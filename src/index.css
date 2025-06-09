@@ -1,3 +1,5 @@
+/* src/App.css - CSS COMPLETO CORREGIDO */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,13 +19,240 @@ code {
     monospace;
 }
 
-/* Estilos adicionales para el SVG del mapa */
-svg text {
-  user-select: none;
-  pointer-events: none;
+/* ===== Z-INDEX HIERARCHY ESPECÍFICO ===== */
+
+/* Panel de control (sidebar) */
+.sidebar {
+  z-index: 100;
 }
 
-/* Estilos para las transiciones */
+/* KPIs superiores - MÁS ALTO */
+.kpis-top-row {
+  z-index: 50;
+  position: relative;
+}
+
+/* Panel lateral derecho - ALTO */
+.info-panel {
+  z-index: 50;
+  position: relative;
+}
+
+/* Indicadores y botones de Magdalena - MEDIO-ALTO */
+.magdalena-controls {
+  z-index: 40;
+  position: relative;
+}
+
+/* Panel de comparación - MEDIO */
+.comparison-panel {
+  z-index: 30;
+  position: relative;
+}
+
+/* Mapa y contenido principal - BAJO */
+.map-container {
+  z-index: 10;
+  position: relative;
+}
+
+/* Breadcrumb navigation - MEDIO */
+.navigation-breadcrumb {
+  z-index: 35;
+  position: relative;
+}
+
+/* ===== ALTURAS CALCULADAS ===== */
+
+/* Altura total menos los KPIs superiores */
+.h-calc-full-minus-kpis {
+  height: calc(100% - 8rem);
+}
+
+/* ===== POSICIONAMIENTO ABSOLUTO CONTROLADO ===== */
+
+.absolute-map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* ===== SHADOW PARA SEPARACIÓN VISUAL ===== */
+
+.shadow-kpi {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-panel {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* ===== ALTURA FIJA PARA KPIs ===== */
+
+.h-28 {
+  height: 7rem;
+}
+
+/* ===== LAYOUT Y FLEXBOX MEJORADO ===== */
+
+/* Asegurar que flex containers respeten min-height */
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.min-h-0 {
+  min-height: 0px;
+}
+
+.min-w-0 {
+  min-width: 0px;
+}
+
+/* Evitar overflow en containers flex */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.overflow-x-hidden {
+  overflow-x: hidden;
+}
+
+/* Asegurar que el grid no cause overflow */
+.grid {
+  display: grid;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid-cols-12 {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.col-span-4 {
+  grid-column: span 4 / span 4;
+}
+
+/* ===== CONTROLES DE TAMAÑO ===== */
+
+/* Alturas específicas para evitar solapamientos */
+.h-24 {
+  height: 6rem;
+}
+
+.h-56 {
+  height: 14rem;
+}
+
+.h-64 {
+  height: 16rem;
+}
+
+.h-80 {
+  height: 20rem;
+}
+
+/* Anchos específicos */
+.w-80 {
+  width: 20rem;
+}
+
+.w-16 {
+  width: 4rem;
+}
+
+/* Anchos máximos para controlar expansión */
+.max-w-4xl {
+  max-width: 56rem;
+}
+
+.max-w-6xl {
+  max-width: 72rem;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+@media (min-width: 640px) {
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sm\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .kpis-responsive {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .kpis-responsive {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .kpi-card-responsive {
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .xl\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ===== TRANSICIONES Y ANIMACIONES ===== */
+
+/* Transiciones suaves para cambios de layout */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
 .transition-opacity {
   transition-property: opacity;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -36,7 +265,37 @@ svg text {
   transition-duration: 150ms;
 }
 
-/* Estilos para el scroll personalizado */
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Escalas para zoom */
+.scale-95 {
+  transform: scale(0.95);
+}
+
+.scale-100 {
+  transform: scale(1);
+}
+
+.scale-105 {
+  transform: scale(1.05);
+}
+
+/* Duraciones específicas */
+.duration-200 {
+  transition-duration: 200ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+/* ===== SCROLLBAR PERSONALIZADO ===== */
+
+/* Scrollbar thin para paneles laterales */
 .scrollbar-thin {
   scrollbar-width: thin;
 }
@@ -46,15 +305,419 @@ svg text {
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f1f5f9;
   border-radius: 3px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #94a3b8;
+}
+
+/* Scrollbar para áreas principales */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ===== ESTILOS PARA SVG Y MAPAS ===== */
+
+/* Estilos adicionales para el SVG del mapa */
+svg text {
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Elementos clickeables en SVG */
+svg .clickable {
+  cursor: pointer;
+}
+
+svg .clickable:hover {
+  opacity: 0.8;
+}
+
+/* ===== Z-INDEX HIERARCHY ===== */
+
+.z-10 {
+  z-index: 10;
+}
+
+.z-20 {
+  z-index: 20;
+}
+
+.z-30 {
+  z-index: 30;
+}
+
+.z-40 {
+  z-index: 40;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+.z-100 {
+  z-index: 100;
+}
+
+/* ===== UTILIDADES DE FLEXBOX ===== */
+
+/* Asegurar que los paneles no se deformen */
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.flex-grow {
+  flex-grow: 1;
+}
+
+.flex-basis-0 {
+  flex-basis: 0%;
+}
+
+/* ===== ESPACIADO CONSISTENTE ===== */
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+/* ===== UTILIDADES DE TEXTO ===== */
+
+/* Truncar texto cuando sea necesario */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== COMPONENTES ESPECÍFICOS ===== */
+
+/* Estilos para cards de KPI */
+.kpi-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para bloques en vista patio */
+.bloque-card {
+  transition: all 0.2s ease-in-out;
+  will-change: transform;
+}
+
+.bloque-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bloque-card.selected {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* Estilos para el breadcrumb de navegación */
+.navigation-breadcrumb {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* ===== LOADING STATES ===== */
+
+/* Spinner de carga */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse para indicadores activos */
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: .5;
+  }
+}
+
+/* ===== ESTADOS DE HOVER Y FOCUS ===== */
+
+/* Botones */
+.btn-hover:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.btn-focus:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* Links */
+.link-hover:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* ===== SIDEBAR ESPECÍFICO ===== */
+
+/* Animación para collapse del sidebar */
+.sidebar-collapsed {
+  width: 4rem;
+  transition: width 0.3s ease-in-out;
+}
+
+.sidebar-expanded {
+  width: 20rem;
+  transition: width 0.3s ease-in-out;
+}
+
+/* ===== MAPAS MULTI-NIVEL ===== */
+
+/* Vista terminal */
+.terminal-view {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+/* Vista patio */
+.patio-view {
+  background: #f8fafc;
+}
+
+/* Vista bloque */
+.bloque-view {
+  background: #f1f5f9;
+}
+
+/* ===== OVERLAYS Y MODALES ===== */
+
+/* Overlay de carga */
+.loading-overlay {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(2px);
+}
+
+/* ===== UTILIDADES ADICIONALES ===== */
+
+/* Posicionamiento absoluto completo */
+.absolute-full {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+/* Centrado perfecto */
+.center-absolute {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ===== OVERFLOW ESPECÍFICO ===== */
+
+.overflow-visible {
+  overflow: visible;
+}
+
+/* ===== BACKDROP PARA SEPARACIÓN ===== */
+
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+}
+
+/* ===== BORDER ESPECÍFICO PARA SEPARACIÓN ===== */
+
+.border-strong {
+  border-width: 2px;
+}
+
+/* ===== ESPECÍFICOS PARA COMPONENTES MAGDALENA ===== */
+
+/* Panel de comparación Magdalena */
+.magdalena-comparison {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #10b981;
+}
+
+/* KPIs de Magdalena */
+.magdalena-kpi {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #3b82f6;
+}
+
+/* Estado activo de Magdalena */
+.magdalena-active {
+  animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-green {
+
+  0%,
+  100% {
+    background-color: rgba(16, 185, 129, 0.1);
+  }
+
+  50% {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+}
+
+/* ===== MEDIA QUERIES ADICIONALES ===== */
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 639px) {
+  .sidebar-expanded {
+    width: 100%;
+    position: fixed;
+    z-index: 50;
+  }
+
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .text-xl {
+    font-size: 1.125rem;
+  }
+
+  .text-2xl {
+    font-size: 1.25rem;
+  }
+}
+
+/* Para pantallas muy grandes */
+@media (min-width: 1536px) {
+  .max-w-screen-2xl {
+    max-width: 1536px;
+  }
+
+  .xl\:grid-cols-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* ===== ACCESIBILIDAD ===== */
+
+/* Reducir animaciones para usuarios que las prefieren reducidas */
+@media (prefers-reduced-motion: reduce) {
+
+  .transition-all,
+  .transition-opacity,
+  .transition-colors,
+  .transition-transform {
+    transition: none !important;
+  }
+
+  .spinner {
+    animation: none !important;
+  }
+
+  .pulse {
+    animation: none !important;
+  }
+}
+
+/* Focus visible para accesibilidad */
+.focus-visible:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ===== UTILIDADES FINALES ===== */
+
+/* Reset para algunos elementos */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Selección de texto */
+::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+/* Estilos para inputs */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* Placeholder styles */
+::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+
+/* src/App.css - AGREGAR ESTA REGLA */
+
+/* Altura calculada cuando hay KPIs abajo */
+.h-calc-full-minus-kpis-bottom {
+  height: calc(100% - 8rem);
 }

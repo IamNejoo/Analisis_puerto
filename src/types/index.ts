@@ -56,8 +56,10 @@ export interface Filters {
   showOHiggins: boolean;
   showEspingon: boolean;
   showGruas: boolean;
-  showCaminos: boolean;
-  [key: string]: boolean;
+  showCaminos: boolean; // CORREGIDO: era showCamiones
+  showOccupancy: boolean;
+  showProductivity: boolean;
+  showTruckTime: boolean;
 }
 
 export interface GaugeChartProps {
@@ -195,13 +197,15 @@ export interface BloqueInfoPanelProps {
 
 
 // Nuevos tipos para la navegación temporal
-export type TimeUnit = 'hour' | 'shift' | 'week';
+export type TimeUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'shift';
 export type DataSource = 'historical' | 'modelMagdalena' | 'modelCamila';
 
 export interface TimeState {
   unit: TimeUnit;
   currentDate: Date;
   dataSource: DataSource;
+  magdalenaConfig?: MagdalenaConfig;
+  camilaConfig?: CamilaConfig;
 }
 
 // Tipos para indicadores de congestión
@@ -284,79 +288,217 @@ export interface ChartsPanelProps {
   isLoading?: boolean;  // Agregar esta propiedad
 }
 
-export interface TimeState {
-  unit: TimeUnit;
-  currentDate: Date;
-  dataSource: DataSource;
+// Tipos adicionales para integración de Magdalena
+export interface MagdalenaConfig {
+  participacion: 68 | 69 | 70;
+  conDispersion: boolean;
+  semana: number;
 }
 
-// Tipos para indicadores de congestión
-export interface CongestionIndicator {
-  id: string;
-  name: string;
-  value: number;
-  description: string;
-  timestamp: Date;
-  dataSource: DataSource;
-  trend: 'up' | 'down' | 'stable';
-  threshold: number;
-  unit: string;
+export interface MagdalenaKPIs {
+  distanciaTotal: number;
+  mejoraVsReal: number;
+  segregacionesGestionadas: number;
+  reubicacionesEliminadas: number;
+  eficienciaDispersion: number;
+  ocupacionOptimizada: number;
 }
 
-// Tipos para comparar modelos vs datos históricos
-export interface ModelComparisonData {
-  historical: number;
-  modelMagdalena?: number;
-  modelCamila?: number;
-  delta?: number;
-  deltaPercentage?: number;
-  indicator: string;
-  timestamp: Date;
-  unit: string;
+export interface MagdalenaWeekData {
+  semana: number;
+  participacion: 68 | 69 | 70;
+  conDispersion: boolean;
+  distanciaReal: number;
+  distanciaModelo: number;
+  mejoraPorcentaje: number;
+  segregaciones: number;
+  ocupacionReal: number;
+  ocupacionModelo: number;
+  reubicacionesEliminadas: number;
 }
 
-// Tipos para segregación de bahías
-export interface SegregationData {
-  id: string;
-  patioId: string;
-  bloqueId: string;
-  bahiaId: string;
-  segregationType: string;
-  colorCode: string;
-  assignedBy: DataSource;
-  timestamp: Date;
+// Extender TimeState existente
+export interface ExtendedTimeState extends TimeState {
+  magdalenaConfig?: MagdalenaConfig;
+  camilaConfig?: CamilaConfig;
 }
 
-// Tipos para funciones objetivo
-export interface ObjectiveFunction {
-  id: string;
-  name: string;
-  value: number;
-  dataSource: DataSource;
-  timestamp: Date;
-  description: string;
-  target: number;
-  unit: string;
+// Props para nuevos componentes
+export interface ModelSelectorProps {
+  participacion: 68 | 69 | 70;
+  conDispersion: boolean;
+  semana: number;
+  onParticipacionChange: (participacion: 68 | 69 | 70) => void;
+  onDispersionChange: (conDispersion: boolean) => void;
+  onSemanaChange: (semana: number) => void;
+  isLoading?: boolean;
 }
 
-// Tipos para paneles de información por tiempo
-export interface TimeContextInfo {
-  timeUnit: TimeUnit;
-  dataSource: DataSource;
-  currentDate: Date;
-  displayString: string;
-  availableModels: DataSource[];
-  congestionLevel: 'low' | 'medium' | 'high';
-  dataAvailable: boolean;
+export interface ComparisonData {
+  semana: number;
+  real: number;
+  modelo: number;
+  mejora: number;
+  segregaciones: number;
 }
 
-// Integración con tipos existentes
-export interface TimeFilteredData<T> {
-  data: T[];
-  timestamp: Date;
-  unit: TimeUnit;
-  dataSource: DataSource;
-  previousPeriodData?: T[];
-  nextPeriodData?: T[];
-  isLoading: boolean;
+// Tipos para Magdalena - VERSIÓN CORREGIDA
+export interface MagdalenaMetrics {
+  // Datos base de comparación
+  totalMovimientos: number;
+  reubicaciones: number;
+  eficienciaReal: number;
+
+  // Optimización Magdalena  
+  totalMovimientosOptimizados: number; // RENOMBRADO para evitar conflicto
+  reubicacionesEliminadas: number;
+  eficienciaGanada: number;
+
+  // Segregaciones
+  segregacionesActivas: number;
+  bloquesAsignados: number;
+  distribucionSegregaciones: Array<{
+    segregacion: string;
+    bloques: number;
+    ocupacion: number;
+  }>;
+
+  // Carga de trabajo
+  cargaTrabajoTotal: number;
+  variacionCarga: number;
+  balanceWorkload: number;
+
+  // Ocupación
+  ocupacionPromedio: number;
+  utilizacionEspacio: number;
+
+  // Comparación movimientos - SEPARADOS EN OBJETOS DISTINTOS
+  movimientosReales: {
+    DLVR: number;
+    DSCH: number;
+    LOAD: number;
+    RECV: number;
+    OTHR: number;
+    YARD: number;
+  };
+
+  movimientosOptimizadosDetalle: { // RENOMBRADO para evitar conflicto
+    Recepcion: number;
+    Carga: number;
+    Descarga: number;
+    Entrega: number;
+  };
+
+  // Datos temporales
+  periodos: number;
+  bloquesUnicos: string[];
+
+  // Datos para gráficos
+  ocupacionPorPeriodo: Array<{
+    periodo: number;
+    ocupacion: number;
+    capacidad: number;
+  }>;
+
+  workloadPorBloque: Array<{
+    bloque: string;
+    cargaTrabajo: number;
+    periodo: number;
+  }>;
+
+  segregacionesPorBloque: Array<{
+    segregacion: string;
+    bloque: string;
+    periodo: number;
+    volumen: number;
+  }>;
+}
+
+export interface RealDataMetrics {
+  totalMovimientos: number;
+  reubicaciones: number;
+  porcentajeReubicaciones: number;
+  movimientosPorTipo: {
+    DLVR: number;
+    DSCH: number;
+    LOAD: number;
+    RECV: number;
+    OTHR: number;
+  };
+  bloquesUnicos: string[];
+  turnos: number[];
+  carriers: number;
+}
+
+export interface ComparisonMetrics {
+  eliminacionReubicaciones: number;
+  mejoraPorcentual: number;
+  optimizacionSegregaciones: number;
+  balanceCargaMejorado: boolean;
+  eficienciaTotal: number;
+}
+
+// Tipos para el modelo de Camila
+export interface CamilaConfig {
+  modelType: 'minmax' | 'maxmin';
+  withSegregations: boolean;
+  week: number;
+  day: string;
+  shift: number;
+}
+
+export interface CamilaResults {
+  // Matrices principales del modelo
+  grueAssignment: number[][];      // y_gbt
+  receptionFlow: number[][];       // fr_sbt
+  deliveryFlow: number[][];        // fe_sbt
+  loadingFlow: number[][];         // fc_sbt
+  unloadingFlow: number[][];       // fd_sbt
+
+  // Métricas calculadas
+  totalFlows: number[][];          // suma de todos los flujos
+  capacity: number[][];            // capacidad por bloque/tiempo
+  availability: number[][];        // capacidad - flujos
+
+  // KPIs
+  workloadBalance: number;         // balance de carga
+  congestionIndex: number;         // índice de congestión
+  blockParticipation: number[];    // % participación por bloque
+  timeParticipation: number[];     // % participación por hora
+  stdDevBlocks: number;            // desviación estándar entre bloques
+  stdDevTime: number;              // desviación estándar entre horas
+  recommendedQuotas: number[][];   // cuotas sugeridas por hora
+
+  // Metadatos
+  objectiveValue: number;
+  modelType: 'minmax' | 'maxmin';
+  week: number;
+  day: string;
+  shift: number;
+}
+
+export interface CamilaRealComparison {
+  realMovements: number[][];
+  optimizedMovements: number[][];
+  improvements: {
+    workloadBalance: number;
+    congestionReduction: number;
+    resourceUtilization: number;
+  };
+}
+
+export interface TimeContextType {
+  timeState: TimeState | null;
+  isLoadingData: boolean;
+  setTimeUnit: (unit: TimeUnit) => void;
+  setDataSource: (source: DataSource) => void;
+  setMagdalenaConfig?: (config: MagdalenaConfig) => void;
+  setCamilaConfig?: (config: CamilaConfig) => void;
+  goToPreviousPeriod: () => void;
+  goToNextPeriod: () => void;
+  playPause: () => void;
+  resetToNow: () => void;
+  getDisplayFormat?: () => string;
+  goToWeek?: (week: number) => void;
+  loadHistoricalDataForPeriod?: (startDate: Date, endDate: Date, patio?: string) => Promise<void>;
 }

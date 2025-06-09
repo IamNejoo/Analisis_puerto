@@ -1,0 +1,8 @@
+{
+    "numCols": 30,
+    "numRows": 7,
+    "targetVisibleCols": 20,
+    "blockAspectRatio": 2.0,
+    "marginToWidthRatio": 0.05,
+    "paddingFactor": 0.03
+}

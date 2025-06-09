@@ -1,32 +1,25 @@
+// src/components/map/PortMapLegend.tsx - VERSIÓN COMPACTA
 import React from 'react';
 
 export const PortMapLegend: React.FC = () => {
+  const legendItems = [
+    { color: '#10b981', label: 'Bajo (< 70%)', range: '< 70%' },
+    { color: '#f59e0b', label: 'Medio (70-85%)', range: '70-85%' },
+    { color: '#ef4444', label: 'Alto (> 85%)', range: '> 85%' }
+  ];
+
   return (
-    <div className="mt-3 flex flex-wrap items-center text-sm text-gray-600">
-      <div className="flex items-center mr-4 mb-1">
-        <span className="inline-block w-3 h-3 bg-green-600 rounded-full mr-1"></span>
-        <span>Disponible (&lt;70%)</span>
-      </div>
-      <div className="flex items-center mr-4 mb-1">
-        <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-1"></span>
-        <span>Moderado (70-85%)</span>
-      </div>
-      <div className="flex items-center mr-4 mb-1">
-        <span className="inline-block w-3 h-3 bg-red-600 rounded-full mr-1"></span>
-        <span>Crítico (&gt;85%)</span>
-      </div>
-      <div className="flex items-center mr-4 mb-1">
-        <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-1"></span>
-        <span>O'Higgins</span>
-      </div>
-      <div className="flex items-center mr-4 mb-1">
-        <span className="inline-block w-3 h-3 bg-purple-700 rounded-full mr-1"></span>
-        <span>Espingón</span>
-      </div>
-      <div className="flex items-center mr-4 mb-1">
-        <span className="inline-block w-3 h-3 bg-teal-600 rounded-full mr-1"></span>
-        <span>Grúas</span>
-      </div>
+    <div className="flex items-center space-x-4 text-xs">
+      <span className="font-medium text-gray-700">Ocupación:</span>
+      {legendItems.map((item, index) => (
+        <div key={index} className="flex items-center space-x-1">
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: item.color }}
+          />
+          <span className="text-gray-600">{item.range}</span>
+        </div>
+      ))}
     </div>
   );
 };

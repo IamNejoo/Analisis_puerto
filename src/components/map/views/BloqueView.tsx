@@ -1,7 +1,21 @@
+// src/components/map/views/BloqueView.tsx
 import React, { useState } from 'react';
-import { patioData } from '../../../data/patioData';
-import type { BahiaData, BloqueData, BloqueStats, BloqueInfoPanelProps } from '../../../types';
-import { Package, Clock, Truck, AlertCircle, Filter, Search, Download } from 'lucide-react';
+import { useMicroData, useCurrentMicroFrame, useFilteredMicroBahias } from '../../../hooks/useMicroData';
+import { useTimeContext } from '../../../contexts/TimeContext';
+import type { MicroBahiaData } from '../../../hooks/useMicroData';
+import {
+  Package,
+  Clock,
+  AlertCircle,
+  Filter,
+  Search,
+  Layers,
+  SkipBack,
+  SkipForward,
+  ChevronLeft,
+  ChevronRight,
+  Info
+} from 'lucide-react';
 
 interface BloqueViewProps {
   patioId: string;
@@ -9,534 +23,491 @@ interface BloqueViewProps {
   getColorForOcupacion: (value: number) => string;
 }
 
-interface BahiaComponentProps {
-  bahia: BahiaData;
+interface MicroBahiaProps {
+  bahia: MicroBahiaData;
   position: { x: number; y: number };
   size: { width: number; height: number };
+  rowIndex: number;
   isSelected: boolean;
-  isVisible: boolean;
   onClick: () => void;
 }
 
-// Función helper para calcular estadísticas del bloque
-const calculateBloqueStats = (bloque: BloqueData): BloqueStats => {
-  return {
-    total: bloque.bahias.length,
-    occupied: bloque.bahias.filter(b => b.occupied).length,
-    free: bloque.bahias.filter(b => !b.occupied).length,
-    import: bloque.bahias.filter(b => b.containerType === 'import').length,
-    export: bloque.bahias.filter(b => b.containerType === 'export').length,
-    empty: bloque.bahias.filter(b => b.containerType === 'empty').length,
-    reefer: bloque.bahias.filter(b => b.containerType === 'reefer').length
-  };
+// Función helper para determinar brillo del color
+const consideraColorClaro = (hexColor: string): number => {
+  if (!hexColor || typeof hexColor !== 'string' || hexColor.charAt(0) !== '#') {
+    return 200;
+  }
+  const hex = hexColor.replace('#', '');
+  let r, g, b;
+  if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (hex.length === 6) {
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  } else {
+    return 200;
+  }
+  return (r * 299 + g * 587 + b * 114) / 1000;
 };
 
-export const BloqueView: React.FC<BloqueViewProps> = ({
-  patioId,
-  bloqueId,
+// Componente para cada celda de la grilla
+const MicroBahiaComponent: React.FC<MicroBahiaProps> = ({
+  bahia,
+  position,
+  size,
+  rowIndex,
+  isSelected,
+  onClick
 }) => {
-  const [selectedBahia, setSelectedBahia] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const patio = patioData.find(p => p.id === patioId);
-  const bloque = patio?.bloques.find(b => b.id === bloqueId);
-  
-  if (!bloque) return (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="text-center text-gray-500">
-        <AlertCircle size={48} className="mx-auto mb-4" />
-        <h3 className="text-lg font-semibold">Bloque no encontrado</h3>
-        <p>El bloque solicitado no existe o no está disponible</p>
-      </div>
-    </div>
-  );
-
-  // Filtrar bahías según criterios
-  const filteredBahias = bloque.bahias.filter(bahia => {
-    const matchesStatus = filterStatus === 'all' || 
-      (filterStatus === 'occupied' && bahia.occupied) ||
-      (filterStatus === 'free' && !bahia.occupied) ||
-      (filterStatus === bahia.containerType);
-    
-    const matchesSearch = !searchTerm || 
-      bahia.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (bahia.containerId && bahia.containerId.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesStatus && matchesSearch;
-  });
-
-  const stats = calculateBloqueStats(bloque);
-
-  // Organizar bahías en grid 7x7
-  const rows = 7;
-  const cols = 7;
-  const bahiaWidth = 70;
-  const bahiaHeight = 50;
-  const spacing = 8;
+  const brightness = consideraColorClaro(bahia.color);
+  const textColor = brightness > 180 ? 'black' : 'white';
 
   return (
-    <div className="w-full h-full bg-gray-50 flex">
-      {/* Panel principal */}
-      <div className="flex-1 p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800">{bloque.name}</h2>
-              <p className="text-gray-600 mt-1">
-                Ocupación: {bloque.ocupacion}% ({stats.occupied}/{stats.total} bahías)
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">{stats.occupied}</div>
-                <div className="text-sm text-gray-500">Bahías Ocupadas</div>
-              </div>
-              <div className={`w-4 h-4 rounded-full ${
-                bloque.ocupacion < 70 ? 'bg-green-500' :
-                bloque.ocupacion < 85 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}></div>
-            </div>
-          </div>
-
-          {/* Stats rápidas */}
-          <div className="grid grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 text-center">
-              <div className="text-lg font-bold text-green-600">{stats.free}</div>
-              <div className="text-xs text-gray-500">Libres</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 text-center">
-              <div className="text-lg font-bold text-blue-600">{stats.import}</div>
-              <div className="text-xs text-gray-500">Importación</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 text-center">
-              <div className="text-lg font-bold text-orange-600">{stats.export}</div>
-              <div className="text-xs text-gray-500">Exportación</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 text-center">
-              <div className="text-lg font-bold text-gray-600">{stats.empty}</div>
-              <div className="text-xs text-gray-500">Vacíos</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 text-center">
-              <div className="text-lg font-bold text-purple-600">{stats.reefer}</div>
-              <div className="text-xs text-gray-500">Refrigerados</div>
-            </div>
-          </div>
-
-          {/* Controles de filtrado */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              {/* Filtro por estado */}
-              <div className="flex items-center space-x-2">
-                <Filter size={16} className="text-gray-500" />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Todas las bahías</option>
-                  <option value="free">Solo libres</option>
-                  <option value="occupied">Solo ocupadas</option>
-                  <option value="import">Importación</option>
-                  <option value="export">Exportación</option>
-                  <option value="empty">Vacíos</option>
-                  <option value="reefer">Refrigerados</option>
-                </select>
-              </div>
-
-              {/* Búsqueda */}
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar bahía o contenedor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Acciones */}
-            <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
-                <Download size={14} />
-                <span>Exportar</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Grid de bahías */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">
-              Layout del Bloque ({filteredBahias.length} bahías mostradas)
-            </h3>
-            
-            {/* Leyenda */}
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
-                <span>Libre</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-blue-500 mr-2 rounded"></div>
-                <span>Importación</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
-                <span>Exportación</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-gray-400 mr-2 rounded"></div>
-                <span>Vacío</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-purple-500 mr-2 rounded"></div>
-                <span>Refrigerado</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="overflow-auto">
-            <svg width="600" height="400" viewBox="0 0 600 400" className="border border-gray-200 rounded">
-              {/* Grid de bahías */}
-              <g id="bahias-grid">
-                {bloque.bahias.map((bahia, index) => {
-                  const row = Math.floor(index / cols);
-                  const col = index % cols;
-                  const x = col * (bahiaWidth + spacing) + 20;
-                  const y = row * (bahiaHeight + spacing) + 20;
-                  
-                  // Verificar si la bahía pasa el filtro
-                  const isVisible = filteredBahias.includes(bahia);
-                  
-                  return (
-                    <BahiaComponent
-                      key={bahia.id}
-                      bahia={bahia}
-                      position={{ x, y }}
-                      size={{ width: bahiaWidth, height: bahiaHeight }}
-                      isSelected={selectedBahia === bahia.id}
-                      isVisible={isVisible}
-                      onClick={() => setSelectedBahia(bahia.id)}
-                    />
-                  );
-                })}
-              </g>
-              
-              {/* Números de fila y columna */}
-              <g id="grid-labels">
-                {Array.from({ length: rows }, (_, i) => (
-                  <text
-                    key={`row-${i}`}
-                    x="8"
-                    y={i * (bahiaHeight + spacing) + 45}
-                    className="fill-gray-500 text-sm font-medium"
-                    fontSize="12"
-                  >
-                    {i + 1}
-                  </text>
-                ))}
-                {Array.from({ length: cols }, (_, i) => (
-                  <text
-                    key={`col-${i}`}
-                    x={i * (bahiaWidth + spacing) + 55}
-                    y="12"
-                    className="fill-gray-500 text-sm font-medium"
-                    textAnchor="middle"
-                    fontSize="12"
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </text>
-                ))}
-              </g>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* Panel lateral con información detallada */}
-      <BloqueInfoPanel 
-        bloque={bloque} 
-        selectedBahia={selectedBahia ? bloque.bahias.find(b => b.id === selectedBahia) : null}
-        stats={stats}
-      />
-    </div>
-  );
-};
-
-// Componente para cada bahía individual
-const BahiaComponent: React.FC<BahiaComponentProps> = ({ 
-  bahia, 
-  position, 
-  size, 
-  isSelected, 
-  isVisible, 
-  onClick 
-}) => {
-  const getStatusColor = (): string => {
-    if (!bahia.occupied) return '#10B981'; // Verde - libre
-    switch (bahia.containerType) {
-      case 'import': return '#3B82F6'; // Azul
-      case 'export': return '#F59E0B'; // Naranja
-      case 'empty': return '#6B7280'; // Gris
-      case 'reefer': return '#8B5CF6'; // Morado
-      default: return '#EF4444'; // Rojo - desconocido
-    }
-  };
-
-  const getStatusIcon = (): string => {
-    if (!bahia.occupied) return '⬜';
-    switch (bahia.containerType) {
-      case 'import': return '📦';
-      case 'export': return '📤';
-      case 'empty': return '📭';
-      case 'reefer': return '🧊';
-      default: return '❓';
-    }
-  };
-
-  return (
-    <g 
+    <g
       transform={`translate(${position.x}, ${position.y})`}
-      className={`cursor-pointer transition-all duration-200 ${
-        isVisible ? 'opacity-100' : 'opacity-30'
-      }`}
+      className="cursor-pointer transition-all duration-200 hover:opacity-80"
       onClick={onClick}
     >
-      {/* Rectángulo de la bahía */}
       <rect
         width={size.width}
         height={size.height}
-        fill={getStatusColor()}
-        stroke={isSelected ? '#1D4ED8' : '#374151'}
-        strokeWidth={isSelected ? 3 : 1}
-        rx="4"
+        fill={bahia.color || '#FFFFFF'}
+        stroke={isSelected ? '#7C3AED' : '#666'}
+        strokeWidth={isSelected ? 2 : 1}
         className="hover:stroke-2 transition-all"
-        opacity={isVisible ? 1 : 0.3}
       />
-      
-      {/* Número de posición */}
-      <text
-        x={size.width / 2}
-        y="14"
-        textAnchor="middle"
-        className="fill-white font-bold text-xs pointer-events-none"
-        fontSize="10"
-      >
-        {bahia.position}
-      </text>
-      
-      {/* Icono de estado */}
-      <text
-        x={size.width / 2}
-        y="28"
-        textAnchor="middle"
-        className="pointer-events-none"
-        fontSize="12"
-      >
-        {getStatusIcon()}
-      </text>
-      
-      {/* ID del contenedor si está ocupado */}
-      {bahia.occupied && bahia.containerId && (
+
+      {bahia.text && bahia.text !== '-' && bahia.text !== '' && (
         <text
           x={size.width / 2}
-          y="40"
+          y={size.height / 2}
           textAnchor="middle"
-          className="fill-white text-xs pointer-events-none"
-          fontSize="8"
+          dominantBaseline="middle"
+          className="pointer-events-none font-medium"
+          fontSize="11"
+          fill={textColor}
         >
-          {bahia.containerId.substring(0, 6)}
+          {bahia.text}
         </text>
       )}
-      
-      {/* Overlay de selección */}
+
       {isSelected && (
         <rect
           width={size.width}
           height={size.height}
-          fill="rgba(29, 78, 216, 0.2)"
-          stroke="rgba(29, 78, 216, 0.8)"
+          fill="rgba(124, 58, 237, 0.2)"
+          stroke="rgba(124, 58, 237, 0.8)"
           strokeWidth="2"
-          rx="4"
-          strokeDasharray="4,2"
-          className="pointer-events-none"
+          strokeDasharray="3,2"
+          className="pointer-events-none animate-pulse"
         />
       )}
     </g>
   );
 };
 
-// Panel lateral con información del bloque
-const BloqueInfoPanel: React.FC<BloqueInfoPanelProps> = ({ 
-  bloque, 
-  selectedBahia, 
-  stats 
+export const BloqueView: React.FC<BloqueViewProps> = ({
+  patioId,
+  bloqueId,
+  getColorForOcupacion
 }) => {
+  // Estado local
+  const [selectedCell, setSelectedCell] = useState<{ row: number, col: number } | null>(null);
+  const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // Contexto de tiempo
+  const { timeState } = useTimeContext();
+
+  // Hook para datos micro
+  const microData = useMicroData(patioId, bloqueId, timeState.dataSource, timeState.unit);
+  const currentFrame = useCurrentMicroFrame(microData);
+
+  // Si hay error, mostrar mensaje
+  if (microData.error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
+          <h3 className="text-lg font-semibold">Error al cargar datos</h3>
+          <p className="text-sm">{microData.error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Configuración del layout
+  const containerWidth = 45;
+  const containerHeight = 35;
+  const containerMargin = 2;
+  const blockStartX = 50;
+  const blockStartY = 50;
+  const rowLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+  // Calcular dimensiones totales
+  const totalWidth = blockStartX * 2 + 30 * containerWidth + 29 * containerMargin;
+  const totalHeight = blockStartY * 2 + 7 * containerHeight + 6 * containerMargin + 60;
+
+  // Filtrar bahías según el grupo seleccionado
+  const shouldShowBahia = (bahia: MicroBahiaData) => {
+    if (groupFilter === 'all') return true;
+    return bahia.group === groupFilter;
+  };
+
+  // Obtener grupos únicos del frame actual
+  const uniqueGroups = Array.from(new Set(
+    microData.processedBahias
+      .filter(b => b.group)
+      .map(b => b.group)
+  )).sort();
+
   return (
-    <div className="w-80 bg-white shadow-lg border-l border-gray-200 p-6 overflow-y-auto">
-      <h3 className="text-lg font-semibold mb-4">Información del Bloque</h3>
-      
-      {/* Información general */}
-      <div className="mb-6">
-        <h4 className="font-medium text-gray-800 mb-3 flex items-center">
-          <Package className="mr-2 text-blue-500" size={16} />
-          Detalles Generales
-        </h4>
-        <div className="space-y-2 text-sm bg-gray-50 rounded p-3">
-          <div className="flex justify-between">
-            <span className="text-gray-600">ID del Bloque:</span>
-            <span className="font-medium">{bloque.id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Capacidad Total:</span>
-            <span className="font-medium">{bloque.capacidadTotal} bahías</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Equipamiento:</span>
-            <span className="font-medium capitalize">{bloque.equipmentType?.replace('_', ' ')}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Estado Operacional:</span>
-            <span className={`font-medium capitalize ${
-              bloque.operationalStatus === 'active' ? 'text-green-600' :
-              bloque.operationalStatus === 'maintenance' ? 'text-orange-600' :
-              'text-red-600'
-            }`}>
-              {bloque.operationalStatus}
+    <div className="w-full h-full bg-gray-50 flex overflow-hidden">
+      {/* Panel principal */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Header con controles */}
+        <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                {patioId} - Bloque {bloqueId}
+              </h2>
+              {currentFrame && (
+                <p className="text-gray-600 text-sm mt-1">
+                  Turno: {currentFrame.timeLabel} • Vista detallada de bahías
+                </p>
+              )}
+            </div>
+            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium flex items-center">
+              <Layers size={12} className="mr-1" />
+              Vista Micro - 7x30 posiciones
             </span>
           </div>
-        </div>
-      </div>
 
-      {/* Estadísticas detalladas */}
-      <div className="mb-6">
-        <h4 className="font-medium text-gray-800 mb-3 flex items-center">
-          <Truck className="mr-2 text-green-500" size={16} />
-          Distribución por Tipo
-        </h4>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center p-2 bg-green-50 rounded">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-              <span className="text-sm">Libres</span>
-            </div>
-            <span className="font-medium">{stats.free}</span>
-          </div>
-          
-          <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-              <span className="text-sm">Importación</span>
-            </div>
-            <span className="font-medium">{stats.import}</span>
-          </div>
-          
-          <div className="flex justify-between items-center p-2 bg-orange-50 rounded">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
-              <span className="text-sm">Exportación</span>
-            </div>
-            <span className="font-medium">{stats.export}</span>
-          </div>
-          
-          <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-gray-400 rounded mr-2"></div>
-              <span className="text-sm">Vacíos</span>
-            </div>
-            <span className="font-medium">{stats.empty}</span>
-          </div>
-          
-          <div className="flex justify-between items-center p-2 bg-purple-50 rounded">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
-              <span className="text-sm">Refrigerados</span>
-            </div>
-            <span className="font-medium">{stats.reefer}</span>
-          </div>
-        </div>
-      </div>
+          {/* Controles de navegación temporal */}
+          {microData.timeFrames.length > 1 && (
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center space-x-4">
+                {/* Navegación */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => microData.setCurrentFrame(0)}
+                    disabled={microData.currentFrame === 0}
+                    className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Ir al inicio"
+                  >
+                    <SkipBack size={16} />
+                  </button>
+                  <button
+                    onClick={() => microData.setCurrentFrame(microData.currentFrame - 1)}
+                    disabled={microData.currentFrame === 0}
+                    className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Turno anterior"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
 
-      {/* Información de la bahía seleccionada */}
-      {selectedBahia && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h4 className="font-medium text-blue-800 mb-3 flex items-center">
-            <AlertCircle className="mr-2" size={16} />
-            Bahía Seleccionada: {selectedBahia.id}
-          </h4>
-          
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-blue-600">Estado:</span>
-              <span className="font-medium">
-                {selectedBahia.occupied ? 'Ocupada' : 'Libre'}
-              </span>
-            </div>
-            
-            {selectedBahia.occupied && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-blue-600">Tipo:</span>
-                  <span className="font-medium capitalize">
-                    {selectedBahia.containerType}
+                  <div className="px-4 py-2 bg-white rounded border border-gray-300 min-w-[120px] text-center">
+                    <span className="text-sm text-gray-600">Turno</span>
+                    <div className="font-mono font-bold text-lg">{currentFrame?.timeLabel || '0'}</div>
+                  </div>
+
+                  <button
+                    onClick={() => microData.setCurrentFrame(microData.currentFrame + 1)}
+                    disabled={microData.currentFrame === microData.timeFrames.length - 1}
+                    className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Siguiente turno"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                  <button
+                    onClick={() => microData.setCurrentFrame(microData.timeFrames.length - 1)}
+                    disabled={microData.currentFrame === microData.timeFrames.length - 1}
+                    className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Ir al final"
+                  >
+                    <SkipForward size={16} />
+                  </button>
+                </div>
+
+                {/* Timeline slider */}
+                <div className="flex-1 flex items-center space-x-3">
+                  <Clock size={16} className="text-gray-500" />
+                  <input
+                    type="range"
+                    min="0"
+                    max={microData.timeFrames.length - 1}
+                    value={microData.currentFrame}
+                    onChange={(e) => microData.setCurrentFrame(parseInt(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-gray-600">
+                    {microData.currentFrame + 1} / {microData.timeFrames.length}
                   </span>
                 </div>
-                
-                {selectedBahia.containerId && (
-                  <div className="flex justify-between">
-                    <span className="text-blue-600">Contenedor:</span>
-                    <span className="font-medium font-mono text-xs">
-                      {selectedBahia.containerId}
-                    </span>
+
+                {/* Filtro por grupo */}
+                <div className="flex items-center space-x-2">
+                  <Filter size={14} className="text-gray-500" />
+                  <select
+                    value={groupFilter}
+                    onChange={(e) => setGroupFilter(e.target.value)}
+                    className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="all">Todos los servicios</option>
+                    {uniqueGroups.map(group => (
+                      <option key={group} value={group}>{group}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Área de visualización */}
+        <div className="flex-1 overflow-auto bg-white p-4">
+          {microData.isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <span className="ml-3 text-gray-600">Cargando vista micro...</span>
+            </div>
+          ) : !currentFrame ? (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <AlertCircle size={24} className="mr-2" />
+              <span>No hay datos disponibles para este período</span>
+            </div>
+          ) : (
+            <div className="overflow-auto">
+              <svg
+                width={totalWidth}
+                height={totalHeight}
+                viewBox={`0 0 ${totalWidth} ${totalHeight}`}
+                className="bg-gray-50"
+              >
+                {/* Marco del bloque */}
+                <rect
+                  x={blockStartX}
+                  y={blockStartY}
+                  width={30 * containerWidth + 29 * containerMargin}
+                  height={7 * containerHeight + 6 * containerMargin}
+                  fill="none"
+                  stroke="#28a745"
+                  strokeWidth="1.5"
+                  rx="5"
+                />
+
+                {/* Grid de bahías - 7 filas x 30 columnas */}
+                {rowLabels.map((row, rowIndex) => (
+                  <g key={row}>
+                    {/* Label de fila (A-G) */}
+                    <text
+                      x={blockStartX - 10}
+                      y={blockStartY + rowIndex * (containerHeight + containerMargin) + containerHeight / 2}
+                      textAnchor="end"
+                      dominantBaseline="middle"
+                      className="fill-gray-700 font-bold"
+                      fontSize="14"
+                    >
+                      {row}
+                    </text>
+
+                    {/* Celdas de la fila */}
+                    {microData.processedBahias.map((bahia, colIndex) => {
+                      const x = blockStartX + colIndex * (containerWidth + containerMargin);
+                      const y = blockStartY + rowIndex * (containerHeight + containerMargin);
+                      const isVisible = shouldShowBahia(bahia);
+
+                      return (
+                        <g key={`${row}-${colIndex}`} style={{ opacity: isVisible ? 1 : 0.2 }}>
+                          <MicroBahiaComponent
+                            bahia={bahia}
+                            position={{ x, y }}
+                            size={{ width: containerWidth, height: containerHeight }}
+                            rowIndex={rowIndex}
+                            isSelected={selectedCell?.row === rowIndex && selectedCell?.col === colIndex}
+                            onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
+                          />
+                        </g>
+                      );
+                    })}
+                  </g>
+                ))}
+
+                {/* Labels del eje X (columnas 1-30) */}
+                {Array.from({ length: 30 }, (_, i) => i).map((colIndex) => {
+                  const x = blockStartX + colIndex * (containerWidth + containerMargin) + containerWidth / 2;
+                  const y = blockStartY - 10;
+
+                  // Mostrar solo algunos números para no saturar
+                  if (colIndex === 0 || colIndex === 9 || colIndex === 19 || colIndex === 29) {
+                    return (
+                      <text
+                        key={`col-label-${colIndex}`}
+                        x={x}
+                        y={y}
+                        textAnchor="middle"
+                        className="fill-gray-700 font-bold"
+                        fontSize="12"
+                      >
+                        {colIndex + 1}
+                      </text>
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Línea de base del eje X */}
+                <line
+                  x1={blockStartX}
+                  y1={blockStartY + 7 * containerHeight + 6 * containerMargin + 10}
+                  x2={blockStartX + 30 * containerWidth + 29 * containerMargin}
+                  y2={blockStartY + 7 * containerHeight + 6 * containerMargin + 10}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+
+                {/* Ticks del eje X */}
+                {Array.from({ length: 31 }, (_, i) => i).map((tickIndex) => {
+                  const x = tickIndex === 0
+                    ? blockStartX
+                    : blockStartX + tickIndex * (containerWidth + containerMargin) - containerMargin / 2;
+                  const y1 = blockStartY + 7 * containerHeight + 6 * containerMargin + 10;
+                  const y2 = y1 + 8;
+
+                  return (
+                    <line
+                      key={`tick-${tickIndex}`}
+                      x1={x}
+                      y1={y1}
+                      x2={x}
+                      y2={y2}
+                      stroke="#333"
+                      strokeWidth="1"
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Panel lateral - Leyenda e información */}
+      <div className="w-80 bg-white shadow-lg border-l border-gray-200 flex flex-col">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold flex items-center">
+            <Info size={18} className="mr-2" />
+            Información del Bloque
+          </h3>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Estadísticas generales */}
+          <div className="mb-6">
+            <h4 className="font-medium text-gray-800 mb-3">Estadísticas del Turno {currentFrame?.timeLabel}</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between p-2 bg-gray-50 rounded">
+                <span className="text-gray-600">Total posiciones:</span>
+                <span className="font-medium">210 (7×30)</span>
+              </div>
+              <div className="flex justify-between p-2 bg-gray-50 rounded">
+                <span className="text-gray-600">Grupos activos:</span>
+                <span className="font-medium">{uniqueGroups.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Leyenda de grupos/servicios */}
+          <div className="mb-6">
+            <h4 className="font-medium text-gray-800 mb-3">Servicios / Segregaciones</h4>
+            <div className="space-y-2">
+              {microData.colorStats.map((stat) => (
+                <div
+                  key={stat.color}
+                  className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${groupFilter === stat.label
+                      ? 'bg-purple-100 border border-purple-300'
+                      : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  onClick={() => setGroupFilter(groupFilter === stat.label ? 'all' : stat.label || '')}
+                >
+                  <div className="flex items-center">
+                    <div
+                      className="w-4 h-4 rounded mr-3 border border-gray-400"
+                      style={{ backgroundColor: stat.color }}
+                    />
+                    <span className="text-sm font-medium">{stat.label || 'Sin grupo'}</span>
                   </div>
-                )}
-                
-                {selectedBahia.size && (
-                  <div className="flex justify-between">
-                    <span className="text-blue-600">Tamaño:</span>
-                    <span className="font-medium">{selectedBahia.size}'</span>
+                  <div className="text-right">
+                    <div className="font-bold text-sm">{stat.count} bahías</div>
+                    <div className="text-xs text-gray-500">{stat.percentage}%</div>
                   </div>
-                )}
-                
-                {selectedBahia.weight && (
-                  <div className="flex justify-between">
-                    <span className="text-blue-600">Peso:</span>
-                    <span className="font-medium">{selectedBahia.weight.toLocaleString()} kg</span>
-                  </div>
-                )}
-                
-                {selectedBahia.destination && (
-                  <div className="flex justify-between">
-                    <span className="text-blue-600">Destino:</span>
-                    <span className="font-medium">{selectedBahia.destination}</span>
-                  </div>
-                )}
-                
-                {selectedBahia.lastMovement && (
-                  <div className="flex justify-between">
-                    <span className="text-blue-600">Último movimiento:</span>
-                    <span className="font-medium text-xs">
-                      {selectedBahia.lastMovement.toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Información de celda seleccionada */}
+          {selectedCell && (
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="font-medium text-purple-800 mb-2">
+                Posición Seleccionada
+              </h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-purple-600">Fila:</span>
+                  <span className="font-medium">{rowLabels[selectedCell.row]}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-600">Columna:</span>
+                  <span className="font-medium">{selectedCell.col + 1}</span>
+                </div>
+                {(() => {
+                  const bahiaData = microData.processedBahias[selectedCell.col];
+                  return (
+                    <>
+                      {bahiaData?.group && (
+                        <div className="flex justify-between">
+                          <span className="text-purple-600">Servicio:</span>
+                          <span className="font-medium">{bahiaData.group}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-purple-600">Color:</span>
+                        <div className="flex items-center">
+                          <div
+                            className="w-3 h-3 rounded mr-1 border border-gray-300"
+                            style={{ backgroundColor: bahiaData?.color || '#FFFFFF' }}
+                          />
+                          <span className="font-mono text-xs">{bahiaData?.color || '#FFFFFF'}</span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Nota informativa */}
+          <div className="mt-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-xs text-blue-700">
+              <strong>Nota:</strong> Esta vista muestra la distribución de servicios/segregaciones
+              en el bloque {bloqueId} a través del tiempo. Cada color representa un servicio diferente
+              (S12, S14, S18, S4, etc.).
+            </p>
           </div>
         </div>
-      )}
 
-      {/* Última actualización */}
-      <div className="text-xs text-gray-500 border-t border-gray-200 pt-4">
-        <div className="flex items-center">
-          <Clock size={12} className="mr-1" />
-          Última actualización: {bloque.lastUpdate?.toLocaleTimeString() || 'N/A'}
+        {/* Footer */}
+        <div className="p-3 border-t border-gray-200 text-xs text-gray-500 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <span>Patio {patioId}</span>
+            <span>Actualizado: {new Date().toLocaleTimeString()}</span>
+          </div>
         </div>
       </div>
     </div>

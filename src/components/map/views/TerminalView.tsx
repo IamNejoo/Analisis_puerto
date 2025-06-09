@@ -1,3 +1,4 @@
+// src/components/map/views/TerminalView.tsx - AGREGAR DEBUG TEMPORAL
 import React from 'react';
 import { PortMap } from '../PortMap';
 import type { Filters } from '../../../types';
@@ -14,21 +15,26 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   onPatioClick,
   getColorForOcupacion
 }) => {
+
+  // 🔍 DEBUG TEMPORAL - AGREGAR ESTAS LÍNEAS
+  console.log('🔍 patioData disponible:', patioData);
+  console.log('🔍 IDs de patios:', patioData.map(p => p.id));
+
   return (
     <div className="w-full h-full overflow-hidden bg-gray-100 rounded-lg relative">
-      <svg 
-        width="100%" 
-        height="100%" 
+      <svg
+        width="100%"
+        height="100%"
         viewBox="0 0 1165.9 595.22"
         className="cursor-pointer"
       >
         <g transform="translate(-19.249 -158.67)">
           {/* Mapa actual */}
-          <PortMap 
-            filters={filters} 
+          <PortMap
+            filters={filters}
             getColorForOcupacion={getColorForOcupacion}
           />
-          
+
           {/* Overlay clickeable para patios */}
           <ClickablePatioOverlays onPatioClick={onPatioClick} />
         </g>
@@ -49,6 +55,13 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
 
 // Componente para áreas clickeables invisibles sobre los patios
 const ClickablePatioOverlays: React.FC<{ onPatioClick: (id: string) => void }> = ({ onPatioClick }) => {
+
+  // 🔧 FUNCIÓN CON DEBUG
+  const handlePatioClick = (patioId: string) => {
+    console.log('🔍 Clic en patio:', patioId); // DEBUG
+    onPatioClick(patioId);
+  };
+
   return (
     <g id="clickable-patio-areas">
       {patioData.map(patio => (
@@ -66,12 +79,12 @@ const ClickablePatioOverlays: React.FC<{ onPatioClick: (id: string) => void }> =
             className="cursor-pointer hover:fill-blue-200 hover:stroke-blue-500 transition-all duration-200"
             onClick={(e) => {
               e.stopPropagation();
-              onPatioClick(patio.id);
+              handlePatioClick(patio.id); // 🔧 USAR FUNCIÓN CON DEBUG
             }}
           />
-          
+
           {/* Etiqueta del patio */}
-          <g 
+          <g
             className="cursor-pointer pointer-events-none"
             opacity="0.9"
           >
@@ -103,7 +116,7 @@ const ClickablePatioOverlays: React.FC<{ onPatioClick: (id: string) => void }> =
               r="12"
               fill={
                 patio.ocupacionTotal < 70 ? '#10B981' :
-                patio.ocupacionTotal < 85 ? '#F59E0B' : '#EF4444'
+                  patio.ocupacionTotal < 85 ? '#F59E0B' : '#EF4444'
               }
               stroke="white"
               strokeWidth="2"
@@ -122,7 +135,7 @@ const ClickablePatioOverlays: React.FC<{ onPatioClick: (id: string) => void }> =
           </g>
         </g>
       ))}
-      
+
       {/* Leyenda de interactividad */}
       <g transform="translate(50, 50)">
         <rect
