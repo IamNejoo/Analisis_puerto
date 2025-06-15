@@ -5,6 +5,7 @@ import { TerminalView } from './views/TerminalView';
 import { PatioView } from './views/PatioView';
 import { BloqueView } from './views/BloqueView';
 import { NavigationBreadcrumb } from './NavigationBreadcrumb';
+import { TimeControl } from '../shared/TimeControl';
 
 interface MultiLevelMapProps {
   viewState: ViewState;
@@ -64,15 +65,18 @@ export const MultiLevelMap: React.FC<MultiLevelMapProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative bg-gray-50 overflow-hidden">
+    <div className="w-full h-full relative bg-gray-50 overflow-hidden flex flex-col">
+      {/* BARRA DE CONTROL TEMPORAL - SIEMPRE ARRIBA */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex-shrink-0 z-30">
+        <TimeControl />
+      </div>
+
       {/* Breadcrumb de navegación */}
       <NavigationBreadcrumb
         viewState={viewState}
         onZoomOut={onZoomOut}
         onZoomToTerminal={onZoomToTerminal}
       />
-
-      {/* NO PONER MapKPIOverlay AQUÍ - Se movió a MapPanel.tsx */}
 
       {/* Indicador de carga durante transiciones */}
       {zoomTransition && (
@@ -86,7 +90,7 @@ export const MultiLevelMap: React.FC<MultiLevelMapProps> = ({
 
       {/* Contenedor del mapa */}
       <div
-        className={`w-full h-full transition-all duration-300 ease-in-out ${zoomTransition ? 'scale-95 opacity-30' : 'scale-100 opacity-100'
+        className={`flex-1 transition-all duration-300 ease-in-out ${zoomTransition ? 'scale-95 opacity-30' : 'scale-100 opacity-100'
           }`}
       >
         {renderCurrentView()}

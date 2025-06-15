@@ -1,4 +1,4 @@
-// src/components/map/views/BloqueView.tsx
+// src/components/map/views/BloqueView.tsx - COMPLETO CON PANEL LATERAL CORREGIDO
 import React, { useState } from 'react';
 import { useMicroData, useCurrentMicroFrame, useFilteredMicroBahias } from '../../../hooks/useMicroData';
 import { useTimeContext } from '../../../contexts/TimeContext';
@@ -14,8 +14,10 @@ import {
   SkipForward,
   ChevronLeft,
   ChevronRight,
-  Info
+  Info,
+  BarChart3
 } from 'lucide-react';
+import { CorePortKPIPanel } from '../../dashboard/CorePortKPIPanel';
 
 interface BloqueViewProps {
   patioId: string;
@@ -168,8 +170,8 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     <div className="w-full h-full bg-gray-50 flex overflow-hidden">
       {/* Panel principal */}
       <div className="flex-1 flex flex-col min-h-0">
-        {/* Header con controles */}
-        <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+        {/* Header con controles - ALTURA FIJA */}
+        <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
@@ -268,7 +270,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
           )}
         </div>
 
-        {/* Área de visualización */}
+        {/* Área de visualización - FLEX-1 PARA OCUPAR EL RESTO */}
         <div className="flex-1 overflow-auto bg-white p-4">
           {microData.isLoading ? (
             <div className="flex items-center justify-center h-64">
@@ -396,20 +398,22 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
         </div>
       </div>
 
-      {/* Panel lateral - Leyenda e información */}
-      <div className="w-80 bg-white shadow-lg border-l border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+      {/* Panel lateral - CORREGIDO CON MEJOR MANEJO DE OVERFLOW */}
+      <div className="w-80 bg-white shadow-lg border-l border-gray-200 flex flex-col overflow-hidden">
+        {/* Header del panel - altura fija */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold flex items-center">
             <Info size={18} className="mr-2" />
             Información del Bloque
           </h3>
         </div>
 
+        {/* Contenido scrolleable - flex-1 y overflow-y-auto */}
         <div className="flex-1 overflow-y-auto p-4">
           {/* Estadísticas generales */}
-          <div className="mb-6">
-            <h4 className="font-medium text-gray-800 mb-3">Estadísticas del Turno {currentFrame?.timeLabel}</h4>
-            <div className="space-y-2 text-sm">
+          <div className="mb-4">
+            <h4 className="font-medium text-gray-800 mb-2 text-sm">Estadísticas del Turno {currentFrame?.timeLabel}</h4>
+            <div className="space-y-1 text-xs">
               <div className="flex justify-between p-2 bg-gray-50 rounded">
                 <span className="text-gray-600">Total posiciones:</span>
                 <span className="font-medium">210 (7×30)</span>
@@ -421,42 +425,42 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
             </div>
           </div>
 
-          {/* Leyenda de grupos/servicios */}
-          <div className="mb-6">
-            <h4 className="font-medium text-gray-800 mb-3">Servicios / Segregaciones</h4>
-            <div className="space-y-2">
+          {/* Leyenda de grupos/servicios - tamaños reducidos */}
+          <div className="mb-4">
+            <h4 className="font-medium text-gray-800 mb-2 text-sm">Servicios / Segregaciones</h4>
+            <div className="space-y-1 max-h-64 overflow-y-auto">
               {microData.colorStats.map((stat) => (
                 <div
                   key={stat.color}
-                  className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${groupFilter === stat.label
-                      ? 'bg-purple-100 border border-purple-300'
-                      : 'bg-gray-50 hover:bg-gray-100'
+                  className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors text-xs ${groupFilter === stat.label
+                    ? 'bg-purple-100 border border-purple-300'
+                    : 'bg-gray-50 hover:bg-gray-100'
                     }`}
                   onClick={() => setGroupFilter(groupFilter === stat.label ? 'all' : stat.label || '')}
                 >
                   <div className="flex items-center">
                     <div
-                      className="w-4 h-4 rounded mr-3 border border-gray-400"
+                      className="w-3 h-3 rounded mr-2 border border-gray-400"
                       style={{ backgroundColor: stat.color }}
                     />
-                    <span className="text-sm font-medium">{stat.label || 'Sin grupo'}</span>
+                    <span className="font-medium">{stat.label || 'Sin grupo'}</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-sm">{stat.count} bahías</div>
-                    <div className="text-xs text-gray-500">{stat.percentage}%</div>
+                    <div className="font-bold">{stat.count}</div>
+                    <div className="text-gray-500" style={{ fontSize: '10px' }}>{stat.percentage}%</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Información de celda seleccionada */}
+          {/* Información de celda seleccionada - tamaño reducido */}
           {selectedCell && (
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <h4 className="font-medium text-purple-800 mb-2">
+            <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 mb-4">
+              <h4 className="font-medium text-purple-800 mb-2 text-sm">
                 Posición Seleccionada
               </h4>
-              <div className="space-y-1 text-sm">
+              <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span className="text-purple-600">Fila:</span>
                   <span className="font-medium">{rowLabels[selectedCell.row]}</span>
@@ -482,7 +486,9 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                             className="w-3 h-3 rounded mr-1 border border-gray-300"
                             style={{ backgroundColor: bahiaData?.color || '#FFFFFF' }}
                           />
-                          <span className="font-mono text-xs">{bahiaData?.color || '#FFFFFF'}</span>
+                          <span className="font-mono" style={{ fontSize: '10px' }}>
+                            {bahiaData?.color || '#FFFFFF'}
+                          </span>
                         </div>
                       </div>
                     </>
@@ -492,21 +498,38 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
             </div>
           )}
 
-          {/* Nota informativa */}
-          <div className="mt-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          {/* KPIs de Congestión del Terminal */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+              <h3 className="font-bold text-blue-900 text-sm flex items-center">
+                <BarChart3 size={16} className="mr-2" />
+                KPIs de Congestión del Terminal
+              </h3>
+              <p className="text-blue-700 text-xs mt-1">
+                KPIs del bloque {bloqueId}
+              </p>
+            </div>
+            <div className="p-3">
+              <CorePortKPIPanel
+                dataFilePath="/data/resultados_congestion_SAI_2022.csv"
+              />
+            </div>
+          </div>
+
+          {/* Nota informativa - tamaño reducido */}
+          <div className="mt-4 p-2 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-700">
-              <strong>Nota:</strong> Esta vista muestra la distribución de servicios/segregaciones
-              en el bloque {bloqueId} a través del tiempo. Cada color representa un servicio diferente
-              (S12, S14, S18, S4, etc.).
+              <strong>Nota:</strong> Vista de distribución de servicios en el bloque {bloqueId}.
+              Cada color = servicio diferente.
             </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-gray-200 text-xs text-gray-500 bg-gray-50">
+        {/* Footer - altura fija */}
+        <div className="flex-shrink-0 p-2 border-t border-gray-200 text-xs text-gray-500 bg-gray-50">
           <div className="flex items-center justify-between">
             <span>Patio {patioId}</span>
-            <span>Actualizado: {new Date().toLocaleTimeString()}</span>
+            <span>{new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         </div>
       </div>

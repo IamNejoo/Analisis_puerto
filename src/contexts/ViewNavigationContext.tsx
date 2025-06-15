@@ -28,57 +28,71 @@ export const ViewNavigationProvider: React.FC<ViewNavigationProviderProps> = ({ 
     const [zoomTransition, setZoomTransition] = useState(false);
     const [navigationHistory, setNavigationHistory] = useState<ViewState[]>([]);
 
-    // Navegar a vista de patio - SIN setTimeout
+    // Función helper para manejar transiciones
+    const handleTransition = (callback: () => void) => {
+        setZoomTransition(true);
+        setTimeout(() => {
+            callback();
+            setTimeout(() => {
+                setZoomTransition(false);
+            }, 50);
+        }, 300);
+    };
+
+    // Navegar a vista de patio con transición
     const zoomToPatio = useCallback((patioId: string) => {
         console.log('🔍 [CONTEXT] zoomToPatio llamado con:', patioId);
 
-        setNavigationHistory(prev => [...prev, viewState]);
-
-        const newState = {
-            level: 'patio' as const,
-            selectedPatio: patioId
-        };
-
-        console.log('🔍 [CONTEXT] Actualizando estado a:', newState);
-        setViewState(newState);
-    }, [viewState]);
-
-    // Navegar a vista de bloque
-    const zoomToBloque = useCallback((patioId: string, bloqueId: string) => {
-        setNavigationHistory(prev => [...prev, viewState]);
-
-        setViewState({
-            level: 'bloque',
-            selectedPatio: patioId,
-            selectedBloque: bloqueId
+        handleTransition(() => {
+            setNavigationHistory(prev => [...prev, viewState]);
+            setViewState({
+                level: 'patio' as const,
+                selectedPatio: patioId
+            });
         });
     }, [viewState]);
 
-    // Volver al nivel anterior
+    // Navegar a vista de bloque con transición
+    const zoomToBloque = useCallback((patioId: string, bloqueId: string) => {
+        handleTransition(() => {
+            setNavigationHistory(prev => [...prev, viewState]);
+            setViewState({
+                level: 'bloque',
+                selectedPatio: patioId,
+                selectedBloque: bloqueId
+            });
+        });
+    }, [viewState]);
+
+    // Volver al nivel anterior con transición
     const zoomOut = useCallback(() => {
-        if (navigationHistory.length > 0) {
-            const previousState = navigationHistory[navigationHistory.length - 1];
-            setNavigationHistory(prev => prev.slice(0, -1));
-            setViewState(previousState);
-        } else {
-            if (viewState.level === 'bloque') {
-                setViewState({
-                    level: 'patio',
-                    selectedPatio: viewState.selectedPatio
-                });
-            } else if (viewState.level === 'patio') {
-                setViewState({
-                    level: 'terminal'
-                });
+        handleTransition(() => {
+            if (navigationHistory.length > 0) {
+                const previousState = navigationHistory[navigationHistory.length - 1];
+                setNavigationHistory(prev => prev.slice(0, -1));
+                setViewState(previousState);
+            } else {
+                if (viewState.level === 'bloque') {
+                    setViewState({
+                        level: 'patio',
+                        selectedPatio: viewState.selectedPatio
+                    });
+                } else if (viewState.level === 'patio') {
+                    setViewState({
+                        level: 'terminal'
+                    });
+                }
             }
-        }
+        });
     }, [viewState, navigationHistory]);
 
-    // Ir directamente a terminal
+    // Ir directamente a terminal con transición
     const zoomToTerminal = useCallback(() => {
-        setNavigationHistory([]);
-        setViewState({
-            level: 'terminal'
+        handleTransition(() => {
+            setNavigationHistory([]);
+            setViewState({
+                level: 'terminal'
+            });
         });
     }, []);
 

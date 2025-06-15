@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMagdalenaData } from '../../hooks/useMagdalenaData';
 import { useTimeContext } from '../../contexts/TimeContext';
 import {
@@ -6,7 +6,14 @@ import {
     BarChart3,
     Clock,
     Layers,
-    AlertCircle
+    AlertCircle,
+    TrendingUp,
+    Package,
+    Grid3X3,
+    Info,
+    ChevronRight,
+    Maximize2,
+    Minimize2
 } from 'lucide-react';
 
 interface HeatmapCellProps {
@@ -15,6 +22,7 @@ interface HeatmapCellProps {
     periodo: number;
     volumen: number;
     maxVolumen: number;
+    color: string;
     onClick?: () => void;
 }
 
@@ -24,90 +32,109 @@ const HeatmapCell: React.FC<HeatmapCellProps> = ({
     periodo,
     volumen,
     maxVolumen,
+    color,
     onClick
 }) => {
-    // Calcular intensidad del color basado en volumen
     const intensity = maxVolumen > 0 ? volumen / maxVolumen : 0;
 
-    // Mapeo de colores por segregación
-    const segregationColors: { [key: string]: string } = {
-        'S1': '#3B82F6', // Blue
-        'S2': '#EF4444', // Red  
-        'S3': '#10B981', // Green
-        'S4': '#F59E0B', // Amber
-        'S5': '#8B5CF6', // Purple
-        'S6': '#06B6D4', // Cyan
-        'S7': '#84CC16', // Lime
-        'S8': '#F97316', // Orange
-        'S9': '#EC4899', // Pink
-        'S10': '#6366F1', // Indigo
-        'S11': '#14B8A6', // Teal
-        'S12': '#F472B6', // Rose
-        'S13': '#A855F7', // Violet
-        'S14': '#22C55E', // Green-500
-        'S15': '#EAB308', // Yellow
-        'S16': '#DC2626'  // Red-600
-    };
-
-    const baseColor = segregationColors[segregacion] || '#6B7280';
-
-    // Aplicar intensidad al color
-    const backgroundColor = intensity > 0
-        ? `${baseColor}${Math.round(intensity * 255).toString(16).padStart(2, '0')}`
-        : '#F9FAFB';
-
-    const textColor = intensity > 0.5 ? '#FFFFFF' : '#374151';
+    // Escala de intensidad más visible
+    const bgOpacity = Math.max(0.1, intensity);
+    const textColor = intensity > 0.5 ? 'white' : color;
 
     return (
         <div
-            className="relative border border-gray-200 cursor-pointer transition-all duration-200 hover:scale-105 hover:border-gray-400"
+            className="relative group cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
             style={{
-                backgroundColor,
-                minHeight: '40px',
-                minWidth: '50px'
+                backgroundColor: volumen > 0 ? color : '#F9FAFB',
+                opacity: volumen > 0 ? bgOpacity : 1,
+                minHeight: '32px',
+                minWidth: '32px'
             }}
             onClick={onClick}
-            title={`${segregacion} - ${bloque} - Período ${periodo}: ${volumen} movimientos`}
         >
-            <div className="absolute inset-0 flex items-center justify-center">
-                {volumen > 0 && (
+            {volumen > 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
                     <span
-                        className="text-xs font-medium"
+                        className="text-xs font-bold"
                         style={{ color: textColor }}
                     >
                         {volumen}
                     </span>
-                )}
+                </div>
+            )}
+
+            {/* Tooltip mejorado */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
+                <div className="font-bold">{segregacion} → {bloque}</div>
+                <div>Período {periodo}: {volumen} mov.</div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
             </div>
         </div>
     );
 };
 
-interface SegregationLegendProps {
-    segregaciones: string[];
-    segregationColors: { [key: string]: string };
+interface SegregationSummaryCardProps {
+    segregacion: string;
+    color: string;
+    volumen: number;
+    porcentaje: string;
+    bloques: number;
+    selected?: boolean;
+    onClick?: () => void;
 }
 
-const SegregationLegend: React.FC<SegregationLegendProps> = ({
-    segregaciones,
-    segregationColors
+const SegregationSummaryCard: React.FC<SegregationSummaryCardProps> = ({
+    segregacion,
+    color,
+    volumen,
+    porcentaje,
+    bloques,
+    selected = false,
+    onClick
 }) => {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h4 className="font-medium text-gray-800 mb-3 flex items-center">
-                <Layers size={16} className="mr-2 text-purple-500" />
-                Leyenda de Segregaciones
-            </h4>
-            <div className="grid grid-cols-4 gap-2">
-                {segregaciones.map(seg => (
-                    <div key={seg} className="flex items-center space-x-2">
-                        <div
-                            className="w-4 h-4 rounded border border-gray-300"
-                            style={{ backgroundColor: segregationColors[seg] || '#6B7280' }}
-                        ></div>
-                        <span className="text-sm text-gray-700">{seg}</span>
-                    </div>
-                ))}
+        <div
+            className={`bg-white rounded-lg p-4 border-2 cursor-pointer transition-all duration-200 ${selected
+                ? 'border-purple-500 shadow-lg scale-105'
+                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                }`}
+            onClick={onClick}
+        >
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                    <div
+                        className="w-6 h-6 rounded-full mr-2"
+                        style={{ backgroundColor: color }}
+                    ></div>
+                    <span className="font-bold text-lg">{segregacion}</span>
+                </div>
+                <ChevronRight size={16} className={`text-gray-400 transition-transform ${selected ? 'rotate-90' : ''}`} />
+            </div>
+
+            <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Movimientos</span>
+                    <span className="font-bold text-lg">{volumen.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Porcentaje</span>
+                    <span className="font-semibold text-purple-600">{porcentaje}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Bloques</span>
+                    <span className="font-medium">{bloques}</span>
+                </div>
+            </div>
+
+            {/* Barra de progreso visual */}
+            <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                <div
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{
+                        width: `${porcentaje}%`,
+                        backgroundColor: color
+                    }}
+                ></div>
             </div>
         </div>
     );
@@ -115,6 +142,9 @@ const SegregationLegend: React.FC<SegregationLegendProps> = ({
 
 export const SegregationHeatmap: React.FC = () => {
     const { timeState } = useTimeContext();
+    const [selectedSegregation, setSelectedSegregation] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact');
+
     const { magdalenaMetrics, isLoading, error } = useMagdalenaData(
         timeState.magdalenaConfig?.semana || 3,
         timeState.magdalenaConfig?.participacion || 69,
@@ -142,13 +172,39 @@ export const SegregationHeatmap: React.FC = () => {
             heatmapMatrix[key] = item.volumen;
         });
 
+        // Calcular estadísticas por segregación
+        const segregationStats: {
+            [key: string]: {
+                volumen: number;
+                bloques: Set<string>;
+                periodos: Set<number>;
+            }
+        } = {};
+
+        segregaciones.forEach(seg => {
+            segregationStats[seg] = {
+                volumen: 0,
+                bloques: new Set(),
+                periodos: new Set()
+            };
+        });
+
+        data.forEach(item => {
+            if (segregationStats[item.segregacion]) {
+                segregationStats[item.segregacion].volumen += item.volumen;
+                segregationStats[item.segregacion].bloques.add(item.bloque);
+                segregationStats[item.segregacion].periodos.add(item.periodo);
+            }
+        });
+
         return {
             segregaciones,
             bloques,
             periodos,
             maxVolumen,
             matrix: heatmapMatrix,
-            totalMovimientos: data.reduce((sum, item) => sum + item.volumen, 0)
+            totalMovimientos: data.reduce((sum, item) => sum + item.volumen, 0),
+            segregationStats
         };
     }, [magdalenaMetrics]);
 
@@ -184,161 +240,268 @@ export const SegregationHeatmap: React.FC = () => {
         'S13': '#A855F7', 'S14': '#22C55E', 'S15': '#EAB308', 'S16': '#DC2626'
     };
 
+    // Filtrar datos según segregación seleccionada
+    const filteredSegregaciones = selectedSegregation
+        ? [selectedSegregation]
+        : heatmapData.segregaciones;
+
+    // Períodos a mostrar según el modo de vista
+    const periodosToShow = viewMode === 'compact'
+        ? heatmapData.periodos.slice(0, 12)
+        : heatmapData.periodos;
+
     return (
-        <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Heatmap de Segregaciones</h2>
-                    <p className="text-sm text-gray-600">
-                        Distribución de movimientos por segregación, bloque y período
-                    </p>
-                </div>
-                <div className="text-right">
-                    <div className="text-2xl font-bold text-purple-600">
-                        {heatmapData.totalMovimientos.toLocaleString()}
+        <div className="space-y-6">
+            {/* Header mejorado */}
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                            <Grid3X3 size={28} className="mr-3 text-purple-600" />
+                            Análisis de Segregaciones por Bloque
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                            Visualización del flujo de contenedores por segregación y período temporal
+                        </p>
                     </div>
-                    <div className="text-sm text-gray-500">Total movimientos</div>
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-purple-600">
+                            {heatmapData.totalMovimientos.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-600">Movimientos totales</div>
+                    </div>
+                </div>
+
+                {/* KPIs principales */}
+                <div className="grid grid-cols-4 gap-4 mt-6">
+                    <div className="bg-white rounded-lg p-3 border border-purple-200">
+                        <div className="flex items-center justify-between">
+                            <Layers size={20} className="text-purple-500" />
+                            <span className="text-2xl font-bold">{heatmapData.segregaciones.length}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">Segregaciones activas</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                        <div className="flex items-center justify-between">
+                            <Package size={20} className="text-blue-500" />
+                            <span className="text-2xl font-bold">{heatmapData.bloques.length}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">Bloques utilizados</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-green-200">
+                        <div className="flex items-center justify-between">
+                            <Clock size={20} className="text-green-500" />
+                            <span className="text-2xl font-bold">{heatmapData.periodos.length}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">Períodos analizados</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-amber-200">
+                        <div className="flex items-center justify-between">
+                            <TrendingUp size={20} className="text-amber-500" />
+                            <span className="text-2xl font-bold">
+                                {Math.round(heatmapData.totalMovimientos / heatmapData.periodos.length)}
+                            </span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">Promedio/período</div>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Summary */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                    <div className="text-lg font-bold text-blue-600">
-                        {heatmapData.segregaciones.length}
-                    </div>
-                    <div className="text-sm text-blue-700">Segregaciones</div>
+            {/* Resumen por Segregación - Tarjetas interactivas */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                        <BarChart3 size={20} className="mr-2 text-blue-500" />
+                        Resumen por Segregación
+                    </h3>
+                    {selectedSegregation && (
+                        <button
+                            onClick={() => setSelectedSegregation(null)}
+                            className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                        >
+                            Ver todas las segregaciones
+                        </button>
+                    )}
                 </div>
-                <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                    <div className="text-lg font-bold text-green-600">
-                        {heatmapData.bloques.length}
-                    </div>
-                    <div className="text-sm text-green-700">Bloques</div>
-                </div>
-                <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                    <div className="text-lg font-bold text-purple-600">
-                        {heatmapData.periodos.length}
-                    </div>
-                    <div className="text-sm text-purple-700">Períodos</div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {heatmapData.segregaciones.map(segregacion => {
+                        const stats = heatmapData.segregationStats[segregacion];
+                        const porcentaje = heatmapData.totalMovimientos > 0
+                            ? ((stats.volumen / heatmapData.totalMovimientos) * 100).toFixed(1)
+                            : '0.0';
+
+                        return (
+                            <SegregationSummaryCard
+                                key={segregacion}
+                                segregacion={segregacion}
+                                color={segregationColors[segregacion]}
+                                volumen={stats.volumen}
+                                porcentaje={porcentaje}
+                                bloques={stats.bloques.size}
+                                selected={selectedSegregation === segregacion}
+                                onClick={() => setSelectedSegregation(
+                                    selectedSegregation === segregacion ? null : segregacion
+                                )}
+                            />
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Heatmap Principal */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            {/* Heatmap Principal Mejorado */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
-                    <h3 className="font-medium text-gray-800">Matriz de Asignaciones</h3>
-                    <div className="text-sm text-gray-600">
-                        Intensidad: 0 - {heatmapData.maxVolumen} movimientos
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                            Matriz de Distribución Temporal
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                            {selectedSegregation
+                                ? `Mostrando segregación ${selectedSegregation}`
+                                : 'Mostrando todas las segregaciones'
+                            }
+                        </p>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                        <div className="text-sm text-gray-600 flex items-center">
+                            <Info size={16} className="mr-1" />
+                            Intensidad: 0 - {heatmapData.maxVolumen} mov.
+                        </div>
+                        <button
+                            onClick={() => setViewMode(viewMode === 'compact' ? 'expanded' : 'compact')}
+                            className="flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                        >
+                            {viewMode === 'compact' ? (
+                                <>
+                                    <Maximize2 size={16} className="mr-1" />
+                                    Expandir
+                                </>
+                            ) : (
+                                <>
+                                    <Minimize2 size={16} className="mr-1" />
+                                    Compactar
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
 
-                {/* Vista por Segregaciones (más compacta) */}
-                <div className="overflow-auto" style={{ maxHeight: '600px' }}>
-                    <div className="min-w-full">
-                        {/* Headers de períodos */}
-                        <div className="flex mb-2">
-                            <div className="w-24 text-xs font-medium text-gray-700 p-2">Seg/Bloque</div>
-                            {heatmapData.periodos.slice(0, 10).map(periodo => (
-                                <div key={periodo} className="w-12 text-xs font-medium text-gray-700 text-center p-1">
+                {/* Heatmap con scroll mejorado */}
+                <div className="overflow-auto border border-gray-200 rounded-lg" style={{ maxHeight: '600px' }}>
+                    <div className="min-w-max">
+                        {/* Header de períodos */}
+                        <div className="sticky top-0 bg-gray-50 border-b border-gray-200 flex">
+                            <div className="sticky left-0 bg-gray-100 w-32 p-3 text-sm font-semibold text-gray-700 border-r border-gray-200">
+                                Segregación / Bloque
+                            </div>
+                            {periodosToShow.map(periodo => (
+                                <div key={periodo} className="w-12 p-2 text-xs font-medium text-gray-700 text-center border-r border-gray-100">
                                     P{periodo}
                                 </div>
                             ))}
-                            {heatmapData.periodos.length > 10 && (
-                                <div className="w-12 text-xs font-medium text-gray-700 text-center p-1">
-                                    ...
+                            {viewMode === 'compact' && heatmapData.periodos.length > 12 && (
+                                <div className="w-16 p-2 text-xs font-medium text-gray-500 text-center">
+                                    +{heatmapData.periodos.length - 12} más
                                 </div>
                             )}
                         </div>
 
-                        {/* Filas por segregación y bloque */}
-                        {heatmapData.segregaciones.map(segregacion => (
-                            <div key={segregacion} className="mb-3">
-                                <div className="text-sm font-medium text-gray-800 mb-1 flex items-center">
-                                    <div
-                                        className="w-3 h-3 rounded mr-2"
-                                        style={{ backgroundColor: segregationColors[segregacion] }}
-                                    ></div>
-                                    {segregacion}
-                                </div>
-                                {heatmapData.bloques.map(bloque => {
-                                    // Verificar si hay datos para esta combinación
-                                    const hasData = heatmapData.periodos.some(periodo => {
-                                        const key = `${segregacion}-${bloque}-${periodo}`;
-                                        return heatmapData.matrix[key] > 0;
-                                    });
+                        {/* Filas del heatmap */}
+                        {filteredSegregaciones.map(segregacion => {
+                            const color = segregationColors[segregacion];
+                            const bloquesConDatos = heatmapData.bloques.filter(bloque => {
+                                return periodosToShow.some(periodo => {
+                                    const key = `${segregacion}-${bloque}-${periodo}`;
+                                    return heatmapData.matrix[key] > 0;
+                                });
+                            });
 
-                                    if (!hasData) return null;
+                            if (bloquesConDatos.length === 0) return null;
 
-                                    return (
-                                        <div key={`${segregacion}-${bloque}`} className="flex mb-1">
-                                            <div className="w-24 text-xs text-gray-600 p-2 bg-gray-50 border border-gray-200">
+                            return (
+                                <div key={segregacion} className="border-b border-gray-200">
+                                    {/* Header de segregación */}
+                                    <div className="sticky left-0 bg-white flex items-center p-3 border-b border-gray-100">
+                                        <div
+                                            className="w-4 h-4 rounded-full mr-2"
+                                            style={{ backgroundColor: color }}
+                                        ></div>
+                                        <span className="font-semibold text-gray-800">{segregacion}</span>
+                                        <span className="ml-2 text-xs text-gray-500">
+                                            ({bloquesConDatos.length} bloques)
+                                        </span>
+                                    </div>
+
+                                    {/* Filas de bloques */}
+                                    {bloquesConDatos.map(bloque => (
+                                        <div key={`${segregacion}-${bloque}`} className="flex hover:bg-gray-50">
+                                            <div className="sticky left-0 bg-white w-32 p-2 text-sm text-gray-700 border-r border-gray-200 pl-8">
                                                 {bloque}
                                             </div>
-                                            {heatmapData.periodos.slice(0, 10).map(periodo => {
+                                            {periodosToShow.map(periodo => {
                                                 const key = `${segregacion}-${bloque}-${periodo}`;
                                                 const volumen = heatmapData.matrix[key] || 0;
                                                 return (
-                                                    <HeatmapCell
-                                                        key={key}
-                                                        segregacion={segregacion}
-                                                        bloque={bloque}
-                                                        periodo={periodo}
-                                                        volumen={volumen}
-                                                        maxVolumen={heatmapData.maxVolumen}
-                                                    />
+                                                    <div key={key} className="w-12 p-1 border-r border-gray-100">
+                                                        <HeatmapCell
+                                                            segregacion={segregacion}
+                                                            bloque={bloque}
+                                                            periodo={periodo}
+                                                            volumen={volumen}
+                                                            maxVolumen={heatmapData.maxVolumen}
+                                                            color={color}
+                                                        />
+                                                    </div>
                                                 );
                                             })}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Leyenda de intensidad */}
+                <div className="mt-4 flex items-center justify-center">
+                    <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-600">Intensidad:</span>
+                        <div className="flex items-center space-x-1">
+                            <div className="w-8 h-4 bg-gray-100 border border-gray-300"></div>
+                            <span className="text-xs text-gray-500">0</span>
+                        </div>
+                        <div className="flex items-center">
+                            {[0.2, 0.4, 0.6, 0.8, 1].map((opacity, i) => (
+                                <div
+                                    key={i}
+                                    className="w-8 h-4"
+                                    style={{
+                                        backgroundColor: '#8B5CF6',
+                                        opacity: opacity
+                                    }}
+                                ></div>
+                            ))}
+                            <span className="text-xs text-gray-500 ml-1">{heatmapData.maxVolumen}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Leyenda */}
-            <SegregationLegend
-                segregaciones={heatmapData.segregaciones}
-                segregationColors={segregationColors}
-            />
-
-            {/* Resumen por Segregación */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-medium text-gray-800 mb-3 flex items-center">
-                    <BarChart3 size={16} className="mr-2 text-blue-500" />
-                    Volumen por Segregación
-                </h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {heatmapData.segregaciones.map(segregacion => {
-                        const volumenTotal = heatmapData.periodos.reduce((sum, periodo) => {
-                            return sum + heatmapData.bloques.reduce((blockSum, bloque) => {
-                                const key = `${segregacion}-${bloque}-${periodo}`;
-                                return blockSum + (heatmapData.matrix[key] || 0);
-                            }, 0);
-                        }, 0);
-
-                        const porcentaje = heatmapData.totalMovimientos > 0
-                            ? ((volumenTotal / heatmapData.totalMovimientos) * 100).toFixed(1)
-                            : '0.0';
-
-                        return (
-                            <div key={segregacion} className="text-center">
-                                <div className="flex items-center justify-center mb-1">
-                                    <div
-                                        className="w-4 h-4 rounded mr-2"
-                                        style={{ backgroundColor: segregationColors[segregacion] }}
-                                    ></div>
-                                    <span className="text-sm font-medium">{segregacion}</span>
-                                </div>
-                                <div className="text-lg font-bold text-gray-800">
-                                    {volumenTotal.toLocaleString()}
-                                </div>
-                                <div className="text-xs text-gray-500">{porcentaje}%</div>
-                            </div>
-                        );
-                    })}
+            {/* Panel de información adicional */}
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-start">
+                    <Info size={20} className="text-blue-600 mr-3 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                        <p className="font-semibold mb-1">¿Cómo interpretar este heatmap?</p>
+                        <ul className="space-y-1 ml-4 list-disc">
+                            <li>Cada celda representa el volumen de movimientos para una combinación específica de segregación, bloque y período</li>
+                            <li>La intensidad del color indica el volumen relativo de movimientos</li>
+                            <li>Haz clic en las tarjetas de segregación para filtrar y analizar una segregación específica</li>
+                            <li>Usa el botón expandir/compactar para ver más o menos períodos</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

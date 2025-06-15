@@ -1,8 +1,8 @@
-// src/components/dashboard/Dashboard.tsx - VERSIÓN CORREGIDA CON MODELOS NO SOLAPADOS
+// src/components/dashboard/Dashboard.tsx - VERSIÓN FINAL CORREGIDA
 import React, { useState, useCallback, useMemo } from 'react';
 import { MapPanel } from './MapPanel';
 import { CorePortKPIPanel } from './CorePortKPIPanel';
-import { PortPerformancePanel } from './PortPerformancePanel';
+
 import MagdalenaKPIPanel from '../magdalena/MagdalenaKPIPanel';
 import MagdalenaComparisonPanel from '../magdalena/ComparisonPanel';
 import CamilaIntegratedPanel from '../camila/CamilaIntegratedPanel';
@@ -10,7 +10,6 @@ import { usePortData } from '../../hooks/usePortData';
 import { useFilters } from '../../hooks/useFilters';
 import { useTimeContext } from '../../contexts/TimeContext';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
-import { useCamilaData } from '../../hooks/useCamilaData';
 import { patioData } from '../../data/patioData';
 import {
   ChevronDown,
@@ -19,7 +18,6 @@ import {
   ChevronRight,
   Activity,
   BarChart3,
-  TrendingUp,
   Clock,
   Calendar,
   User,
@@ -117,7 +115,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       </header>
-
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
@@ -202,7 +199,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <input
                             type="checkbox"
                             checked={value}
-                            onChange={() => toggleFilter(key)}
+                            onChange={() => toggleFilter(key as keyof Filters)}
                             className="sr-only"
                           />
                           <div className={`w-8 h-4 rounded-full transition-colors ${value ? 'bg-blue-600' : 'bg-gray-300'
@@ -510,14 +507,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           )}
 
-          {/* VISTA BLOQUE: Layout original permanece igual */}
+          {/* VISTA BLOQUE: Layout simplificado para evitar cortes */}
           {viewState.level === 'bloque' && (
-            <div className="h-full overflow-y-auto overflow-x-hidden">
-              <div className="min-h-full flex flex-col gap-4 p-4">
-                {/* Indicadores de modelos si están activos */}
-                {isMagdalenaActive && (
-                  <div className="bg-gradient-to-r from-green-50 to-purple-50 border-2 border-green-200 rounded-xl px-6 py-4 shadow-lg">
-                    <div className="flex justify-between items-center">
+            <div className="h-full flex flex-col overflow-hidden">
+              {/* Indicadores de modelos si están activos - FIJO ARRIBA */}
+              {(isMagdalenaActive || isCamilaActive) && (
+                <div className="flex-shrink-0 p-4 bg-gray-50 border-b border-gray-200">
+                  {isMagdalenaActive && (
+                    <div className="bg-gradient-to-r from-green-50 to-purple-50 border-2 border-green-200 rounded-xl px-6 py-4 shadow-lg">
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-green-500 rounded-full mr-4 animate-pulse"></div>
                         <div>
@@ -530,42 +527,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Mapa del bloque */}
-                <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg" style={{ height: '600px' }}>
-                  <MapPanel
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    filters={filters}
-                    getColorForOcupacion={getColorForOcupacion}
-                    timeState={timeState}
-                    isLoading={isLoadingData}
-                    blockCapacities={blockCapacities}
-                  />
+                  {isCamilaActive && (
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl px-6 py-4 shadow-lg">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-purple-500 rounded-full mr-4 animate-pulse"></div>
+                        <div>
+                          <span className="text-lg font-bold text-purple-800">
+                            ⚡ Modelo Camila Activo
+                          </span>
+                          <div className="text-sm text-purple-700 mt-1">
+                            {viewState.selectedPatio} • Bloque {viewState.selectedBloque}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {/* KPIs del bloque */}
-                <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg">
-                  <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-blue-100">
-                    <h3 className="font-bold text-blue-900 text-lg flex items-center">
-                      <BarChart3 size={20} className="mr-3" />
-                      KPIs Fundamentales de la Terminal
-                    </h3>
-                    <p className="text-blue-700 text-sm">
-                      Vista detallada del bloque {viewState.selectedBloque}
-                    </p>
-                  </div>
-                  <div className="p-4">
-                    <CorePortKPIPanel
-                      dataFilePath="/data/resultados_congestion_SAI_2022.csv"
+              {/* CONTENEDOR PRINCIPAL - Usar toda la altura restante */}
+              <div className="flex-1 overflow-hidden">
+                <div className="h-full p-4">
+                  <div className="h-full bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden">
+                    <MapPanel
+                      activeTab={activeTab}
+                      setActiveTab={setActiveTab}
+                      filters={filters}
+                      getColorForOcupacion={getColorForOcupacion}
+                      timeState={timeState}
+                      isLoading={isLoadingData}
                       blockCapacities={blockCapacities}
                     />
                   </div>
                 </div>
-
-                <div className="h-8"></div>
               </div>
             </div>
           )}

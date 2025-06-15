@@ -1,8 +1,7 @@
 // src/components/dashboard/MapPanel.tsx - ACTUALIZACIÓN COMPLETA
 import React from 'react';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
-import { useTimeContext } from '../../contexts/TimeContext';
-import { ChevronLeft, Home, Layers, Eye } from 'lucide-react';
+import { ChevronLeft, Home } from 'lucide-react';
 import type { Filters } from '../../types';
 import { MultiLevelMap } from '../map/MultiLevelMap';
 import { PortMapLegend } from '../map/PortMapLegend';
@@ -19,12 +18,8 @@ interface MapPanelProps {
 }
 
 export const MapPanel: React.FC<MapPanelProps> = ({
-  activeTab,
-  setActiveTab,
   filters,
   getColorForOcupacion,
-  timeState,
-  isLoading,
   blockCapacities
 }) => {
   const { viewState, zoomOut, zoomToTerminal, zoomToPatio, zoomToBloque } = useViewNavigation();

@@ -99,18 +99,21 @@ export interface BahiaData {
   status?: 'available' | 'reserved' | 'in_transit' | 'customs_hold';
 }
 
+// src/types/index.ts o donde tengas definido BloqueData
+
 export interface BloqueData {
   id: string;
   patioId: string;
   name: string;
   ocupacion: number;
+  ocupacionPromedio?: number; // Agregar esta línea
   capacidadTotal: number;
   bahias: BahiaData[];
-  tipo: string;
+  tipo: 'contenedores' | 'carga_general' | 'granel';
   bounds: { x: number; y: number; width: number; height: number };
-  lastUpdate?: Date;
-  operationalStatus: 'active' | 'maintenance' | 'restricted';
-  equipmentType?: 'rtg' | 'rmg' | 'reach_stacker';
+  operationalStatus: 'active' | 'restricted' | 'maintenance';
+  equipmentType?: 'rtg' | 'reachstacker' | 'toploader';
+  ocupacionPorTurno?: number[]; // Agregar esta línea
 }
 
 export interface PatioData {
@@ -405,7 +408,20 @@ export interface MagdalenaMetrics {
     cargaTrabajo: number;
     periodo: number;
   }>;
-
+  bloquesMagdalena: Array<{
+    bloqueId: string;
+    ocupacionPromedio: number;
+    capacidad: number;
+    ocupacionPorTurno: number[];
+    movimientos: {
+      entrega: number;
+      recepcion: number;
+      carga: number;
+      descarga: number;
+      total: number;
+    };
+    estado: 'active' | 'restricted' | 'maintenance';
+  }>;
   segregacionesPorBloque: Array<{
     segregacion: string;
     bloque: string;

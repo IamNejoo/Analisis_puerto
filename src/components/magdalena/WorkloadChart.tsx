@@ -314,50 +314,7 @@ export const WorkloadChart: React.FC = () => {
             {/* Balance Analysis */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Balance Score */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 className="font-medium text-gray-800 mb-4">Score de Balance</h3>
-                    <div className="text-center">
-                        <div className={`text-4xl font-bold mb-2 ${chartData.stats.balance < 30 ? 'text-green-600' :
-                                chartData.stats.balance < 50 ? 'text-yellow-600' : 'text-red-600'
-                            }`}>
-                            {chartData.stats.balance.toFixed(1)}
-                        </div>
-                        <div className="text-sm text-gray-600 mb-4">Desviación Estándar</div>
 
-                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${chartData.stats.balance < 30 ? 'bg-green-100 text-green-800' :
-                                chartData.stats.balance < 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                            {chartData.stats.balance < 30 ? '✅ Excelente Balance' :
-                                chartData.stats.balance < 50 ? '⚠️ Balance Aceptable' : '❌ Desbalanceado'}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Distribution Analysis */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 className="font-medium text-gray-800 mb-4">Análisis de Distribución</h3>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Rango de Carga:</span>
-                            <span className="font-medium">
-                                {chartData.stats.minWorkload} - {chartData.stats.maxWorkload}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Diferencia Max-Min:</span>
-                            <span className="font-medium">
-                                {(chartData.stats.maxWorkload - chartData.stats.minWorkload).toLocaleString()}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Eficiencia:</span>
-                            <span className={`font-medium ${chartData.stats.balance < 50 ? 'text-green-600' : 'text-orange-600'
-                                }`}>
-                                {chartData.stats.balance < 50 ? 'Optimizada' : 'Mejorable'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );
