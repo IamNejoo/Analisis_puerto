@@ -1,8 +1,8 @@
 // src/hooks/usePortKPIs.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Papa from 'papaparse';
 import { useTimeContext } from '../contexts/TimeContext';
-import type { TimeUnit } from '../types'; // AGREGAR ESTA IMPORTACIÓN
+import type { TimeUnit } from '../types';
 import type {
     CorePortKPIs,
     PortMovementData,
@@ -73,6 +73,22 @@ const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
     }
 };
 
+// Función helper para obtener KPIs por defecto - FUERA DEL COMPONENTE
+const getDefaultCoreKPIs = (): CorePortKPIs => ({
+    utilizacionPorVolumen: 0,
+    congestionVehicular: 0,
+    balanceFlujo: 1,
+    productividadOperacional: 0,
+    indiceRemanejo: 0,
+    saturacionOperacional: 0,
+    utilizacionPorBloque: {},
+    utilizacionPorPatio: {},
+    movimientosPorBloque: {},
+    remanejosPorBloque: {},
+    horasConActividad: 0,
+    totalMovimientos: 0
+});
+
 export const usePortKPIs = ({
     dataFilePath = '/data/resultados_congestion_SAI_2022.csv',
     blockCapacities = CAPACIDADES,
@@ -84,6 +100,9 @@ export const usePortKPIs = ({
     const [aggregatedData, setAggregatedData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // Usar useRef para evitar recreación de funciones pesadas
+    const processingRef = useRef(false);
 
     // USAR EL TIME CONTEXT
     const { timeState } = useTimeContext();
@@ -214,13 +233,13 @@ export const usePortKPIs = ({
         });
     };
 
-    // Filtrar datos según el rango temporal
-    const getFilteredData = useCallback(() => {
-        if (!historicalData.length) return [];
+    // FILTRAR DATOS CON USEMEMO
+    const filteredData = useMemo(() => {
+        if (!historicalData.length || dataSource !== 'historical') return [];
 
         const { startDate, endDate } = getDateRange();
 
-        let filteredData = historicalData.filter(item => {
+        let filtered = historicalData.filter(item => {
             const itemDate = new Date(item.hora);
             return itemDate >= startDate && itemDate <= endDate;
         });
@@ -228,181 +247,212 @@ export const usePortKPIs = ({
         // Aplicar filtros de patio y bloque si existen
         if (patioFilter && PATIOS[patioFilter as keyof typeof PATIOS]) {
             const blocksInPatio = PATIOS[patioFilter as keyof typeof PATIOS];
-            filteredData = filteredData.filter(item =>
+            filtered = filtered.filter(item =>
                 blocksInPatio.includes(item.bloque)
             );
         }
 
         if (bloqueFilter) {
-            filteredData = filteredData.filter(item =>
+            filtered = filtered.filter(item =>
                 item.bloque === bloqueFilter
             );
         }
 
-        console.log(`📊 Datos filtrados: ${filteredData.length} registros para ${unit} - ${currentDate.toLocaleDateString()}`);
+        console.log(`📊 Datos filtrados: ${filtered.length} registros para ${unit} - ${currentDate.toLocaleDateString()}`);
 
-        return filteredData;
-    }, [historicalData, patioFilter, bloqueFilter, getDateRange, unit, currentDate]);
+        return filtered;
+    }, [historicalData, patioFilter, bloqueFilter, currentDate, unit, dataSource, getDateRange]);
 
-    // CALCULAR LOS 6 KPIs PRINCIPALES + ANÁLISIS DE RELACIONES
+    // CALCULAR LOS 6 KPIs PRINCIPALES - OPTIMIZADO PARA GRANDES VOLÚMENES
     const calculateCoreKPIs = useCallback((data: PortMovementData[]): CorePortKPIs => {
         if (!data.length) {
             return getDefaultCoreKPIs();
         }
 
-        // 1. UTILIZACIÓN POR VOLUMEN
-        const ocupacionPorBloque: Record<string, number> = {};
-        const utilizacionPorBloque: Record<string, number> = {};
+        try {
+            // 1. UTILIZACIÓN POR VOLUMEN
+            const ocupacionPorBloque: Record<string, number> = {};
+            const utilizacionPorBloque: Record<string, number> = {};
 
-        // Agrupar datos por bloque
-        const dataByBloque = data.reduce((acc, d) => {
-            if (!acc[d.bloque]) acc[d.bloque] = [];
-            acc[d.bloque].push(d);
-            return acc;
-        }, {} as Record<string, PortMovementData[]>);
+            // Usar Map para mejor performance con grandes datasets
+            const dataByBloque = new Map<string, PortMovementData[]>();
+            
+            // Procesar en chunks para evitar stack overflow
+            const chunkSize = 1000;
+            for (let i = 0; i < data.length; i += chunkSize) {
+                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
+                chunk.forEach(d => {
+                    if (!dataByBloque.has(d.bloque)) {
+                        dataByBloque.set(d.bloque, []);
+                    }
+                    dataByBloque.get(d.bloque)!.push(d);
+                });
+            }
 
-        // Calcular ocupación promedio por bloque
-        Object.entries(dataByBloque).forEach(([bloque, registros]) => {
-            const promedioTeus = registros.reduce((sum, r) => sum + r.promedioTeus, 0) / registros.length;
-            ocupacionPorBloque[bloque] = promedioTeus;
-            const capacidadBloque = blockCapacities[bloque] || 1008;
-            utilizacionPorBloque[bloque] = (promedioTeus / capacidadBloque) * 100;
-        });
+            // Calcular ocupación promedio por bloque
+            dataByBloque.forEach((registros, bloque) => {
+                let sumaTeus = 0;
+                for (let i = 0; i < registros.length; i++) {
+                    sumaTeus += registros[i].promedioTeus;
+                }
+                const promedioTeus = sumaTeus / registros.length;
+                ocupacionPorBloque[bloque] = promedioTeus;
+                const capacidadBloque = blockCapacities[bloque] || 1008;
+                utilizacionPorBloque[bloque] = (promedioTeus / capacidadBloque) * 100;
+            });
 
-        // Calcular utilización por patio
-        const utilizacionPorPatio: Record<string, number> = {};
-        Object.entries(PATIOS).forEach(([patio, bloques]) => {
-            const ocupacionPatio = bloques.reduce((sum, bloque) =>
-                sum + (ocupacionPorBloque[bloque] || 0), 0
-            );
-            const capacidadPatio = CAPACIDAD_PATIOS[patio as keyof typeof CAPACIDAD_PATIOS];
-            utilizacionPorPatio[patio] = (ocupacionPatio / capacidadPatio) * 100;
-        });
+            // Calcular utilización por patio
+            const utilizacionPorPatio: Record<string, number> = {};
+            Object.entries(PATIOS).forEach(([patio, bloques]) => {
+                let ocupacionPatio = 0;
+                bloques.forEach(bloque => {
+                    ocupacionPatio += (ocupacionPorBloque[bloque] || 0);
+                });
+                const capacidadPatio = CAPACIDAD_PATIOS[patio as keyof typeof CAPACIDAD_PATIOS];
+                utilizacionPorPatio[patio] = (ocupacionPatio / capacidadPatio) * 100;
+            });
 
-        // Utilización total del terminal
-        const ocupacionTotal = Object.values(ocupacionPorBloque).reduce((sum, val) => sum + val, 0);
-        const utilizacionPorVolumen = (ocupacionTotal / CAPACIDAD_TERMINAL) * 100;
+            // Utilización total del terminal
+            let ocupacionTotal = 0;
+            Object.values(ocupacionPorBloque).forEach(val => ocupacionTotal += val);
+            const utilizacionPorVolumen = (ocupacionTotal / CAPACIDAD_TERMINAL) * 100;
 
-        // 2. CONGESTIÓN VEHICULAR
-        const movimientosGatePorHora: Record<string, number> = {};
-        data.forEach(d => {
-            const hora = d.hora.substring(11, 13); // Extraer hora
-            if (!movimientosGatePorHora[hora]) movimientosGatePorHora[hora] = 0;
-            movimientosGatePorHora[hora] += d.gateEntradaContenedores + d.gateSalidaContenedores;
-        });
+            // 2. CONGESTIÓN VEHICULAR
+            const movimientosGatePorHora: Record<string, number> = {};
+            
+            // Procesar en chunks
+            for (let i = 0; i < data.length; i += chunkSize) {
+                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
+                chunk.forEach(d => {
+                    const hora = d.hora.substring(11, 13);
+                    if (!movimientosGatePorHora[hora]) movimientosGatePorHora[hora] = 0;
+                    movimientosGatePorHora[hora] += d.gateEntradaContenedores + d.gateSalidaContenedores;
+                });
+            }
 
-        const horasConMovimientos = Object.values(movimientosGatePorHora).filter(m => m > 0).length;
-        const totalMovimientosGate = Object.values(movimientosGatePorHora).reduce((sum, m) => sum + m, 0);
-        const congestionVehicular = horasConMovimientos > 0 ?
-            totalMovimientosGate / horasConMovimientos : 0;
+            const horasConMovimientos = Object.values(movimientosGatePorHora).filter(m => m > 0).length;
+            let totalMovimientosGate = 0;
+            Object.values(movimientosGatePorHora).forEach(m => totalMovimientosGate += m);
+            const congestionVehicular = horasConMovimientos > 0 ?
+                totalMovimientosGate / horasConMovimientos : 0;
 
-        // 3. BALANCE DE FLUJO ENTRADA/SALIDA
-        const totalEntradas = data.reduce((sum, d) =>
-            sum + d.gateEntradaContenedores + d.muelleEntradaContenedores, 0
-        );
-        const totalSalidas = data.reduce((sum, d) =>
-            sum + d.gateSalidaContenedores + d.muelleSalidaContenedores, 0
-        );
-        const balanceFlujo = totalSalidas > 0 ? totalEntradas / totalSalidas : 1;
+            // 3. BALANCE DE FLUJO ENTRADA/SALIDA
+            let totalEntradas = 0;
+            let totalSalidas = 0;
+            
+            // Procesar en chunks
+            for (let i = 0; i < data.length; i += chunkSize) {
+                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
+                chunk.forEach(d => {
+                    totalEntradas += d.gateEntradaContenedores + d.muelleEntradaContenedores;
+                    totalSalidas += d.gateSalidaContenedores + d.muelleSalidaContenedores;
+                });
+            }
+            
+            const balanceFlujo = totalSalidas > 0 ? totalEntradas / totalSalidas : 1;
 
-        // 4. PRODUCTIVIDAD OPERACIONAL
-        const totalMovimientosTerminal = totalEntradas + totalSalidas;
-        const horasUnicas = new Set(data.map(d => d.hora)).size;
-        const productividadOperacional = horasUnicas > 0 ?
-            totalMovimientosTerminal / horasUnicas : 0;
+            // 4. PRODUCTIVIDAD OPERACIONAL
+            const totalMovimientosTerminal = totalEntradas + totalSalidas;
+            const horasSet = new Set<string>();
+            data.forEach(d => horasSet.add(d.hora));
+            const horasUnicas = horasSet.size;
+            const productividadOperacional = horasUnicas > 0 ?
+                totalMovimientosTerminal / horasUnicas : 0;
 
-        // 5. ÍNDICE DE REMANEJO
-        const totalRemanejos = data.reduce((sum, d) => sum + d.remanejosContenedores, 0);
-        const totalMovimientos = totalMovimientosTerminal + totalRemanejos;
-        const indiceRemanejo = totalMovimientos > 0 ?
-            (totalRemanejos / totalMovimientos) * 100 : 0;
+            // 5. ÍNDICE DE REMANEJO
+            let totalRemanejos = 0;
+            
+            // Procesar en chunks
+            for (let i = 0; i < data.length; i += chunkSize) {
+                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
+                chunk.forEach(d => {
+                    totalRemanejos += d.remanejosContenedores;
+                });
+            }
+            
+            const totalMovimientos = totalMovimientosTerminal + totalRemanejos;
+            const indiceRemanejo = totalMovimientos > 0 ?
+                (totalRemanejos / totalMovimientos) * 100 : 0;
 
-        // 6. SATURACIÓN OPERACIONAL
-        const maximosHistoricos = data.map(d => d.maximosTeus || d.promedioTeus);
-        const maximoHistorico = Math.max(...maximosHistoricos, 0);
-        const promedioActual = data.length > 0 ?
-            data[data.length - 1].promedioTeus : 0; // Último registro
-        const saturacionOperacional = maximoHistorico > 0 ?
-            (promedioActual / maximoHistorico) * 100 : 0;
+            // 6. SATURACIÓN OPERACIONAL
+            let maximoHistorico = 0;
+            data.forEach(d => {
+                const max = d.maximosTeus || d.promedioTeus;
+                if (max > maximoHistorico) maximoHistorico = max;
+            });
+            
+            const promedioActual = data.length > 0 ?
+                data[data.length - 1].promedioTeus : 0;
+            const saturacionOperacional = maximoHistorico > 0 ?
+                (promedioActual / maximoHistorico) * 100 : 0;
 
-        // Datos auxiliares
-        const movimientosPorBloque: Record<string, number> = {};
-        const remanejosPorBloque: Record<string, number> = {};
+            // Datos auxiliares
+            const movimientosPorBloque: Record<string, number> = {};
+            const remanejosPorBloque: Record<string, number> = {};
 
-        Object.entries(dataByBloque).forEach(([bloque, registros]) => {
-            movimientosPorBloque[bloque] = registros.reduce((sum, r) =>
-                sum + r.gateEntradaContenedores + r.gateSalidaContenedores +
-                r.muelleEntradaContenedores + r.muelleSalidaContenedores, 0
-            );
-            remanejosPorBloque[bloque] = registros.reduce((sum, r) =>
-                sum + r.remanejosContenedores, 0
-            );
-        });
+            dataByBloque.forEach((registros, bloque) => {
+                let movimientos = 0;
+                let remanejos = 0;
+                
+                registros.forEach(r => {
+                    movimientos += r.gateEntradaContenedores + r.gateSalidaContenedores +
+                        r.muelleEntradaContenedores + r.muelleSalidaContenedores;
+                    remanejos += r.remanejosContenedores;
+                });
+                
+                movimientosPorBloque[bloque] = movimientos;
+                remanejosPorBloque[bloque] = remanejos;
+            });
 
-        // ANÁLISIS DE RELACIONES ENTRE KPIs - CORREGIDO CON as const
-        const kpiRelations = {
-            // Relación Congestión-Productividad
-            congestionProductividadStatus: (() => {
-                const ratio = productividadOperacional / (congestionVehicular || 1);
-                if (congestionVehicular > 100 && productividadOperacional < 50) return 'critical' as const;
-                if (congestionVehicular < 30 && productividadOperacional < 50) return 'warning' as const;
-                if (ratio > 2) return 'good' as const;
-                return 'normal' as const;
-            })(),
+            // ANÁLISIS DE RELACIONES ENTRE KPIs
+            const kpiRelations = {
+                congestionProductividadStatus: (() => {
+                    const ratio = productividadOperacional / (congestionVehicular || 1);
+                    if (congestionVehicular > 100 && productividadOperacional < 50) return 'critical' as const;
+                    if (congestionVehicular < 30 && productividadOperacional < 50) return 'warning' as const;
+                    if (ratio > 2) return 'good' as const;
+                    return 'normal' as const;
+                })(),
 
-            // Relación Utilización-Remanejos
-            utilizacionRemanejosStatus: (() => {
-                if (utilizacionPorVolumen > 85 && indiceRemanejo > 5) return 'critical' as const;
-                if (utilizacionPorVolumen > 85 && indiceRemanejo < 3) return 'good' as const;
-                if (utilizacionPorVolumen < 60 && indiceRemanejo > 5) return 'warning' as const;
-                return 'normal' as const;
-            })(),
+                utilizacionRemanejosStatus: (() => {
+                    if (utilizacionPorVolumen > 85 && indiceRemanejo > 5) return 'critical' as const;
+                    if (utilizacionPorVolumen > 85 && indiceRemanejo < 3) return 'good' as const;
+                    if (utilizacionPorVolumen < 60 && indiceRemanejo > 5) return 'warning' as const;
+                    return 'normal' as const;
+                })(),
 
-            // Relación Balance-Utilización
-            balanceUtilizacionStatus: (() => {
-                if (balanceFlujo > 1.2 && utilizacionPorVolumen > 85) return 'critical' as const;
-                if (balanceFlujo > 1.5 && utilizacionPorVolumen > 70) return 'warning' as const;
-                if (balanceFlujo >= 0.8 && balanceFlujo <= 1.2) return 'good' as const;
-                return 'normal' as const;
-            })()
-        };
+                balanceUtilizacionStatus: (() => {
+                    if (balanceFlujo > 1.2 && utilizacionPorVolumen > 85) return 'critical' as const;
+                    if (balanceFlujo > 1.5 && utilizacionPorVolumen > 70) return 'warning' as const;
+                    if (balanceFlujo >= 0.8 && balanceFlujo <= 1.2) return 'good' as const;
+                    return 'normal' as const;
+                })()
+            };
 
-        return {
-            utilizacionPorVolumen,
-            congestionVehicular,
-            balanceFlujo,
-            productividadOperacional,
-            indiceRemanejo,
-            saturacionOperacional,
-            utilizacionPorBloque,
-            utilizacionPorPatio,
-            congestionPorHora: movimientosGatePorHora,
-            movimientosPorBloque,
-            remanejosPorBloque,
-            horasConActividad: horasConMovimientos,
-            totalMovimientos,
-            kpiRelations
-        };
+            return {
+                utilizacionPorVolumen,
+                congestionVehicular,
+                balanceFlujo,
+                productividadOperacional,
+                indiceRemanejo,
+                saturacionOperacional,
+                utilizacionPorBloque,
+                utilizacionPorPatio,
+                congestionPorHora: movimientosGatePorHora,
+                movimientosPorBloque,
+                remanejosPorBloque,
+                horasConActividad: horasConMovimientos,
+                totalMovimientos,
+                kpiRelations
+            };
+        } catch (error) {
+            console.error('Error calculando KPIs:', error);
+            return getDefaultCoreKPIs();
+        }
     }, [blockCapacities]);
 
-    // Función para obtener KPIs por defecto
-    const getDefaultCoreKPIs = (): CorePortKPIs => ({
-        utilizacionPorVolumen: 0,
-        congestionVehicular: 0,
-        balanceFlujo: 1,
-        productividadOperacional: 0,
-        indiceRemanejo: 0,
-        saturacionOperacional: 0,
-        utilizacionPorBloque: {},
-        utilizacionPorPatio: {},
-        movimientosPorBloque: {},
-        remanejosPorBloque: {},
-        horasConActividad: 0,
-        totalMovimientos: 0
-    });
-
-    // Función para agregar datos por unidad de tiempo
-    const aggregateDataByTimeUnit = (data: PortMovementData[], timeUnit: TimeUnit) => {
+    // Función para agregar datos por unidad de tiempo - OPTIMIZADA
+    const aggregateDataByTimeUnit = useCallback((data: PortMovementData[], timeUnit: TimeUnit) => {
         const grouped = new Map<string, PortMovementData[]>();
 
         data.forEach(item => {
@@ -451,11 +501,11 @@ export const usePortKPIs = ({
         }));
 
         return aggregated.sort((a, b) => a.timeUnit.localeCompare(b.timeUnit));
-    };
+    }, [calculateCoreKPIs]);
 
     // Cargar datos cuando cambia el archivo
     useEffect(() => {
-        if (dataSource !== 'historical') return; // Solo cargar si estamos en modo histórico
+        if (dataSource !== 'historical') return;
 
         const loadData = async () => {
             try {
@@ -485,36 +535,56 @@ export const usePortKPIs = ({
         loadData();
     }, [dataFilePath, dataSource]);
 
-    // Recalcular KPIs cuando cambien los datos o el tiempo
+    // EFECTO PRINCIPAL - PROCESAR DATOS DE FORMA SEGURA
     useEffect(() => {
-        if (dataSource !== 'historical') {
-            setCurrentKPIs(null);
-            setAggregatedData([]);
+        if (dataSource !== 'historical' || processingRef.current) {
+            if (dataSource !== 'historical') {
+                setCurrentKPIs(null);
+                setAggregatedData([]);
+            }
             return;
         }
 
-        const filteredData = getFilteredData();
-
         if (filteredData.length > 0) {
-            const kpis = calculateCoreKPIs(filteredData);
-            setCurrentKPIs(kpis);
+            // Marcar que estamos procesando
+            processingRef.current = true;
 
-            console.log('✅ KPIs actualizados para:', {
-                unit,
-                fecha: currentDate.toLocaleDateString(),
-                registros: filteredData.length,
-                ocupacion: kpis.utilizacionPorVolumen?.toFixed(1) + '%'
-            });
+            // Usar setTimeout para evitar bloquear el thread principal
+            setTimeout(() => {
+                try {
+                    const kpis = calculateCoreKPIs(filteredData);
+                    setCurrentKPIs(kpis);
 
-            // Agregar datos según la unidad para las tendencias
-            const aggregated = aggregateDataByTimeUnit(filteredData, unit);
-            setAggregatedData(aggregated);
+                    console.log('✅ KPIs actualizados para:', {
+                        unit,
+                        fecha: currentDate.toLocaleDateString(),
+                        registros: filteredData.length,
+                        ocupacion: kpis.utilizacionPorVolumen?.toFixed(1) + '%'
+                    });
+
+                    // Solo agregar si no son demasiados datos
+                    if (filteredData.length < 50000) {
+                        const aggregated = aggregateDataByTimeUnit(filteredData, unit);
+                        setAggregatedData(aggregated);
+                    } else {
+                        // Para datasets muy grandes, limitar la agregación
+                        console.log('⚠️ Dataset muy grande, limitando agregación');
+                        setAggregatedData([]);
+                    }
+                } catch (error) {
+                    console.error('Error procesando KPIs:', error);
+                    setCurrentKPIs(getDefaultCoreKPIs());
+                    setAggregatedData([]);
+                } finally {
+                    processingRef.current = false;
+                }
+            }, 0);
         } else {
             console.log('⚠️ No hay datos para el período seleccionado');
             setCurrentKPIs(getDefaultCoreKPIs());
             setAggregatedData([]);
         }
-    }, [getFilteredData, unit, currentDate, dataSource, calculateCoreKPIs]);
+    }, [filteredData, unit, currentDate, dataSource, calculateCoreKPIs, aggregateDataByTimeUnit]);
 
     // Obtener estado del KPI
     const getStatusForKPI = useCallback((kpi: NumericKPIs): KPIStatus => {
@@ -579,6 +649,6 @@ export const usePortKPIs = ({
         error,
         getStatusForKPI,
         formatKPIValue,
-        refreshData: () => { } // Ahora los datos se actualizan automáticamente con el TimeContext
+        refreshData: () => { }
     };
 };

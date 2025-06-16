@@ -45,12 +45,14 @@ export const useMagdalenaData = (
     const loadRealData = async (): Promise<RealDataMetrics> => {
         try {
             console.log('📊 Cargando datos reales...');
+            const fileBase = `analisis_flujos_w${semana}_ci.xlsx`;
+
 
             const possiblePaths = [
-                '/data/semanas/analisis_flujos_w3_ci.xlsx',
-                'data/semanas/analisis_flujos_w3_ci.xlsx',
-                '/analisis_flujos_w3_ci.xlsx',
-                'analisis_flujos_w3_ci.xlsx'
+                `/data/semanas/Semana ${semana}/${fileBase}`,
+                `data/semanas/Semana ${semana}/${fileBase}`,
+                `/${fileBase}`,
+                fileBase,
             ];
 
             let response: Response | null = null;
@@ -76,8 +78,21 @@ export const useMagdalenaData = (
             }
 
             if (!workbook) {
-                throw new Error('No se pudo cargar analisis_flujos_w3_ci.xlsx desde ninguna ruta.');
+                console.warn(`⚠️ No se pudo cargar el archivo ${fileBase} desde ninguna ruta.`);
+                console.warn(`ℹ️ Para esta configuración necesitas el archivo: public/data/semanas/semana ${semana}/${fileBase}`);
+                setDataNotAvailable(true);
+                setRealMetrics(null);
+                return {
+                    totalMovimientos: 0,
+                    reubicaciones: 0,
+                    porcentajeReubicaciones: 0,
+                    movimientosPorTipo: { DLVR: 0, DSCH: 0, LOAD: 0, RECV: 0, OTHR: 0 },
+                    bloquesUnicos: [],
+                    turnos: [],
+                    carriers: 0
+                };
             }
+            console.log('📋 Hojas disponibles en el archivo Excel:', Object.keys(workbook.Sheets));
 
             if (!workbook.Sheets['FlujosAll_sbt']) {
                 console.log('Hojas disponibles:', Object.keys(workbook.Sheets));

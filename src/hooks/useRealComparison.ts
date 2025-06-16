@@ -41,7 +41,7 @@ export const useRealComparison = () => {
     const processRealWeekData = useCallback(async (semana: number): Promise<RealWeekData | null> => {
         try {
             // Leer archivo de flujos reales
-            const flujosResponse = await fetch(`/data/semanas/analisis_flujos_w${semana}.xlsx`);
+            const flujosResponse = await fetch(`/data/semanas/semana ${semana}/analisis_flujos_w${semana}.xlsx`);
             if (!flujosResponse.ok) {
                 throw new Error(`Archivo de flujos semana ${semana} no encontrado`);
             }

@@ -204,7 +204,11 @@ export const PatioView: React.FC<PatioViewProps> = ({
     timeState?.magdalenaConfig?.participacion || 69,
     timeState?.magdalenaConfig?.conDispersion ?? true
   );
-
+console.log('🔍 TimeState:', { 
+  dataSource: timeState?.dataSource, 
+  patioId, 
+  isMagdalenaActive 
+});
   // Auto-play effect
   useEffect(() => {
     if (!isPlaying || !isMagdalenaActive || !magdalenaMetrics) return;
@@ -258,18 +262,26 @@ export const PatioView: React.FC<PatioViewProps> = ({
     if (!patioBase) return null;
 
     if (isMagdalenaActive && magdalenaMetrics?.bloquesMagdalena && magdalenaMetrics.bloquesMagdalena.length > 0) {
+      console.log('🔄 Construyendo patio con datos Magdalena...');
+      console.log('📊 Bloques Magdalena disponibles:', magdalenaMetrics.bloquesMagdalena.length);
+      
       const bloquesMagdalena: BloqueDataExtended[] = magdalenaMetrics.bloquesMagdalena.map((blockData) => {
         // Obtener ocupación para el turno actual
-        const ocupacionTurno = blockData.ocupacionPorTurno && blockData.ocupacionPorTurno[currentTurno - 1]
+        const ocupacionTurno = blockData.ocupacionPorTurno && blockData.ocupacionPorTurno[currentTurno - 1] !== undefined
           ? blockData.ocupacionPorTurno[currentTurno - 1]
           : blockData.ocupacionPromedio;
+
+        // Asegurar que la ocupación sea al menos visible (mínimo 5%)
+        const ocupacionVisible = Math.max(5, Math.round(ocupacionTurno));
+
+        console.log(`📦 Bloque ${blockData.bloqueId}: Ocu=${ocupacionVisible}%, Cap=${blockData.capacidad}`);
 
         return {
           id: blockData.bloqueId,
           patioId: patioId,
           name: `Bloque ${blockData.bloqueId}`,
-          ocupacion: Math.round(ocupacionTurno), // Usar ocupación del turno actual
-          ocupacionPromedio: Math.round(blockData.ocupacionPromedio),
+          ocupacion: ocupacionVisible,
+          ocupacionPromedio: Math.max(5, Math.round(blockData.ocupacionPromedio)),
           capacidadTotal: blockData.capacidad,
           bahias: [],
           tipo: 'contenedores' as const,
@@ -277,20 +289,26 @@ export const PatioView: React.FC<PatioViewProps> = ({
           operationalStatus: blockData.estado,
           equipmentType: 'rtg' as const,
           // Datos adicionales para el timeline
-          ocupacionPorTurno: blockData.ocupacionPorTurno
+          ocupacionPorTurno: blockData.ocupacionPorTurno ? 
+            blockData.ocupacionPorTurno.map(o => Math.max(5, Math.round(o))) : 
+            undefined
         };
       });
 
+      // Calcular ocupación total del patio
       const totalOcupacion = bloquesMagdalena.reduce((sum, b) => sum + (b.ocupacion * b.capacidadTotal), 0);
       const totalCapacidad = bloquesMagdalena.reduce((sum, b) => sum + b.capacidadTotal, 0);
       const ocupacionPromedio = totalCapacidad > 0 ? Math.round(totalOcupacion / totalCapacidad) : 0;
+
+      console.log(`📊 Ocupación total del patio: ${ocupacionPromedio}%`);
+      console.log(`📊 Total bloques a renderizar: ${bloquesMagdalena.length}`);
 
       const patioConDatosMagdalena: PatioData = {
         id: 'costanera',
         name: 'Patio Costanera - Modelo Magdalena',
         type: 'contenedores',
         bloques: bloquesMagdalena,
-        ocupacionTotal: ocupacionPromedio,
+        ocupacionTotal: Math.max(10, ocupacionPromedio), // Mínimo 10% para visualización
         bounds: { x: 0, y: 0, width: 1000, height: 600 },
         description: `Optimización Magdalena - Semana ${timeState?.magdalenaConfig?.semana || 3} - Turno ${currentTurno}`,
         operatingHours: { start: '00:00', end: '23:59' },
@@ -300,6 +318,7 @@ export const PatioView: React.FC<PatioViewProps> = ({
       return patioConDatosMagdalena;
 
     } else {
+      console.log('📊 Usando datos estáticos del patio');
       return patioBase;
     }
   }, [isMagdalenaActive, magdalenaMetrics, patioId, timeState?.magdalenaConfig?.semana, currentTurno]);
@@ -327,9 +346,17 @@ export const PatioView: React.FC<PatioViewProps> = ({
     );
   }
 
+  // Log para debug
+  console.log('🎯 Renderizando PatioView con:', {
+    patioId,
+    isMagdalenaActive,
+    totalBloques: patio?.bloques?.length || 0,
+    ocupacionTotal: patio?.ocupacionTotal || 0
+  });
+
   return (
-    <div className="w-full h-full bg-gray-50 overflow-hidden">
-      <div className="h-full overflow-y-auto p-4">
+    <div className="w-full h-full bg-gray-50 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-4">
         {/* Timeline Controls - Solo visible cuando Magdalena está activo */}
         {isMagdalenaActive && magdalenaMetrics && (
           <TimelineControls
@@ -437,10 +464,20 @@ export const PatioView: React.FC<PatioViewProps> = ({
             )}
           </h3>
 
+          {/* Mensaje de debug */}
+          {patio.bloques.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <AlertTriangle size={32} className="mx-auto mb-2" />
+              <p>No hay bloques disponibles para mostrar</p>
+            </div>
+          )}
+
           {/* Grid responsivo y controlado */}
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-4xl">
             {patio.bloques.map((bloque) => {
               const bloqueExtended = bloque as BloqueDataExtended;
+              console.log(`🎨 Renderizando bloque ${bloque.id} con ocupación ${bloque.ocupacion}%`);
+              
               return (
                 <BloqueComponent
                   key={bloque.id}
@@ -485,8 +522,6 @@ export const PatioView: React.FC<PatioViewProps> = ({
             </div>
           </div>
         </div>
-
-
       </div>
     </div>
   );
@@ -599,7 +634,7 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
                 key={idx}
                 className="flex-1 bg-purple-400 rounded-t"
                 style={{
-                  height: `${(ocu / 100) * 100}%`,
+                  height: `${Math.max(10, (ocu / 100) * 100)}%`,
                   opacity: 0.6
                 }}
               />

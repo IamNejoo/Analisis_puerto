@@ -65,7 +65,7 @@ export const MultiLevelMap: React.FC<MultiLevelMapProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative bg-gray-50 overflow-hidden flex flex-col">
+    <div className="w-full h-full relative bg-gray-50 flex flex-col">
       {/* BARRA DE CONTROL TEMPORAL - SIEMPRE ARRIBA */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex-shrink-0 z-30">
         <TimeControl />
@@ -88,10 +88,11 @@ export const MultiLevelMap: React.FC<MultiLevelMapProps> = ({
         </div>
       )}
 
-      {/* Contenedor del mapa */}
+      {/* Contenedor del mapa - CAMBIO CLAVE: overflow-y-auto */}
       <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${zoomTransition ? 'scale-95 opacity-30' : 'scale-100 opacity-100'
-          }`}
+        className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${
+          zoomTransition ? 'scale-95 opacity-30' : 'scale-100 opacity-100'
+        }`}
       >
         {renderCurrentView()}
       </div>

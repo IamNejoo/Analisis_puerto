@@ -449,9 +449,9 @@ export const useCamilaData = (
 
             // Intentar cargar archivo Excel primero
             try {
-                console.log('📁 Intentando cargar BBDD_2023.xlsx...');
-                const xlsxBuffer = await window.fs.readFile('BBDD_2023.xlsx');
-                console.log('✅ Archivo BBDD_2023.xlsx encontrado');
+                console.log('📁 Intentando cargar BBDD_2023.csv...');
+                const xlsxBuffer = await window.fs.readFile('BBDD_2023.csv');
+                console.log('✅ Archivo BBDD_2023.csv encontrado');
                 console.log('📁 Tamaño del buffer:', xlsxBuffer.byteLength, 'bytes');
 
                 const workbook = XLSX.read(xlsxBuffer, { type: 'array' });
@@ -620,7 +620,7 @@ export const useCamilaData = (
                 throw new Error('No hay datos en el archivo');
 
             } catch (xlsxError) {
-                console.error('❌ Error cargando BBDD_2023.xlsx:', xlsxError);
+                console.error('❌ Error cargando BBDD_2023.csv:', xlsxError);
                 console.log('📁 Generando datos simulados como fallback...');
                 return generateSimulatedData();
             }

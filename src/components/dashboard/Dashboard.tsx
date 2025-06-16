@@ -161,58 +161,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   )}
                 </div>
 
-                {/* Tipo de vista */}
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <BarChart2 size={16} className="mr-1" />
-                    Tipo de Vista
-                  </h4>
-                  <div className="grid grid-cols-3 gap-1">
-                    {['operativo', 'analitico', 'planificacion'].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`text-xs py-1.5 px-2 rounded transition-colors ${activeTab === tab
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-600 hover:bg-gray-100'
-                          }`}
-                      >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Filtros */}
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <Filter size={16} className="mr-1" />
-                    Filtros Visuales
-                  </h4>
-                  <div className="space-y-1.5">
-                    {Object.entries(filters).map(([key, value]) => (
-                      <label key={key} className="flex items-center justify-between cursor-pointer">
-                        <span className="text-sm text-gray-700">
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^show /, '').trim()}
-                        </span>
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={value}
-                            onChange={() => toggleFilter(key as keyof Filters)}
-                            className="sr-only"
-                          />
-                          <div className={`w-8 h-4 rounded-full transition-colors ${value ? 'bg-blue-600' : 'bg-gray-300'
-                            }`}>
-                            <div className={`w-3 h-3 bg-white rounded-full transform transition-transform ${value ? 'translate-x-4' : 'translate-x-0.5'
-                              } translate-y-0.5`} />
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Métricas actuales */}
                 <div className="bg-gray-50 rounded-lg p-3">
                   <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
