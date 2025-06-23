@@ -536,6 +536,12 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
   isMagdalenaActive,
   ocupacionTurno
 }) => {
+    const { timeState } = useTimeContext();
+  const { magdalenaMetrics } = useMagdalenaData(
+    timeState?.magdalenaConfig?.semana || 3,
+    timeState?.magdalenaConfig?.participacion || 69,
+    timeState?.magdalenaConfig?.conDispersion ?? true
+  );
   // Extender el tipo localmente
   const bloqueExtended = bloque as BloqueDataExtended;
 
@@ -599,7 +605,15 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
           <div className="text-xs text-gray-600 space-y-1">
             <div className="flex justify-between">
               <span>Capacidad:</span>
-              <span className="font-medium">{ocupiedSlots}/{bloque.capacidadTotal}</span>
+<span className="font-medium">
+  {(() => {
+    const capacidadReal = isMagdalenaActive && magdalenaMetrics?.capacidadesPorBloque 
+      ? magdalenaMetrics.capacidadesPorBloque[bloque.id] || 35
+      : bloque.capacidadTotal;
+    const slots = Math.round(capacidadReal * ocupacionActual / 100);
+    return `${slots}/${capacidadReal}`;
+  })()}
+</span>
             </div>
             <div className="flex justify-between">
               <span>Estado:</span>

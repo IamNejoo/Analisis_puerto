@@ -311,11 +311,20 @@ export const WorkloadChart: React.FC = () => {
                 </div>
             </div>
 
-            {/* Balance Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Balance Score */}
-
-            </div>
+{/* Información adicional de capacidades */}
+{magdalenaMetrics?.capacidadesPorBloque && (
+  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <h3 className="font-medium text-gray-800 mb-3">Capacidades por Bloque</h3>
+    <div className="grid grid-cols-3 gap-2 text-sm">
+      {Object.entries(magdalenaMetrics.capacidadesPorBloque).map(([bloque, capacidad]) => (
+        <div key={bloque} className="flex justify-between p-2 bg-white rounded">
+          <span className="font-medium">{bloque}:</span>
+          <span>{capacidad} bahías</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
         </div>
     );
 };

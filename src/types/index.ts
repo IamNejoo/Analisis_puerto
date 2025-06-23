@@ -353,7 +353,7 @@ export interface MagdalenaMetrics {
   eficienciaReal: number;
 
   // Optimización Magdalena  
-  totalMovimientosOptimizados: number; // RENOMBRADO para evitar conflicto
+  totalMovimientosOptimizados: number;
   reubicacionesEliminadas: number;
   eficienciaGanada: number;
 
@@ -375,7 +375,7 @@ export interface MagdalenaMetrics {
   ocupacionPromedio: number;
   utilizacionEspacio: number;
 
-  // Comparación movimientos - SEPARADOS EN OBJETOS DISTINTOS
+  // Comparación movimientos
   movimientosReales: {
     DLVR: number;
     DSCH: number;
@@ -385,7 +385,7 @@ export interface MagdalenaMetrics {
     YARD: number;
   };
 
-  movimientosOptimizadosDetalle: { // RENOMBRADO para evitar conflicto
+  movimientosOptimizadosDetalle: {
     Recepcion: number;
     Carga: number;
     Descarga: number;
@@ -408,6 +408,7 @@ export interface MagdalenaMetrics {
     cargaTrabajo: number;
     periodo: number;
   }>;
+
   bloquesMagdalena: Array<{
     bloqueId: string;
     ocupacionPromedio: number;
@@ -422,14 +423,57 @@ export interface MagdalenaMetrics {
     };
     estado: 'active' | 'restricted' | 'maintenance';
   }>;
+
   segregacionesPorBloque: Array<{
     segregacion: string;
     bloque: string;
     periodo: number;
     volumen: number;
   }>;
+
+  // Datos adicionales
+  capacidadesPorBloque: { [key: string]: number };
+  teusPorSegregacion: { [key: string]: number };
+  segregacionesInfo: { [key: string]: {
+    id: string;
+    nombre: string;
+    teu: number;
+  }};
+  bahiasPorBloque: { [key: string]: any };
+  
+  // AGREGAR ESTAS DOS:
+  volumenPorBloque: { [key: string]: any };
+  segregacionesColores?: { [key: string]: string };
+}
+// Agregar a src/types/index.ts después de MagdalenaMetrics
+
+// Interfaz extendida para estadísticas de segregación
+export interface SegregacionStats {
+  color: string;
+  count: number;
+  bahias: number;
+  volumen: number;
+  porcentajeOcupacion: number;
+  tipo: '20' | '40';
 }
 
+// Interfaz para tooltip mejorado
+export interface BahiaTooltipData {
+  segregacion: string;
+  bahiasReservadas: number;
+  capacidadMaxima: number;
+  ocupacionReal: number;
+  ocupacionPorcentaje: number;
+  tipoContenedor: '20' | '40';
+}
+
+// Interfaz para comparación visual
+export interface VisualizacionComparacion {
+  segregacionesReales: number;
+  segregacionesModelo: number;
+  participacionPorcentaje: number;
+  criterioUsado: number;
+}
 export interface RealDataMetrics {
   totalMovimientos: number;
   reubicaciones: number;

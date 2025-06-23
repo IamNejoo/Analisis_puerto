@@ -1,8 +1,9 @@
-// src/hooks/useMicroData.ts
+// src/hooks/useMicroData.ts - VERSIÓN SIMPLIFICADA PARA MAGDALENA
 import { useState, useEffect, useMemo } from 'react';
+import { useTimeContext } from '../contexts/TimeContext';
 import type { DataSource, TimeUnit } from '../types';
 
-// Tipos adaptados de tu vista_micro
+// Tipos (mantener los mismos)
 export interface MicroBahiaData {
     c: number;
     text: string;
@@ -18,14 +19,6 @@ export interface MicroTimeFrame {
     contenedores?: Array<{ r: number; c: number; text: string; color: string; group: string }>;
 }
 
-export interface DistanceData {
-    semana: number;
-    distanciaModelo: number;
-    distanciaRealSinYard: number;
-    distanciaRealConYard: number;
-    mejoraPorcentaje: number;
-}
-
 export interface MicroDataResult {
     timeFrames: MicroTimeFrame[];
     isLoading: boolean;
@@ -35,7 +28,6 @@ export interface MicroDataResult {
     currentFrame: number;
     setCurrentFrame: (frame: number) => void;
     processedBahias: MicroBahiaData[];
-    distanceData?: DistanceData;
     colorMap: Record<string, string>;
 }
 
@@ -46,7 +38,6 @@ export interface ColorStatistic {
     label?: string;
 }
 
-// Configuración adaptada de tu config.js
 const CONFIG = {
     numCols: 30,
     numRows: 7,
@@ -54,7 +45,7 @@ const CONFIG = {
     rowLabels: ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 };
 
-// Función helper para generar mapa de colores HSL
+// Función helper para generar mapa de colores
 const generaMapaColoresPorGrupo = (frames: MicroTimeFrame[]): Record<string, string> => {
     const gruposSet = new Set<string>();
 
@@ -62,11 +53,6 @@ const generaMapaColoresPorGrupo = (frames: MicroTimeFrame[]): Record<string, str
         if (Array.isArray(frame.bahias)) {
             frame.bahias.forEach((b) => {
                 if (b.group) gruposSet.add(b.group);
-            });
-        }
-        if (Array.isArray(frame.contenedores)) {
-            frame.contenedores.forEach((c) => {
-                if (c.group) gruposSet.add(c.group);
             });
         }
     });
@@ -91,109 +77,200 @@ export const useMicroData = (
     const [error, setError] = useState<string | null>(null);
     const [currentFrame, setCurrentFrame] = useState(0);
     const [colorMap, setColorMap] = useState<Record<string, string>>({});
-    const [distanceData, setDistanceData] = useState<DistanceData | undefined>();
 
-    // Función para cargar datos de distancias
-    const loadDistanceData = async (week: number): Promise<DistanceData | undefined> => {
-        try {
-            // Cargar distancias del modelo
-            const modelResponse = await fetch(`/data/distancias_modelo/semana_${week}.json`);
-            if (!modelResponse.ok) return undefined;
-            const modelData = await modelResponse.json();
+    const { timeState } = useTimeContext();
 
-            // Cargar distancias reales
-            const realResponse = await fetch('/data/Distancias_reales.xlsx');
-            if (!realResponse.ok) return undefined;
-            // Aquí necesitarías parsear el Excel o tener los datos en JSON
-
-            return {
-                semana: week,
-                distanciaModelo: modelData.distancia_total || 0,
-                distanciaRealSinYard: 0, // Datos del Excel
-                distanciaRealConYard: 0, // Datos del Excel
-                mejoraPorcentaje: 0 // Calcular
-            };
-        } catch (err) {
-            console.error('Error loading distance data:', err);
-            return undefined;
-        }
-    };
-
-    // Función principal de carga adaptada de tu dataLoader.js
+    // Función principal de carga
     const loadTimelineData = async (): Promise<{ allTimeData: MicroTimeFrame[], colorMapByGroup: Record<string, string> }> => {
         try {
-            const response = await fetch('/data/data_2022-01-03.json');
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-            const jsonData = await response.json();
+            // SIMPLIFICADO: Para Magdalena, leer del mismo JSON pero buscar datos específicos de Magdalena
+            if (dataSource === 'modelMagdalena') {
+                console.log('📊 Cargando datos de Magdalena desde JSON...');
+                
+                // Intentar cargar desde un JSON específico de Magdalena primero
+                let response = await fetch('/data/data_magdalena.json');
+                
+                // Si no existe, usar el JSON general
+                if (!response.ok) {
+                    console.log('📊 No se encontró data_magdalena.json, usando data_bahias.json...');
+                    response = await fetch('/data/data_bahias.json');
+                }
 
-            const patioData = jsonData.patios;
-            if (!patioData) {
-                throw new Error('No se encontró la propiedad "patios" en el JSON');
-            }
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
 
-            // Buscar el patio de forma case-insensitive
-            const patioKeys = Object.keys(patioData);
-            const matchedPatioKey = patioKeys.find(key =>
-                key.toLowerCase() === patioId.toLowerCase()
-            );
+                const jsonData = await response.json();
+                
+                // Buscar datos en la estructura del JSON
+                const patioData = jsonData.patios;
+                if (!patioData) {
+                    throw new Error('No se encontró la propiedad "patios" en el JSON');
+                }
 
-            if (!matchedPatioKey) {
-                throw new Error(
-                    `Patio '${patioId}' no encontrado. Patios disponibles: ${patioKeys.join(', ')}`
+                // Buscar el patio
+                const patioKeys = Object.keys(patioData);
+                const matchedPatioKey = patioKeys.find(key =>
+                    key.toLowerCase() === patioId.toLowerCase()
                 );
-            }
 
-            const patio = patioData[matchedPatioKey];
-            if (!patio.bloques) {
-                throw new Error(`No se encontraron bloques en el patio '${matchedPatioKey}'`);
-            }
+                if (!matchedPatioKey) {
+                    // Si no hay datos, crear frames vacíos para Magdalena
+                    const allTimeData: MicroTimeFrame[] = [];
+                    for (let i = 1; i <= 21; i++) {
+                        allTimeData.push({
+                            timeLabel: `${i}`,
+                            defaultText: '',
+                            defaultColor: '#FFFFFF',
+                            bahias: []
+                        });
+                    }
+                    return { allTimeData, colorMapByGroup: {} };
+                }
 
-            // Buscar el bloque de forma case-insensitive
-            const bloqueKeys = Object.keys(patio.bloques);
-            const matchedBloqueKey = bloqueKeys.find(key =>
-                key.toLowerCase() === bloqueId.toLowerCase()
-            );
+                const patio = patioData[matchedPatioKey];
+                if (!patio.bloques) {
+                    throw new Error(`No se encontraron bloques en el patio '${matchedPatioKey}'`);
+                }
 
-            if (!matchedBloqueKey) {
-                throw new Error(
-                    `Bloque '${bloqueId}' no encontrado en patio '${matchedPatioKey}'. Bloques disponibles: ${bloqueKeys.join(', ')}`
+                // Buscar el bloque
+                const bloqueKeys = Object.keys(patio.bloques);
+                const matchedBloqueKey = bloqueKeys.find(key =>
+                    key.toLowerCase() === bloqueId.toLowerCase()
                 );
+
+                if (!matchedBloqueKey) {
+                    // Si no hay datos del bloque, crear frames vacíos
+                    const allTimeData: MicroTimeFrame[] = [];
+                    for (let i = 1; i <= 21; i++) {
+                        allTimeData.push({
+                            timeLabel: `${i}`,
+                            defaultText: '',
+                            defaultColor: '#FFFFFF',
+                            bahias: []
+                        });
+                    }
+                    return { allTimeData, colorMapByGroup: {} };
+                }
+
+                const allTimeData = patio.bloques[matchedBloqueKey];
+
+                if (!Array.isArray(allTimeData) || allTimeData.length === 0) {
+                    // Crear 21 frames vacíos para Magdalena
+                    const frames: MicroTimeFrame[] = [];
+                    for (let i = 1; i <= 21; i++) {
+                        frames.push({
+                            timeLabel: `${i}`,
+                            defaultText: '',
+                            defaultColor: '#FFFFFF',
+                            bahias: []
+                        });
+                    }
+                    return { allTimeData: frames, colorMapByGroup: {} };
+                }
+
+                // Si hay datos, asegurarse de que haya 21 frames
+                while (allTimeData.length < 21) {
+                    allTimeData.push({
+                        timeLabel: `${allTimeData.length + 1}`,
+                        defaultText: '',
+                        defaultColor: '#FFFFFF',
+                        bahias: []
+                    });
+                }
+
+                const colorMapByGroup = generaMapaColoresPorGrupo(allTimeData);
+
+                console.log(`✅ Datos Magdalena cargados desde JSON: ${allTimeData.length} frames`);
+                return { allTimeData, colorMapByGroup };
             }
+            
+            // Para datos históricos, mantener la lógica original
+            if (dataSource === 'historical') {
+                const response = await fetch('/data/data_2022-01-03');
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                const jsonData = await response.json();
 
-            const allTimeData = patio.bloques[matchedBloqueKey];
+                const patioData = jsonData.patios;
+                if (!patioData) {
+                    throw new Error('No se encontró la propiedad "patios" en el JSON');
+                }
 
-            if (!Array.isArray(allTimeData)) {
-                throw new Error(
-                    `Los datos del bloque '${matchedBloqueKey}' no son un array válido`
+                const patioKeys = Object.keys(patioData);
+                const matchedPatioKey = patioKeys.find(key =>
+                    key.toLowerCase() === patioId.toLowerCase()
                 );
-            }
 
-            if (allTimeData.length === 0) {
-                throw new Error(
-                    `No hay frames de tiempo para el bloque '${matchedBloqueKey}'`
+                if (!matchedPatioKey) {
+                    throw new Error(
+                        `Patio '${patioId}' no encontrado. Patios disponibles: ${patioKeys.join(', ')}`
+                    );
+                }
+
+                const patio = patioData[matchedPatioKey];
+                if (!patio.bloques) {
+                    throw new Error(`No se encontraron bloques en el patio '${matchedPatioKey}'`);
+                }
+
+                const bloqueKeys = Object.keys(patio.bloques);
+                const matchedBloqueKey = bloqueKeys.find(key =>
+                    key.toLowerCase() === bloqueId.toLowerCase()
                 );
+
+                if (!matchedBloqueKey) {
+                    throw new Error(
+                        `Bloque '${bloqueId}' no encontrado en patio '${matchedPatioKey}'. Bloques disponibles: ${bloqueKeys.join(', ')}`
+                    );
+                }
+
+                const allTimeData = patio.bloques[matchedBloqueKey];
+
+                if (!Array.isArray(allTimeData)) {
+                    throw new Error(
+                        `Los datos del bloque '${matchedBloqueKey}' no son un array válido`
+                    );
+                }
+
+                if (allTimeData.length === 0) {
+                    throw new Error(
+                        `No hay frames de tiempo para el bloque '${matchedBloqueKey}'`
+                    );
+                }
+
+                const colorMapByGroup = generaMapaColoresPorGrupo(allTimeData);
+
+                console.log(`✅ Datos históricos cargados: ${matchedPatioKey}/${matchedBloqueKey} - ${allTimeData.length} frames`);
+
+                return { allTimeData, colorMapByGroup };
             }
+            
+            // Para otros modelos
+            console.log(`⚠️ Vista micro no implementada para: ${dataSource}`);
+            return { 
+                allTimeData: [], 
+                colorMapByGroup: {} 
+            };
 
-            const colorMapByGroup = generaMapaColoresPorGrupo(allTimeData);
-
-            console.log(`✅ Datos cargados exitosamente: ${matchedPatioKey}/${matchedBloqueKey} - ${allTimeData.length} frames`);
-
-            return { allTimeData, colorMapByGroup };
         } catch (err) {
             console.error("Error en loadTimelineData:", err);
             throw err;
         }
     };
 
-    // Función para procesar frame actual (adaptada de tu applyStateToAllContainers)
+    // Función para procesar frame actual
     const processCurrentFrame = (currentFrameData: MicroTimeFrame, colorMapByGroup: Record<string, string>): MicroBahiaData[] => {
         if (!currentFrameData) return [];
 
         const processedBahias: MicroBahiaData[] = [];
 
-        // Crear mapas auxiliares para bahías y contenedores
+        // Si ya hay bahías procesadas, usarlas directamente
+        if (Array.isArray(currentFrameData.bahias) && currentFrameData.bahias.length > 0) {
+            return currentFrameData.bahias;
+        }
+
+        // Procesar según formato antiguo (compatibilidad)
         const bayDataMap = new Map();
         if (Array.isArray(currentFrameData.bahias)) {
             currentFrameData.bahias.forEach((bay) => {
@@ -201,40 +278,20 @@ export const useMicroData = (
             });
         }
 
-        const contDataMap = new Map();
-        if (Array.isArray(currentFrameData.contenedores)) {
-            currentFrameData.contenedores.forEach((c) => {
-                contDataMap.set(`C-${c.r}-${c.c}`, c);
-            });
-        }
-
-        // Iterar sobre todas las columnas (bahías)
+        // Iterar sobre todas las columnas
         for (let c = 0; c < CONFIG.numCols; c++) {
-            // Valores por defecto (del frame)
-            let nuevoTexto = currentFrameData.defaultText !== undefined ? currentFrameData.defaultText : 'N/A';
-            let nuevoColor = currentFrameData.defaultColor !== undefined ? currentFrameData.defaultColor : '#D3D3D3';
-            let grupoAttr = null;
+            let nuevoTexto = currentFrameData.defaultText || '';
+            let nuevoColor = currentFrameData.defaultColor || '#FFFFFF';
+            let grupoAttr = '';
 
-            // Si existe info en bahias (por índice c)
             const bayProps = bayDataMap.get(c);
             if (bayProps) {
-                nuevoTexto = bayProps.text !== undefined ? bayProps.text : nuevoTexto;
-                grupoAttr = bayProps.group !== undefined ? bayProps.group : grupoAttr;
+                nuevoTexto = bayProps.text || nuevoTexto;
+                nuevoColor = bayProps.color || nuevoColor;
+                grupoAttr = bayProps.group || grupoAttr;
             }
 
-            // Si existe info específica para algún contenedor en esta columna
-            // (tomamos el primero que encontremos para simplificar)
-            for (let r = 0; r < CONFIG.numRows; r++) {
-                const containerId = `C-${r}-${c}`;
-                const contProps = contDataMap.get(containerId);
-                if (contProps) {
-                    nuevoTexto = contProps.text !== undefined ? contProps.text : nuevoTexto;
-                    grupoAttr = contProps.group !== undefined ? contProps.group : grupoAttr;
-                    break;
-                }
-            }
-
-            // Color según grupo (si existe en el mapa)
+            // Aplicar color del grupo si existe
             if (grupoAttr && colorMapByGroup[grupoAttr]) {
                 nuevoColor = colorMapByGroup[grupoAttr];
             }
@@ -243,7 +300,7 @@ export const useMicroData = (
                 c,
                 text: nuevoTexto,
                 color: nuevoColor,
-                group: grupoAttr || ''
+                group: grupoAttr
             });
         }
 
@@ -259,25 +316,29 @@ export const useMicroData = (
             try {
                 const { allTimeData, colorMapByGroup } = await loadTimelineData();
 
-                if (!allTimeData || allTimeData.length === 0) {
-                    throw new Error(`No se encontraron datos de turnos para ${patioId} - ${bloqueId}`);
-                }
-
                 setTimeFrames(allTimeData);
                 setColorMap(colorMapByGroup);
                 setCurrentFrame(0);
-
-                // Cargar datos de distancias si es modelo Magdalena
-                if (dataSource === 'modelMagdalena') {
-                    const week = 3; // Por defecto semana 3, ajustar según necesidad
-                    const distances = await loadDistanceData(week);
-                    setDistanceData(distances);
-                }
 
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Error loading data';
                 setError(errorMessage);
                 setTimeFrames([]);
+                
+                // Para Magdalena, no es error crítico si no hay datos
+                if (dataSource === 'modelMagdalena') {
+                    setError(null);
+                    const emptyFrames: MicroTimeFrame[] = [];
+                    for (let i = 1; i <= 21; i++) {
+                        emptyFrames.push({
+                            timeLabel: `${i}`,
+                            defaultText: '',
+                            defaultColor: '#FFFFFF',
+                            bahias: []
+                        });
+                    }
+                    setTimeFrames(emptyFrames);
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -288,38 +349,39 @@ export const useMicroData = (
 
     // Procesar bahías del frame actual
     const processedBahias = useMemo(() => {
-        if (!timeFrames[currentFrame] || !colorMap) return [];
+        if (!timeFrames[currentFrame]) return [];
         return processCurrentFrame(timeFrames[currentFrame], colorMap);
     }, [timeFrames, currentFrame, colorMap]);
 
-    // Calcular estadísticas de color (adaptada de tu updateLegend)
+    // Calcular estadísticas de color
     const colorStats = useMemo((): ColorStatistic[] => {
         if (processedBahias.length === 0) return [];
 
         const gruposVisibles = new Map<string, { color: string; count: number; group: string }>();
 
         processedBahias.forEach(bahia => {
-            const key = bahia.group || bahia.color;
-            const existing = gruposVisibles.get(key);
-            if (existing) {
-                existing.count++;
-            } else {
-                gruposVisibles.set(key, {
-                    color: bahia.color,
-                    count: 1,
-                    group: bahia.group
-                });
+            if (bahia.group) {
+                const existing = gruposVisibles.get(bahia.group);
+                if (existing) {
+                    existing.count++;
+                } else {
+                    gruposVisibles.set(bahia.group, {
+                        color: bahia.color,
+                        count: 1,
+                        group: bahia.group
+                    });
+                }
             }
         });
 
-        const total = processedBahias.length;
+        const total = 30;
 
         return Array.from(gruposVisibles.values())
             .map(({ color, count, group }) => ({
                 color,
                 count,
                 percentage: Math.round((count / total) * 100),
-                label: group || `Color ${color.slice(1, 4)}`
+                label: group
             }))
             .sort((a, b) => b.count - a.count);
 
@@ -338,7 +400,6 @@ export const useMicroData = (
             }
         },
         processedBahias,
-        distanceData,
         colorMap
     };
 };
@@ -351,41 +412,6 @@ export const useCurrentMicroFrame = (
         if (microData.timeFrames.length === 0) return null;
         return microData.timeFrames[microData.currentFrame] || null;
     }, [microData.timeFrames, microData.currentFrame]);
-};
-
-// Hook para filtrar bahías
-export const useFilteredMicroBahias = (
-    processedBahias: MicroBahiaData[],
-    filters: {
-        colorFilter?: string;
-        textFilter?: string;
-        groupFilter?: string;
-    }
-) => {
-    return useMemo(() => {
-        if (!processedBahias) return [];
-
-        return processedBahias.filter(bahia => {
-            if (filters.colorFilter && filters.colorFilter !== 'all') {
-                if (bahia.color !== filters.colorFilter) return false;
-            }
-
-            if (filters.textFilter) {
-                const searchTerm = filters.textFilter.toLowerCase();
-                if (!bahia.text.toLowerCase().includes(searchTerm) &&
-                    !bahia.c.toString().includes(searchTerm) &&
-                    !(bahia.group && bahia.group.toLowerCase().includes(searchTerm))) {
-                    return false;
-                }
-            }
-
-            if (filters.groupFilter && filters.groupFilter !== 'all') {
-                if (bahia.group !== filters.groupFilter) return false;
-            }
-
-            return true;
-        });
-    }, [processedBahias, filters]);
 };
 
 export default useMicroData;

@@ -126,14 +126,16 @@ export const RealComparisonPanel: React.FC = () => {
             improvementType: 'positive',
             icon: <CheckCircle size={16} />
         },
-        {
-            metric: 'Segregaciones Gestionadas',
-            realValue: '9 básicas',
-            optimizedValue: magdalenaMetrics.segregacionesActivas,
-            improvement: `+${((magdalenaMetrics.segregacionesActivas - 9) / 9 * 100).toFixed(0)}%`,
-            improvementType: 'positive',
-            icon: <BarChart3 size={16} />
-        },
+{
+    metric: 'Segregaciones Gestionadas',
+    realValue: magdalenaMetrics?.segregacionesInfo ? 
+      `${Object.keys(magdalenaMetrics.segregacionesInfo).length} totales` : 
+      '182 totales',
+    optimizedValue: `${magdalenaMetrics.segregacionesActivas} (${timeState.magdalenaConfig?.participacion || 69}% participación)`,
+    improvement: `Optimizadas para ${timeState.magdalenaConfig?.participacion || 69}%`,
+    improvementType: 'positive',
+    icon: <BarChart3 size={16} />
+},
         {
             metric: 'Balance de Carga',
             realValue: 'Desbalanceado',

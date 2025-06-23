@@ -158,15 +158,17 @@ export const MagdalenaKPIPanel: React.FC = () => {
                     isLoading={isLoading}
                 />
 
-                {/* Segregaciones Activas */}
-                <KPICard
-                    title="Segregaciones"
-                    value={magdalenaMetrics?.segregacionesActivas || 0}
-                    subtitle={`${magdalenaMetrics?.bloquesAsignados || 0} bloques`}
-                    icon={<Layers size={20} />}
-                    color="purple"
-                    isLoading={isLoading}
-                />
+{/* Segregaciones Activas - MEJORADO */}
+<KPICard
+    title="Segregaciones del Modelo"
+    value={magdalenaMetrics?.segregacionesActivas || 0}
+    subtitle={`${magdalenaMetrics?.bloquesAsignados || 0} bloques - ${magdalenaMetrics?.segregacionesInfo ? 
+        `De ${Object.keys(magdalenaMetrics.segregacionesInfo).length} totales (${timeState.magdalenaConfig?.participacion || 69}%)` : 
+        `${timeState.magdalenaConfig?.participacion || 69}% participación`}`}
+    icon={<Layers size={20} />}
+    color="purple"
+    isLoading={isLoading}
+/>
 
                 {/* Balance de Carga */}
                 <KPICard

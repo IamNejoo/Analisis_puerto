@@ -1,3 +1,4 @@
+// src/components/magdalena/SegregationHeatmap.tsx - VERSIÓN COMPLETA FINAL
 import React, { useMemo, useState } from 'react';
 import { useMagdalenaData } from '../../hooks/useMagdalenaData';
 import { useTimeContext } from '../../contexts/TimeContext';
@@ -24,6 +25,7 @@ interface HeatmapCellProps {
     maxVolumen: number;
     color: string;
     onClick?: () => void;
+    teuFactor?: number;
 }
 
 const HeatmapCell: React.FC<HeatmapCellProps> = ({
@@ -33,13 +35,14 @@ const HeatmapCell: React.FC<HeatmapCellProps> = ({
     volumen,
     maxVolumen,
     color,
-    onClick
+    onClick,
+    teuFactor = 1
 }) => {
-    const intensity = maxVolumen > 0 ? volumen / maxVolumen : 0;
-
-    // Escala de intensidad más visible
-    const bgOpacity = Math.max(0.1, intensity);
-    const textColor = intensity > 0.5 ? 'white' : color;
+    const intensity = maxVolumen > 0 ? Math.min(1, volumen / maxVolumen) : 0;
+    const bgOpacity = Math.max(0.2, Math.min(1, intensity));
+    
+    // Calcular contenedores reales usando el factor TEU
+    const contenedoresReales = teuFactor === 2 ? Math.round(volumen / 2) : volumen;
 
     return (
         <div
@@ -56,9 +59,9 @@ const HeatmapCell: React.FC<HeatmapCellProps> = ({
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span
                         className="text-xs font-bold"
-                        style={{ color: textColor }}
+                        style={{ color: intensity > 0.5 ? 'white' : color }}
                     >
-                        {volumen}
+                        {contenedoresReales}
                     </span>
                 </div>
             )}
@@ -66,7 +69,7 @@ const HeatmapCell: React.FC<HeatmapCellProps> = ({
             {/* Tooltip mejorado */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
                 <div className="font-bold">{segregacion} → {bloque}</div>
-                <div>Período {periodo}: {volumen} mov.</div>
+                <div>Período {periodo}: {contenedoresReales} contenedores ({volumen} TEUs)</div>
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
             </div>
         </div>
@@ -81,6 +84,8 @@ interface SegregationSummaryCardProps {
     bloques: number;
     selected?: boolean;
     onClick?: () => void;
+    nombre?: string;
+    teu?: number;
 }
 
 const SegregationSummaryCard: React.FC<SegregationSummaryCardProps> = ({
@@ -90,7 +95,9 @@ const SegregationSummaryCard: React.FC<SegregationSummaryCardProps> = ({
     porcentaje,
     bloques,
     selected = false,
-    onClick
+    onClick,
+    nombre,
+    teu
 }) => {
     return (
         <div
@@ -124,6 +131,12 @@ const SegregationSummaryCard: React.FC<SegregationSummaryCardProps> = ({
                     <span className="text-sm text-gray-600">Bloques</span>
                     <span className="font-medium">{bloques}</span>
                 </div>
+                {nombre && (
+                    <div className="pt-2 border-t border-gray-100">
+                        <p className="text-xs text-gray-500">{nombre}</p>
+                        <p className="text-xs text-gray-400">{teu === 2 ? 'Contenedor 40ft' : 'Contenedor 20ft'}</p>
+                    </div>
+                )}
             </div>
 
             {/* Barra de progreso visual */}
@@ -145,6 +158,7 @@ export const SegregationHeatmap: React.FC = () => {
     const [selectedSegregation, setSelectedSegregation] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact');
 
+    // Hook llamado al nivel superior del componente
     const { magdalenaMetrics, isLoading, error } = useMagdalenaData(
         timeState.magdalenaConfig?.semana || 3,
         timeState.magdalenaConfig?.participacion || 69,
@@ -153,9 +167,13 @@ export const SegregationHeatmap: React.FC = () => {
 
     // Procesar datos para el heatmap
     const heatmapData = useMemo(() => {
-        if (!magdalenaMetrics?.segregacionesPorBloque) return null;
+        if (!magdalenaMetrics?.segregacionesPorBloque || magdalenaMetrics.segregacionesPorBloque.length === 0) {
+            console.log('⚠️ No hay datos de segregaciones por bloque');
+            return null;
+        }
 
         const data = magdalenaMetrics.segregacionesPorBloque;
+        console.log('📊 Procesando', data.length, 'registros de segregaciones');
 
         // Obtener listas únicas
         const segregaciones = Array.from(new Set(data.map(d => d.segregacion))).sort();
@@ -197,7 +215,7 @@ export const SegregationHeatmap: React.FC = () => {
             }
         });
 
-        return {
+        const result = {
             segregaciones,
             bloques,
             periodos,
@@ -206,7 +224,34 @@ export const SegregationHeatmap: React.FC = () => {
             totalMovimientos: data.reduce((sum, item) => sum + item.volumen, 0),
             segregationStats
         };
+
+        console.log('✅ Heatmap procesado:', {
+            segregaciones: result.segregaciones.length,
+            bloques: result.bloques.length,
+            periodos: result.periodos.length,
+            totalMovimientos: result.totalMovimientos
+        });
+
+        return result;
     }, [magdalenaMetrics]);
+
+    // Generar colores para segregaciones
+    const segregationColors = useMemo(() => {
+        const baseColors = [
+            '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
+            '#8B5CF6', '#06B6D4', '#84CC16', '#F97316',
+            '#EC4899', '#6366F1', '#14B8A6', '#F472B6',
+            '#A855F7', '#22C55E', '#EAB308', '#DC2626'
+        ];
+        
+        const colors: { [key: string]: string } = {};
+        if (heatmapData) {
+            heatmapData.segregaciones.forEach((seg, index) => {
+                colors[seg] = baseColors[index % baseColors.length];
+            });
+        }
+        return colors;
+    }, [heatmapData]);
 
     if (isLoading) {
         return (
@@ -232,13 +277,6 @@ export const SegregationHeatmap: React.FC = () => {
             </div>
         );
     }
-
-    const segregationColors: { [key: string]: string } = {
-        'S1': '#3B82F6', 'S2': '#EF4444', 'S3': '#10B981', 'S4': '#F59E0B',
-        'S5': '#8B5CF6', 'S6': '#06B6D4', 'S7': '#84CC16', 'S8': '#F97316',
-        'S9': '#EC4899', 'S10': '#6366F1', 'S11': '#14B8A6', 'S12': '#F472B6',
-        'S13': '#A855F7', 'S14': '#22C55E', 'S15': '#EAB308', 'S16': '#DC2626'
-    };
 
     // Filtrar datos según segregación seleccionada
     const filteredSegregaciones = selectedSegregation
@@ -330,6 +368,8 @@ export const SegregationHeatmap: React.FC = () => {
                         const porcentaje = heatmapData.totalMovimientos > 0
                             ? ((stats.volumen / heatmapData.totalMovimientos) * 100).toFixed(1)
                             : '0.0';
+                        
+                        const info = magdalenaMetrics?.segregacionesInfo?.[segregacion];
 
                         return (
                             <SegregationSummaryCard
@@ -343,6 +383,8 @@ export const SegregationHeatmap: React.FC = () => {
                                 onClick={() => setSelectedSegregation(
                                     selectedSegregation === segregacion ? null : segregacion
                                 )}
+                                nombre={info?.nombre}
+                                teu={info?.teu}
                             />
                         );
                     })}
@@ -411,6 +453,7 @@ export const SegregationHeatmap: React.FC = () => {
                         {/* Filas del heatmap */}
                         {filteredSegregaciones.map(segregacion => {
                             const color = segregationColors[segregacion];
+                            const teuFactor = magdalenaMetrics?.teusPorSegregacion?.[segregacion] || 1;
                             const bloquesConDatos = heatmapData.bloques.filter(bloque => {
                                 return periodosToShow.some(periodo => {
                                     const key = `${segregacion}-${bloque}-${periodo}`;
@@ -452,6 +495,7 @@ export const SegregationHeatmap: React.FC = () => {
                                                             volumen={volumen}
                                                             maxVolumen={heatmapData.maxVolumen}
                                                             color={color}
+                                                            teuFactor={teuFactor}
                                                         />
                                                     </div>
                                                 );
@@ -498,6 +542,7 @@ export const SegregationHeatmap: React.FC = () => {
                         <ul className="space-y-1 ml-4 list-disc">
                             <li>Cada celda representa el volumen de movimientos para una combinación específica de segregación, bloque y período</li>
                             <li>La intensidad del color indica el volumen relativo de movimientos</li>
+                            <li>Los números muestran contenedores reales (convertidos desde TEUs según el tipo)</li>
                             <li>Haz clic en las tarjetas de segregación para filtrar y analizar una segregación específica</li>
                             <li>Usa el botón expandir/compactar para ver más o menos períodos</li>
                         </ul>
