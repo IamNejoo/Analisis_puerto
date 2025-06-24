@@ -32,10 +32,10 @@ const WorkloadStats: React.FC<WorkloadStatsProps> = ({
         return (
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="bg-white rounded-lg border border-gray-200 p-3 animate-pulse">
-                        <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
-                        <div className="h-6 bg-gray-200 rounded w-12 mb-1"></div>
-                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    <div key={i} className="bg-slate-800 rounded-lg border border-slate-700 p-3 animate-pulse">
+                        <div className="h-4 bg-slate-700 rounded w-16 mb-2"></div>
+                        <div className="h-6 bg-slate-700 rounded w-12 mb-1"></div>
+                        <div className="h-3 bg-slate-700 rounded w-20"></div>
                     </div>
                 ))}
             </div>
@@ -48,7 +48,7 @@ const WorkloadStats: React.FC<WorkloadStatsProps> = ({
             value: totalWorkload.toLocaleString(),
             subtitle: 'Carga total',
             icon: <Activity size={16} />,
-            color: 'blue'
+            color: 'cyan'
         },
         {
             title: 'Promedio',
@@ -69,23 +69,23 @@ const WorkloadStats: React.FC<WorkloadStatsProps> = ({
             value: minWorkload.toLocaleString(),
             subtitle: 'Carga mínima',
             icon: <Target size={16} />,
-            color: 'purple'
+            color: 'teal'
         },
         {
             title: 'Balance',
             value: balance.toFixed(1),
             subtitle: 'Desv. estándar',
             icon: <Clock size={16} />,
-            color: balance < 50 ? 'green' : 'orange'
+            color: balance < 50 ? 'green' : 'amber'
         }
     ];
 
     const colorClasses = {
-        blue: 'bg-blue-50 border-blue-200 text-blue-800',
-        green: 'bg-green-50 border-green-200 text-green-800',
-        red: 'bg-red-50 border-red-200 text-red-800',
-        purple: 'bg-purple-50 border-purple-200 text-purple-800',
-        orange: 'bg-orange-50 border-orange-200 text-orange-800'
+        cyan: 'bg-cyan-950/30 border-cyan-700 text-cyan-400',
+        green: 'bg-green-950/30 border-green-700 text-green-400',
+        red: 'bg-red-950/30 border-red-700 text-red-400',
+        teal: 'bg-teal-950/30 border-teal-700 text-teal-400',
+        amber: 'bg-amber-950/30 border-amber-700 text-amber-400'
     };
 
     return (
@@ -177,7 +177,7 @@ export const WorkloadChart: React.FC = () => {
         return (
             <div className="space-y-4">
                 <div className="animate-pulse">
-                    <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="h-6 bg-slate-700 rounded w-48 mb-4"></div>
                     <WorkloadStats
                         totalWorkload={0}
                         avgWorkload={0}
@@ -186,7 +186,7 @@ export const WorkloadChart: React.FC = () => {
                         balance={0}
                         isLoading={true}
                     />
-                    <div className="h-64 bg-gray-200 rounded mt-4"></div>
+                    <div className="h-64 bg-slate-700 rounded mt-4"></div>
                 </div>
             </div>
         );
@@ -194,12 +194,12 @@ export const WorkloadChart: React.FC = () => {
 
     if (error || !chartData) {
         return (
-            <div className="bg-white rounded-lg border border-red-200 p-6">
-                <div className="flex items-center text-red-600 mb-2">
+            <div className="bg-slate-800 rounded-lg border border-red-700 p-6">
+                <div className="flex items-center text-red-400 mb-2">
                     <AlertCircle size={20} className="mr-2" />
                     <h3 className="font-semibold">Error en datos de workload</h3>
                 </div>
-                <p className="text-sm text-red-600">
+                <p className="text-sm text-red-400">
                     {error || 'No hay datos de carga de trabajo disponibles'}
                 </p>
             </div>
@@ -210,8 +210,8 @@ export const WorkloadChart: React.FC = () => {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Análisis de Carga de Trabajo</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className="text-lg font-semibold text-slate-50">Análisis de Carga de Trabajo</h2>
+                <p className="text-sm text-slate-300">
                     Distribución y balance de workload optimizado por Magdalena
                 </p>
             </div>
@@ -220,47 +220,50 @@ export const WorkloadChart: React.FC = () => {
             <WorkloadStats {...chartData.stats} />
 
             {/* Gráfico temporal */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-medium text-gray-800 mb-4">Carga de Trabajo por Período</h3>
+            <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+                <h3 className="font-medium text-slate-50 mb-4">Carga de Trabajo por Período</h3>
                 <div style={{ height: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={chartData.timelineData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                             <XAxis
                                 dataKey="periodo"
-                                tick={{ fontSize: 12 }}
-                                axisLine={{ stroke: '#e0e0e0' }}
+                                tick={{ fontSize: 12, fill: '#94a3b8' }}
+                                axisLine={{ stroke: '#475569' }}
                             />
                             <YAxis
-                                tick={{ fontSize: 12 }}
-                                axisLine={{ stroke: '#e0e0e0' }}
+                                tick={{ fontSize: 12, fill: '#94a3b8' }}
+                                axisLine={{ stroke: '#475569' }}
                             />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: '#fff',
-                                    border: '1px solid #e0e0e0',
+                                    backgroundColor: '#1e293b',
+                                    border: '1px solid #334155',
                                     borderRadius: '8px',
-                                    fontSize: '12px'
+                                    fontSize: '12px',
+                                    color: '#cbd5e1'
                                 }}
                                 formatter={(value: any, name: string) => [
                                     typeof value === 'number' ? value.toLocaleString() : value,
                                     name === 'carga' ? 'Carga Total' : 'Promedio'
                                 ]}
                             />
-                            <Legend />
+                            <Legend
+                                wrapperStyle={{ color: '#cbd5e1' }}
+                            />
                             <Area
                                 type="monotone"
                                 dataKey="carga"
-                                fill="#8884d8"
+                                fill="#06b6d4"
                                 fillOpacity={0.3}
-                                stroke="#8884d8"
+                                stroke="#06b6d4"
                                 strokeWidth={2}
                                 name="Carga Total"
                             />
                             <Line
                                 type="monotone"
                                 dataKey="promedio"
-                                stroke="#82ca9d"
+                                stroke="#10b981"
                                 strokeWidth={2}
                                 strokeDasharray="5 5"
                                 dot={false}
@@ -272,37 +275,40 @@ export const WorkloadChart: React.FC = () => {
             </div>
 
             {/* Gráfico por bloque */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-medium text-gray-800 mb-4">Carga Promedio por Bloque</h3>
+            <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+                <h3 className="font-medium text-slate-50 mb-4">Carga Promedio por Bloque</h3>
                 <div style={{ height: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData.bloqueData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                             <XAxis
                                 dataKey="bloque"
-                                tick={{ fontSize: 12 }}
-                                axisLine={{ stroke: '#e0e0e0' }}
+                                tick={{ fontSize: 12, fill: '#94a3b8' }}
+                                axisLine={{ stroke: '#475569' }}
                             />
                             <YAxis
-                                tick={{ fontSize: 12 }}
-                                axisLine={{ stroke: '#e0e0e0' }}
+                                tick={{ fontSize: 12, fill: '#94a3b8' }}
+                                axisLine={{ stroke: '#475569' }}
                             />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: '#fff',
-                                    border: '1px solid #e0e0e0',
+                                    backgroundColor: '#1e293b',
+                                    border: '1px solid #334155',
                                     borderRadius: '8px',
-                                    fontSize: '12px'
+                                    fontSize: '12px',
+                                    color: '#cbd5e1'
                                 }}
                                 formatter={(value: any, name: string) => [
                                     typeof value === 'number' ? value.toFixed(1) : value,
                                     name === 'cargaPromedio' ? 'Carga Promedio' : 'Carga Total'
                                 ]}
                             />
-                            <Legend />
+                            <Legend
+                                wrapperStyle={{ color: '#cbd5e1' }}
+                            />
                             <Bar
                                 dataKey="cargaPromedio"
-                                fill="#3B82F6"
+                                fill="#06b6d4"
                                 name="Carga Promedio"
                                 radius={[4, 4, 0, 0]}
                             />
@@ -311,20 +317,6 @@ export const WorkloadChart: React.FC = () => {
                 </div>
             </div>
 
-{/* Información adicional de capacidades */}
-{magdalenaMetrics?.capacidadesPorBloque && (
-  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-    <h3 className="font-medium text-gray-800 mb-3">Capacidades por Bloque</h3>
-    <div className="grid grid-cols-3 gap-2 text-sm">
-      {Object.entries(magdalenaMetrics.capacidadesPorBloque).map(([bloque, capacidad]) => (
-        <div key={bloque} className="flex justify-between p-2 bg-white rounded">
-          <span className="font-medium">{bloque}:</span>
-          <span>{capacidad} bahías</span>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
         </div>
     );
 };

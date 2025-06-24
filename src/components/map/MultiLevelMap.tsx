@@ -4,8 +4,6 @@ import type { ViewState, Filters } from '../../types';
 import { TerminalView } from './views/TerminalView';
 import { PatioView } from './views/PatioView';
 import { BloqueView } from './views/BloqueView';
-import { NavigationBreadcrumb } from './NavigationBreadcrumb';
-import { TimeControl } from '../shared/TimeControl';
 
 interface MultiLevelMapProps {
   viewState: ViewState;
@@ -65,24 +63,12 @@ export const MultiLevelMap: React.FC<MultiLevelMapProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative bg-gray-50 flex flex-col">
-      {/* BARRA DE CONTROL TEMPORAL - SIEMPRE ARRIBA */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex-shrink-0 z-30">
-        <TimeControl />
-      </div>
-
-      {/* Breadcrumb de navegación */}
-      <NavigationBreadcrumb
-        viewState={viewState}
-        onZoomOut={onZoomOut}
-        onZoomToTerminal={onZoomToTerminal}
-      />
-
+    <div className="w-full h-full relative bg-gradient-to-br from-slate-900 to-slate-950 flex flex-col">
       {/* Indicador de carga durante transiciones */}
       {zoomTransition && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
-          <div className="flex items-center space-x-2 text-blue-600">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="absolute inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-20">
+          <div className="flex items-center space-x-2 text-cyan-400">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
             <span className="text-lg font-medium">Cargando vista...</span>
           </div>
         </div>
@@ -90,9 +76,8 @@ export const MultiLevelMap: React.FC<MultiLevelMapProps> = ({
 
       {/* Contenedor del mapa - CAMBIO CLAVE: overflow-y-auto */}
       <div
-        className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${
-          zoomTransition ? 'scale-95 opacity-30' : 'scale-100 opacity-100'
-        }`}
+        className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${zoomTransition ? 'scale-95 opacity-30' : 'scale-100 opacity-100'
+          }`}
       >
         {renderCurrentView()}
       </div>

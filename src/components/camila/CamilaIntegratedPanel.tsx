@@ -50,12 +50,12 @@ export const CamilaIntegratedPanel: React.FC = () => {
 
     if (!timeState.camilaConfig) {
         return (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-                <AlertCircle className="mx-auto text-yellow-600 mb-3" size={48} />
-                <h3 className="text-lg font-medium text-yellow-800 mb-2">
+            <div className="bg-yellow-950/30 border border-yellow-700 rounded-lg p-6 text-center">
+                <AlertCircle className="mx-auto text-yellow-400 mb-3" size={48} />
+                <h3 className="text-lg font-medium text-yellow-300 mb-2">
                     Modelo Camila No Configurado
                 </h3>
-                <p className="text-yellow-700">
+                <p className="text-yellow-200">
                     Selecciona "Modelo Camila" en el selector de fuente de datos para ver el análisis.
                 </p>
             </div>
@@ -65,22 +65,22 @@ export const CamilaIntegratedPanel: React.FC = () => {
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                <span className="mt-4 text-gray-600">Cargando modelo Camila...</span>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-400"></div>
+                <span className="mt-4 text-slate-400">Cargando modelo Camila...</span>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="bg-red-950/30 border border-red-700 rounded-lg p-6">
                 <div className="flex items-start">
-                    <AlertCircle className="text-red-600 mr-3 flex-shrink-0" size={24} />
+                    <AlertCircle className="text-red-400 mr-3 flex-shrink-0" size={24} />
                     <div>
-                        <h3 className="text-lg font-medium text-red-800 mb-2">
+                        <h3 className="text-lg font-medium text-red-300 mb-2">
                             Error al cargar el modelo
                         </h3>
-                        <p className="text-red-700">{error}</p>
+                        <p className="text-red-200">{error}</p>
                     </div>
                 </div>
             </div>
@@ -109,21 +109,21 @@ export const CamilaIntegratedPanel: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header con información del modelo */}
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+            <div className="bg-gradient-to-r from-teal-950/30 to-blue-950/30 rounded-lg p-4 border border-teal-700">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                            <Activity className="mr-2 text-purple-600" size={24} />
+                        <h2 className="text-xl font-bold text-slate-100 flex items-center">
+                            <Activity className="mr-2 text-teal-400" size={24} />
                             Modelo Camila - Optimización de Carga de Trabajo
                         </h2>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-slate-300 mt-1">
                             Semana {camilaResults.week} • {camilaResults.day} • Turno {camilaResults.shift} •
                             Modelo {camilaResults.modelType === 'minmax' ? 'MinMax (Conservador)' : 'MaxMin (Máxima Utilización)'}
                         </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Clock className="text-purple-600" size={20} />
-                        <span className="text-sm font-medium text-gray-700">
+                        <Clock className="text-teal-400" size={20} />
+                        <span className="text-sm font-medium text-slate-300">
                             {timeState.hourRange.start}:00 - {timeState.hourRange.end}:00
                         </span>
                     </div>
@@ -154,12 +154,12 @@ export const CamilaIntegratedPanel: React.FC = () => {
 
             {/* Información adicional según la pestaña */}
             {activeTab === 'gruas' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="font-medium text-blue-800 mb-2 flex items-center">
+                <div className="bg-blue-950/30 border border-blue-700 rounded-lg p-4">
+                    <h3 className="font-medium text-blue-300 mb-2 flex items-center">
                         <AlertCircle size={16} className="mr-2" />
                         Información sobre la Asignación de Grúas
                     </h3>
-                    <ul className="space-y-1 text-sm text-blue-700">
+                    <ul className="space-y-1 text-sm text-blue-200">
                         <li>• Cada grúa puede operar en múltiples bloques durante una hora</li>
                         <li>• La productividad estándar es de 20 movimientos/hora por grúa</li>
                         <li>• El modelo optimiza la distribución para minimizar congestión</li>

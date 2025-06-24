@@ -10,14 +10,14 @@ export const PortMapLegend: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-4 text-xs">
-      <span className="font-medium text-gray-700">Ocupación:</span>
+      <span className="font-medium text-slate-300">Ocupación:</span>
       {legendItems.map((item, index) => (
         <div key={index} className="flex items-center space-x-1">
           <div
             className="w-3 h-3 rounded"
             style={{ backgroundColor: item.color }}
           />
-          <span className="text-gray-600">{item.range}</span>
+          <span className="text-slate-400">{item.range}</span>
         </div>
       ))}
     </div>

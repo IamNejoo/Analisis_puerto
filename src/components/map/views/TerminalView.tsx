@@ -19,38 +19,58 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
   const [hoveredPatio, setHoveredPatio] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Manejador para clics en bloques específicos con transición
   const handleBlockClick = (e: React.MouseEvent, patioId: string, bloqueId: string) => {
     e.stopPropagation();
     setIsTransitioning(true);
-
     setTimeout(() => {
       zoomToBloque(patioId, bloqueId);
     }, 300);
   };
 
-  // Manejador para clics en áreas de patios con transición
   const handlePatioAreaClick = (e: React.MouseEvent, patioId: string) => {
     e.stopPropagation();
     setIsTransitioning(true);
-
     setTimeout(() => {
       onPatioClick(patioId);
     }, 300);
   };
 
   return (
-    <div className={`w-full h-full overflow-hidden bg-gray-100 rounded-lg relative transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
-      }`}>
+    <div className={`w-full h-full overflow-hidden relative transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
+      }`}
+      style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)'
+      }}>
+      {/* Overlay de efecto de agua */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-30"
+        style={{
+          background: 'repeating-linear-gradient(90deg, transparent, transparent 200px, rgba(255, 255, 255, 0.03) 200px, rgba(255, 255, 255, 0.03) 400px)',
+          animation: 'waterEffect 20s linear infinite'
+        }}
+      />
+
       <svg
         width="100%"
         height="100%"
         viewBox="0 0 1165.9 595.22"
-        className="cursor-pointer"
+        className="cursor-pointer relative z-10"
       >
         <defs>
-          {/* Filtro para efecto de brillo */}
-          <filter id="brightness-filter">
+          {/* Gradientes marinos para el puerto */}
+          <linearGradient id="portAreaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1e293b" stopOpacity="0.85" />
+            <stop offset="50%" stopColor="#1e3a5f" stopOpacity="0.90" />
+            <stop offset="100%" stopColor="#334155" stopOpacity="0.85" />
+          </linearGradient>
+
+          {/* Sombra suave */}
+          <filter id="portShadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0f172a" floodOpacity="0.3" />
+          </filter>
+
+          {/* Brillo para hover */}
+          <filter id="brightness-hover">
             <feComponentTransfer>
               <feFuncR type="linear" slope="1.3" />
               <feFuncG type="linear" slope="1.3" />
@@ -66,35 +86,45 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
             getColorForOcupacion={getColorForOcupacion}
           />
 
-          {/* Overlay de áreas clickeables para los rectángulos de patios */}
+          {/* Overlays interactivos */}
           <PatioAreaClickableOverlay
             onPatioAreaClick={handlePatioAreaClick}
             hoveredPatio={hoveredPatio}
             setHoveredPatio={setHoveredPatio}
           />
 
-          {/* Overlay de interactividad para bloques específicos */}
           <BlockInteractiveOverlay
             onBlockClick={handleBlockClick}
           />
         </g>
       </svg>
 
-      {/* Tooltips informativos con animación */}
-      <div className={`absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 text-xs border border-gray-200 max-w-xs transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
+      {/* Tooltip informativo con estilo marino */}
+      <div className={`absolute bottom-4 right-4 bg-slate-800/90 backdrop-blur-sm rounded-lg shadow-xl p-3 text-xs border border-slate-600/50 max-w-xs transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
         }`}>
-        <h4 className="font-semibold text-gray-800 mb-2">💡 Navegación Interactiva</h4>
-        <ul className="space-y-1 text-gray-600">
+        <h4 className="font-semibold text-slate-100 mb-2 flex items-center gap-2">
+          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+          Navegación Interactiva
+        </h4>
+        <ul className="space-y-1 text-slate-300">
           <li>• Pase el mouse sobre un área para resaltarla</li>
           <li>• Clic en área coloreada: Vista del patio</li>
           <li>• Clic en círculos (H2, C3, etc.): Vista del bloque</li>
         </ul>
       </div>
+
+      {/* Animación de agua */}
+      <style>{`
+        @keyframes waterEffect {
+          0% { transform: translateX(-100%) translateY(0); }
+          100% { transform: translateX(100%) translateY(-10px); }
+        }
+      `}</style>
     </div>
   );
 };
 
-// Componente para hacer clickeables los rectángulos de patios con efecto brillante
+// Componente para hacer clickeables los rectángulos de patios
 const PatioAreaClickableOverlay: React.FC<{
   onPatioAreaClick: (e: React.MouseEvent, patioId: string) => void,
   hoveredPatio: string | null,
@@ -118,10 +148,12 @@ const PatioAreaClickableOverlay: React.FC<{
             key={`ohiggins-${index}`}
             d={d}
             fill="transparent"
-            stroke={hoveredPatio === 'ohiggins' ? 'rgba(96, 165, 250, 0.8)' : 'transparent'}
+            stroke={hoveredPatio === 'ohiggins' ? '#60a5fa' : 'transparent'}
             strokeWidth={hoveredPatio === 'ohiggins' ? '2' : '0'}
-            filter={hoveredPatio === 'ohiggins' ? 'url(#brightness-filter)' : ''}
-            className={`cursor-pointer transition-all duration-200 ${hoveredPatio === 'ohiggins' ? 'fill-blue-400 fill-opacity-30' : 'hover:fill-blue-200 hover:fill-opacity-20'
+            filter={hoveredPatio === 'ohiggins' ? 'url(#brightness-hover)' : ''}
+            className={`cursor-pointer transition-all duration-200 ${hoveredPatio === 'ohiggins'
+                ? 'fill-blue-400 fill-opacity-20'
+                : 'hover:fill-blue-300 hover:fill-opacity-10'
               }`}
             onClick={(e) => onPatioAreaClick(e, 'ohiggins')}
           />
@@ -147,10 +179,12 @@ const PatioAreaClickableOverlay: React.FC<{
             key={`costanera-${index}`}
             d={d}
             fill="transparent"
-            stroke={hoveredPatio === 'costanera' ? 'rgba(251, 191, 36, 0.8)' : 'transparent'}
+            stroke={hoveredPatio === 'costanera' ? '#fbbf24' : 'transparent'}
             strokeWidth={hoveredPatio === 'costanera' ? '2' : '0'}
-            filter={hoveredPatio === 'costanera' ? 'url(#brightness-filter)' : ''}
-            className={`cursor-pointer transition-all duration-200 ${hoveredPatio === 'costanera' ? 'fill-yellow-400 fill-opacity-30' : 'hover:fill-yellow-200 hover:fill-opacity-20'
+            filter={hoveredPatio === 'costanera' ? 'url(#brightness-hover)' : ''}
+            className={`cursor-pointer transition-all duration-200 ${hoveredPatio === 'costanera'
+                ? 'fill-yellow-400 fill-opacity-20'
+                : 'hover:fill-yellow-300 hover:fill-opacity-10'
               }`}
             onClick={(e) => onPatioAreaClick(e, 'costanera')}
           />
@@ -165,10 +199,12 @@ const PatioAreaClickableOverlay: React.FC<{
         <path
           d="m278.47687 336.41625 9.5646-11.22001 47.08723 38.25838-9.56459 10.85214z"
           fill="transparent"
-          stroke={hoveredPatio === 'tebas' ? 'rgba(52, 211, 153, 0.8)' : 'transparent'}
+          stroke={hoveredPatio === 'tebas' ? '#34d399' : 'transparent'}
           strokeWidth={hoveredPatio === 'tebas' ? '2' : '0'}
-          filter={hoveredPatio === 'tebas' ? 'url(#brightness-filter)' : ''}
-          className={`cursor-pointer transition-all duration-200 ${hoveredPatio === 'tebas' ? 'fill-green-400 fill-opacity-30' : 'hover:fill-green-200 hover:fill-opacity-20'
+          filter={hoveredPatio === 'tebas' ? 'url(#brightness-hover)' : ''}
+          className={`cursor-pointer transition-all duration-200 ${hoveredPatio === 'tebas'
+              ? 'fill-green-400 fill-opacity-20'
+              : 'hover:fill-green-300 hover:fill-opacity-10'
             }`}
           onClick={(e) => onPatioAreaClick(e, 'tebas')}
         />
@@ -213,7 +249,6 @@ const BlockInteractiveOverlay: React.FC<{
     <g id="block-interactive-areas">
       {blockAreas.map(({ patioId, bloqueId, cx, cy, r }) => (
         <g key={`${patioId}-${bloqueId}`}>
-          {/* Área clickeable del bloque */}
           <circle
             cx={cx}
             cy={cy}

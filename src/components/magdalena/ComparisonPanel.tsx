@@ -17,17 +17,17 @@ export const ComparisonPanel: React.FC = () => {
         {
             id: 'comparison',
             label: 'Comparación Real vs Optimizado',
-            icon: <GitCompare size={16} />
+            icon: <GitCompare size={16} className="text-cyan-400" />
         },
         {
             id: 'segregations',
             label: 'Heatmap Segregaciones',
-            icon: <Layers size={16} />
+            icon: <Layers size={16} className="text-cyan-400" />
         },
         {
             id: 'workload',
             label: 'Análisis Workload',
-            icon: <Activity size={16} />
+            icon: <Activity size={16} className="text-cyan-400" />
         }
     ];
 

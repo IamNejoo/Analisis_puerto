@@ -163,14 +163,14 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
     };
 
     return (
-        <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+        <div className={`bg-slate-700 rounded-lg shadow-sm border border-slate-600 ${className}`}>
             <div className="p-3">
                 <div className="flex items-center justify-between gap-4">
                     {/* Selector de granularidad temporal */}
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                            <Timer className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-600">Granularidad:</span>
+                            <Timer className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm font-medium text-slate-300">Granularidad:</span>
                         </div>
                         <div className="flex gap-1">
                             {timeUnits.map((tu) => (
@@ -181,8 +181,8 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                     flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium 
                     transition-all duration-200
                     ${timeState.unit === tu.value
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            ? 'bg-cyan-600 text-white shadow-sm'
+                                            : 'bg-slate-800 text-slate-300 hover:bg-slate-600 border border-slate-600'
                                         }
                   `}
                                     title={tu.description}
@@ -198,18 +198,18 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={goToPreviousPeriod}
-                            className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                            className="p-1.5 rounded-md hover:bg-slate-600 transition-colors"
                             title={`${timeState.unit === 'hour' ? 'Hora' :
                                 timeState.unit === 'day' ? 'Día' :
                                     timeState.unit === 'week' ? 'Semana' :
                                         timeState.unit === 'month' ? 'Mes' : 'Año'} anterior`}
                         >
-                            <ChevronLeft className="w-5 h-5 text-gray-600" />
+                            <ChevronLeft className="w-5 h-5 text-slate-300" />
                         </button>
 
                         <div className="flex items-center gap-2 min-w-[280px] justify-center 
-                          bg-gray-50 px-3 py-1.5 rounded-md">
-                            <span className="text-sm font-medium text-gray-900">
+                          bg-slate-800 px-3 py-1.5 rounded-md border border-slate-600">
+                            <span className="text-sm font-medium text-slate-100">
                                 {formatCurrentPeriod}
                             </span>
                             <input
@@ -221,29 +221,29 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                             />
                             <label
                                 htmlFor="date-picker"
-                                className="cursor-pointer p-1 hover:bg-gray-200 rounded transition-colors"
+                                className="cursor-pointer p-1 hover:bg-slate-700 rounded transition-colors"
                                 title="Seleccionar fecha"
                             >
-                                <Calendar className="w-4 h-4 text-gray-600" />
+                                <Calendar className="w-4 h-4 text-slate-400" />
                             </label>
                         </div>
 
                         <button
                             onClick={goToNextPeriod}
-                            className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                            className="p-1.5 rounded-md hover:bg-slate-600 transition-colors"
                             title={`${timeState.unit === 'hour' ? 'Hora' :
                                 timeState.unit === 'day' ? 'Día' :
                                     timeState.unit === 'week' ? 'Semana' :
                                         timeState.unit === 'month' ? 'Mes' : 'Año'} siguiente`}
                         >
-                            <ChevronRight className="w-5 h-5 text-gray-600" />
+                            <ChevronRight className="w-5 h-5 text-slate-300" />
                         </button>
 
-                        <div className="border-l border-gray-300 pl-2 ml-1">
+                        <div className="border-l border-slate-600 pl-2 ml-1">
                             <button
                                 onClick={resetToNow}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-600 
-                         bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                                className="px-3 py-1.5 text-sm font-medium text-slate-300 
+                         bg-slate-800 rounded-md hover:bg-slate-600 transition-colors border border-slate-600"
                                 title="Volver al período actual"
                             >
                                 Hoy
@@ -253,14 +253,13 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                 </div>
 
                 {/* Indicador de estado */}
-                <div className="mt-3 pt-2 border-t border-gray-200">
+                <div className="mt-3 pt-2 border-t border-slate-600">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-400">
                             {getGranularityDescription()}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span>Datos históricos activos</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+
                         </div>
                     </div>
                 </div>

@@ -20,7 +20,7 @@ interface KPICardProps {
     subtitle?: string;
     trend?: 'up' | 'down' | 'neutral';
     icon: React.ReactNode;
-    color: 'green' | 'blue' | 'purple' | 'orange' | 'red';
+    color: 'green' | 'blue' | 'cyan' | 'orange' | 'red' | 'teal';
     isLoading?: boolean;
 }
 
@@ -34,31 +34,33 @@ const KPICard: React.FC<KPICardProps> = ({
     isLoading = false
 }) => {
     const colorClasses = {
-        green: 'bg-green-50 border-green-200 text-green-800',
-        blue: 'bg-blue-50 border-blue-200 text-blue-800',
-        purple: 'bg-purple-50 border-purple-200 text-purple-800',
-        orange: 'bg-orange-50 border-orange-200 text-orange-800',
-        red: 'bg-red-50 border-red-200 text-red-800'
+        green: 'bg-green-950/30 border-green-700 text-green-300',
+        blue: 'bg-blue-950/30 border-blue-700 text-blue-300',
+        cyan: 'bg-cyan-950/30 border-cyan-700 text-cyan-300',
+        teal: 'bg-teal-950/30 border-teal-700 text-teal-300',
+        orange: 'bg-orange-950/30 border-orange-700 text-orange-300',
+        red: 'bg-red-950/30 border-red-700 text-red-300'
     };
 
     const iconColorClasses = {
-        green: 'text-green-600',
-        blue: 'text-blue-600',
-        purple: 'text-purple-600',
-        orange: 'text-orange-600',
-        red: 'text-red-600'
+        green: 'text-green-400',
+        blue: 'text-blue-400',
+        cyan: 'text-cyan-400',
+        teal: 'text-teal-400',
+        orange: 'text-orange-400',
+        red: 'text-red-400'
     };
 
     if (isLoading) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
                 <div className="animate-pulse">
                     <div className="flex items-center justify-between mb-2">
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                        <div className="h-5 w-5 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-slate-700 rounded w-20"></div>
+                        <div className="h-5 w-5 bg-slate-700 rounded"></div>
                     </div>
-                    <div className="h-8 bg-gray-200 rounded w-16 mb-1"></div>
-                    <div className="h-3 bg-gray-200 rounded w-24"></div>
+                    <div className="h-8 bg-slate-700 rounded w-16 mb-1"></div>
+                    <div className="h-3 bg-slate-700 rounded w-24"></div>
                 </div>
             </div>
         );
@@ -78,8 +80,8 @@ const KPICard: React.FC<KPICardProps> = ({
                     {typeof value === 'number' ? value.toLocaleString() : value}
                 </p>
                 {trend && (
-                    <div className={`flex items-center ${trend === 'up' ? 'text-green-600' :
-                            trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                    <div className={`flex items-center ${trend === 'up' ? 'text-green-400' :
+                        trend === 'down' ? 'text-red-400' : 'text-slate-400'
                         }`}>
                         {trend === 'up' ? <TrendingUp size={16} /> :
                             trend === 'down' ? <TrendingDown size={16} /> : null}
@@ -104,12 +106,12 @@ export const MagdalenaKPIPanel: React.FC = () => {
 
     if (error) {
         return (
-            <div className="bg-white rounded-lg border border-red-200 p-6">
-                <div className="flex items-center text-red-600 mb-2">
+            <div className="bg-slate-800 rounded-lg border border-red-700 p-6">
+                <div className="flex items-center text-red-400 mb-2">
                     <AlertCircle size={20} className="mr-2" />
                     <h3 className="font-semibold">Error al cargar datos</h3>
                 </div>
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-300">{error}</p>
             </div>
         );
     }
@@ -119,16 +121,16 @@ export const MagdalenaKPIPanel: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">KPIs Modelo Magdalena</h2>
-                    <p className="text-sm text-gray-600">
+                    <h2 className="text-lg font-semibold text-slate-100">KPIs Modelo Magdalena</h2>
+                    <p className="text-sm text-slate-400">
                         Semana {timeState.magdalenaConfig?.semana || 3} •
                         Participación {timeState.magdalenaConfig?.participacion || 69}% •
                         {timeState.magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Centralizada'}
                     </p>
                 </div>
                 {isLoading && (
-                    <div className="flex items-center text-purple-600">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                    <div className="flex items-center text-cyan-400">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400 mr-2"></div>
                         <span className="text-sm">Cargando...</span>
                     </div>
                 )}
@@ -158,17 +160,17 @@ export const MagdalenaKPIPanel: React.FC = () => {
                     isLoading={isLoading}
                 />
 
-{/* Segregaciones Activas - MEJORADO */}
-<KPICard
-    title="Segregaciones del Modelo"
-    value={magdalenaMetrics?.segregacionesActivas || 0}
-    subtitle={`${magdalenaMetrics?.bloquesAsignados || 0} bloques - ${magdalenaMetrics?.segregacionesInfo ? 
-        `De ${Object.keys(magdalenaMetrics.segregacionesInfo).length} totales (${timeState.magdalenaConfig?.participacion || 69}%)` : 
-        `${timeState.magdalenaConfig?.participacion || 69}% participación`}`}
-    icon={<Layers size={20} />}
-    color="purple"
-    isLoading={isLoading}
-/>
+                {/* Segregaciones Activas - MEJORADO */}
+                <KPICard
+                    title="Segregaciones del Modelo"
+                    value={magdalenaMetrics?.segregacionesActivas || 0}
+                    subtitle={`${magdalenaMetrics?.bloquesAsignados || 0} bloques - ${magdalenaMetrics?.segregacionesInfo ?
+                        `De ${Object.keys(magdalenaMetrics.segregacionesInfo).length} totales (${timeState.magdalenaConfig?.participacion || 69}%)` :
+                        `${timeState.magdalenaConfig?.participacion || 69}% participación`}`}
+                    icon={<Layers size={20} />}
+                    color="cyan"
+                    isLoading={isLoading}
+                />
 
                 {/* Balance de Carga */}
                 <KPICard
@@ -197,7 +199,7 @@ export const MagdalenaKPIPanel: React.FC = () => {
                     value={magdalenaMetrics?.cargaTrabajoTotal || 0}
                     subtitle={`${magdalenaMetrics?.periodos || 0} períodos`}
                     icon={<Activity size={20} />}
-                    color="purple"
+                    color="teal"
                     isLoading={isLoading}
                 />
 
@@ -224,32 +226,32 @@ export const MagdalenaKPIPanel: React.FC = () => {
 
             {/* Detalles de Movimientos */}
             {magdalenaMetrics && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 className="font-medium text-gray-800 mb-3">Distribución de Movimientos Optimizados</h3>
+                <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+                    <h3 className="font-medium text-slate-200 mb-3">Distribución de Movimientos Optimizados</h3>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="text-center">
-                            <div className="text-lg font-bold text-blue-600">
+                            <div className="text-lg font-bold text-blue-400">
                                 {magdalenaMetrics.movimientosOptimizadosDetalle.Recepcion.toLocaleString()}
                             </div>
-                            <div className="text-xs text-gray-600">Recepción</div>
+                            <div className="text-xs text-slate-400">Recepción</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-lg font-bold text-green-600">
+                            <div className="text-lg font-bold text-green-400">
                                 {magdalenaMetrics.movimientosOptimizadosDetalle.Carga.toLocaleString()}
                             </div>
-                            <div className="text-xs text-gray-600">Carga</div>
+                            <div className="text-xs text-slate-400">Carga</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-lg font-bold text-orange-600">
+                            <div className="text-lg font-bold text-orange-400">
                                 {magdalenaMetrics.movimientosOptimizadosDetalle.Descarga.toLocaleString()}
                             </div>
-                            <div className="text-xs text-gray-600">Descarga</div>
+                            <div className="text-xs text-slate-400">Descarga</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-lg font-bold text-purple-600">
+                            <div className="text-lg font-bold text-cyan-400">
                                 {magdalenaMetrics.movimientosOptimizadosDetalle.Entrega.toLocaleString()}
                             </div>
-                            <div className="text-xs text-gray-600">Entrega</div>
+                            <div className="text-xs text-slate-400">Entrega</div>
                         </div>
                     </div>
                 </div>

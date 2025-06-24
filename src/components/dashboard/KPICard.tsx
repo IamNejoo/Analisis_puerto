@@ -29,13 +29,13 @@ export const KPICard: React.FC<KPICardProps> = ({
     const getStatusColor = () => {
         switch (status) {
             case 'good':
-                return 'bg-green-50 text-green-700 border-green-200';
+                return 'bg-green-950/30 text-green-300 border-green-700';
             case 'warning':
-                return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                return 'bg-yellow-950/30 text-yellow-300 border-yellow-700';
             case 'critical':
-                return 'bg-red-50 text-red-700 border-red-200';
+                return 'bg-red-950/30 text-red-300 border-red-700';
             default:
-                return 'bg-gray-50 text-gray-700 border-gray-200';
+                return 'bg-slate-800 text-slate-300 border-slate-700';
         }
     };
 
@@ -48,7 +48,7 @@ export const KPICard: React.FC<KPICardProps> = ({
 
         return {
             value: `${isPositive ? '+' : ''}${deltaValue.toFixed(1)}%`,
-            color: isGood ? 'text-green-600' : 'text-red-600',
+            color: isGood ? 'text-green-400' : 'text-red-400',
             icon: isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />
         };
     };
@@ -62,19 +62,19 @@ export const KPICard: React.FC<KPICardProps> = ({
         >
             {/* Tooltip mejorado */}
             {tooltip && (
-                <div className="absolute bottom-full left-0 mb-2 p-3 bg-gray-900 text-white text-xs rounded
+                <div className="absolute bottom-full left-0 mb-2 p-3 bg-slate-900 text-white text-xs rounded
                                opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                               pointer-events-none whitespace-normal w-64 z-10 shadow-lg">
+                               pointer-events-none whitespace-normal w-64 z-10 shadow-lg border border-slate-700">
                     {tooltip}
                     <div className="absolute top-full left-6 -mt-1 border-4 border-transparent
-                                   border-t-gray-900"></div>
+                                   border-t-slate-900"></div>
                 </div>
             )}
 
             {/* Header con título e icono */}
             <div className="flex justify-between items-start mb-3">
                 <div className="text-sm font-semibold pr-2">{title}</div>
-                <div className="p-2 rounded-full bg-white bg-opacity-60 flex-shrink-0">
+                <div className="p-2 rounded-full bg-slate-700/60 flex-shrink-0">
                     {icon}
                 </div>
             </div>
@@ -84,7 +84,7 @@ export const KPICard: React.FC<KPICardProps> = ({
 
             {/* Nota de advertencia si existe */}
             {note && (
-                <div className="flex items-start mb-2 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
+                <div className="flex items-start mb-2 p-2 bg-yellow-950/30 rounded text-xs text-yellow-300 border border-yellow-800">
                     <AlertTriangle size={14} className="mr-1 flex-shrink-0 mt-0.5" />
                     <span>{note}</span>
                 </div>

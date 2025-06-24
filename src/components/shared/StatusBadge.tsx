@@ -7,10 +7,10 @@ interface StatusBadgeProps {
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const colors = {
-    good: 'bg-green-100 text-green-800',
-    normal: 'bg-blue-100 text-blue-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    critical: 'bg-red-100 text-red-800'
+    good: 'bg-green-950/30 text-green-300 border border-green-700',
+    normal: 'bg-blue-950/30 text-blue-300 border border-blue-700',
+    warning: 'bg-yellow-950/30 text-yellow-300 border border-yellow-700',
+    critical: 'bg-red-950/30 text-red-300 border border-red-700'
   };
 
   const labels = {

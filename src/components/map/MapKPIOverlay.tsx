@@ -1,4 +1,3 @@
-// src/components/map/MapKPIOverlay.tsx
 import React from 'react';
 import { usePortKPIs } from '../../hooks/usePortKPIs';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
@@ -29,6 +28,8 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
         blockCapacities,
         patioFilter
     });
+    console.log('MapKPIOverlay - viewState:', viewState.level, 'currentKPIs:', currentKPIs, 'isLoading:', isLoading);
+
 
     // SOLO mostrar en vista terminal
     if (viewState.level !== 'terminal') {
@@ -39,8 +40,8 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
 
     if (error) {
         return (
-            <div className="absolute top-4 right-4 bg-red-100 p-4 rounded-lg shadow-lg z-20">
-                <div className="text-red-700">
+            <div className="absolute top-4 right-4 bg-red-900/90 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20 border border-red-600/50">
+                <div className="text-red-100">
                     <h3 className="font-bold">Error cargando KPIs</h3>
                     <p className="text-sm">{error}</p>
                 </div>
@@ -51,10 +52,20 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
     const getStatusColor = (kpi: any) => {
         const status = getStatusForKPI(kpi);
         switch (status) {
-            case 'good': return 'text-green-600';
-            case 'warning': return 'text-yellow-600';
-            case 'critical': return 'text-red-600';
-            default: return 'text-gray-600';
+            case 'good': return 'text-green-400';
+            case 'warning': return 'text-yellow-400';
+            case 'critical': return 'text-red-400';
+            default: return 'text-gray-400';
+        }
+    };
+
+    const getStatusBg = (kpi: any) => {
+        const status = getStatusForKPI(kpi);
+        switch (status) {
+            case 'good': return 'bg-green-500/10 border-green-500/30';
+            case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
+            case 'critical': return 'bg-red-500/10 border-red-500/30';
+            default: return 'bg-gray-700/50 border-gray-600/30';
         }
     };
 
@@ -66,23 +77,23 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
     };
 
     return (
-        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-lg shadow-lg z-20 border border-gray-200">
+        <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20 border border-slate-700/50">
             <div className="min-w-[280px] max-w-[320px]">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-3 pb-2 border-b">
-                    <h3 className="text-sm font-bold text-gray-800">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-700/50">
+                    <h3 className="text-sm font-bold text-slate-100">
                         KPIs del Terminal
                     </h3>
                     <div className="flex items-center space-x-1">
                         {hasCriticalAlert() ? (
                             <>
                                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                <span className="text-xs text-red-600">Alerta</span>
+                                <span className="text-xs text-red-400">Alerta</span>
                             </>
                         ) : (
                             <>
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span className="text-xs text-gray-600">Normal</span>
+                                <span className="text-xs text-gray-400">Normal</span>
                             </>
                         )}
                     </div>
@@ -91,53 +102,53 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                 {/* Grid 3x2 con los 6 KPIs principales */}
                 <div className="grid grid-cols-3 gap-2">
                     {/* 1. Utilización */}
-                    <div className="bg-gray-50 rounded-lg p-2">
+                    <div className={`rounded-lg p-2 border ${getStatusBg('utilizacionPorVolumen')}`}>
                         <div className="flex flex-col">
-                            <Package className="w-4 h-4 text-blue-600 mb-1" />
-                            <span className="text-xs text-gray-600">Utilización</span>
+                            <Package className="w-4 h-4 text-blue-400 mb-1" />
+                            <span className="text-xs text-gray-300">Utilización</span>
                             <div className={`text-base font-bold ${getStatusColor('utilizacionPorVolumen')}`}>
                                 {formatKPIValue('utilizacionPorVolumen')}
                             </div>
                             {currentKPIs.indiceRemanejo > 5 && (
-                                <span className="text-[10px] text-yellow-600">⚠️ +remanejos</span>
+                                <span className="text-[10px] text-yellow-400">⚠️ +remanejos</span>
                             )}
                         </div>
                     </div>
 
                     {/* 2. Congestión */}
-                    <div className="bg-gray-50 rounded-lg p-2">
+                    <div className={`rounded-lg p-2 border ${getStatusBg('congestionVehicular')}`}>
                         <div className="flex flex-col">
-                            <Car className="w-4 h-4 text-red-600 mb-1" />
-                            <span className="text-xs text-gray-600">Congestión</span>
+                            <Car className="w-4 h-4 text-red-400 mb-1" />
+                            <span className="text-xs text-gray-300">Congestión</span>
 
                             <div className={`text-base font-bold ${getStatusColor('congestionVehicular')}`}>
                                 {formatKPIValue('congestionVehicular')}
                             </div>
                             {currentKPIs.productividadOperacional < 50 && (
-                                <span className="text-[10px] text-yellow-600">⚠️ baja prod.</span>
+                                <span className="text-[10px] text-yellow-400">⚠️ baja prod.</span>
                             )}
                         </div>
                     </div>
 
                     {/* 3. Balance */}
-                    <div className="bg-gray-50 rounded-lg p-2">
+                    <div className={`rounded-lg p-2 border ${getStatusBg('balanceFlujo')}`}>
                         <div className="flex flex-col">
-                            <RefreshCw className="w-4 h-4 text-purple-600 mb-1" />
-                            <span className="text-xs text-gray-600">Balance</span>
+                            <RefreshCw className="w-4 h-4 text-purple-400 mb-1" />
+                            <span className="text-xs text-gray-300">Balance</span>
                             <div className={`text-base font-bold ${getStatusColor('balanceFlujo')}`}>
                                 {formatKPIValue('balanceFlujo')}
                             </div>
                             {currentKPIs.balanceFlujo > 1.2 && currentKPIs.utilizacionPorVolumen > 85 && (
-                                <span className="text-[10px] text-red-600">⚠️ saturación</span>
+                                <span className="text-[10px] text-red-400">⚠️ saturación</span>
                             )}
                         </div>
                     </div>
 
                     {/* 4. Productividad */}
-                    <div className="bg-gray-50 rounded-lg p-2">
+                    <div className={`rounded-lg p-2 border ${getStatusBg('productividadOperacional')}`}>
                         <div className="flex flex-col">
-                            <Zap className="w-4 h-4 text-green-600 mb-1" />
-                            <span className="text-xs text-gray-600">Product.</span>
+                            <Zap className="w-4 h-4 text-green-400 mb-1" />
+                            <span className="text-xs text-gray-300">Product.</span>
                             <div className={`text-base font-bold ${getStatusColor('productividadOperacional')}`}>
                                 {formatKPIValue('productividadOperacional')}
                             </div>
@@ -145,10 +156,10 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                     </div>
 
                     {/* 5. Remanejos */}
-                    <div className="bg-gray-50 rounded-lg p-2">
+                    <div className={`rounded-lg p-2 border ${getStatusBg('indiceRemanejo')}`}>
                         <div className="flex flex-col">
-                            <Shuffle className="w-4 h-4 text-orange-600 mb-1" />
-                            <span className="text-xs text-gray-600">Remanejos</span>
+                            <Shuffle className="w-4 h-4 text-orange-400 mb-1" />
+                            <span className="text-xs text-gray-300">Remanejos</span>
                             <div className={`text-base font-bold ${getStatusColor('indiceRemanejo')}`}>
                                 {formatKPIValue('indiceRemanejo')}
                             </div>
@@ -156,10 +167,10 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                     </div>
 
                     {/* 6. Saturación */}
-                    <div className="bg-gray-50 rounded-lg p-2">
+                    <div className={`rounded-lg p-2 border ${getStatusBg('saturacionOperacional')}`}>
                         <div className="flex flex-col">
-                            <Gauge className="w-4 h-4 text-indigo-600 mb-1" />
-                            <span className="text-xs text-gray-600">Saturación</span>
+                            <Gauge className="w-4 h-4 text-indigo-400 mb-1" />
+                            <span className="text-xs text-gray-300">Saturación</span>
                             <div className={`text-base font-bold ${getStatusColor('saturacionOperacional')}`}>
                                 {formatKPIValue('saturacionOperacional')}
                             </div>
@@ -169,19 +180,19 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
 
                 {/* Alertas críticas resumidas */}
                 {hasCriticalAlert() && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className="mt-2 pt-2 border-t border-slate-700/50">
                         {currentKPIs?.kpiRelations?.congestionProductividadStatus === 'critical' && (
-                            <div className="text-[10px] text-red-600 mb-1">
+                            <div className="text-[10px] text-red-400 mb-1">
                                 ⚠️ Cuello de botella: alta congestión, baja productividad
                             </div>
                         )}
                         {currentKPIs?.kpiRelations?.utilizacionRemanejosStatus === 'critical' && (
-                            <div className="text-[10px] text-red-600 mb-1">
+                            <div className="text-[10px] text-red-400 mb-1">
                                 ⚠️ Terminal saturado con muchos remanejos
                             </div>
                         )}
                         {currentKPIs?.kpiRelations?.balanceUtilizacionStatus === 'critical' && (
-                            <div className="text-[10px] text-red-600 mb-1">
+                            <div className="text-[10px] text-red-400 mb-1">
                                 ⚠️ Riesgo de saturación: más entradas que salidas
                             </div>
                         )}
@@ -189,7 +200,7 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                 )}
 
                 {/* Footer */}
-                <div className="mt-3 pt-2 border-t flex items-center justify-between">
+                <div className="mt-3 pt-2 border-t border-slate-700/50 flex items-center justify-between">
                     <span className="text-xs text-gray-500">
                         Vista completa del terminal
                     </span>

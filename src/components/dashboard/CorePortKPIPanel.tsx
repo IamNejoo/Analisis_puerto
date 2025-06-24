@@ -50,10 +50,10 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
     if (isLoading) {
         return (
-            <div className="bg-white rounded-lg p-6 shadow-lg">
+            <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
                 <div className="flex items-center justify-center space-x-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <span className="text-gray-600">Cargando KPIs del terminal...</span>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                    <span className="text-slate-400">Cargando KPIs del terminal...</span>
                 </div>
             </div>
         );
@@ -61,15 +61,15 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
     if (error) {
         return (
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-                <div className="flex items-center text-red-600 mb-3">
+            <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
+                <div className="flex items-center text-red-400 mb-3">
                     <AlertCircle size={20} className="mr-2" />
                     <h3 className="font-semibold">Error al cargar datos</h3>
                 </div>
-                <p className="text-sm text-gray-600">{error}</p>
+                <p className="text-sm text-slate-400">{error}</p>
                 <button
                     onClick={refreshData}
-                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="mt-3 px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700"
                 >
                     Reintentar
                 </button>
@@ -79,8 +79,8 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
     if (!currentKPIs) {
         return (
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-                <p className="text-gray-500 text-center">No hay datos disponibles</p>
+            <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
+                <p className="text-slate-500 text-center">No hay datos disponibles</p>
             </div>
         );
     }
@@ -293,13 +293,13 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
     };
 
     return (
-        <div className="bg-white rounded-lg p-6 shadow-lg">
+        <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-800">
+                    <h2 className="text-xl font-bold text-slate-100">
                         KPIs de Congestión del Terminal
                     </h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-slate-400 mt-1">
                         {viewState.level === 'terminal' && 'Vista general - 6 KPIs principales'}
                         {viewState.level === 'patio' && `KPIs del patio ${patioFilter}`}
                         {viewState.level === 'bloque' && `KPIs del bloque ${bloqueFilter}`}
@@ -309,18 +309,18 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={() => setShowInfo(!showInfo)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
                         title="Información sobre KPIs"
                     >
-                        <Info size={18} className="text-gray-600" />
+                        <Info size={18} className="text-slate-400" />
                     </button>
 
                     <button
                         onClick={refreshData}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
                         title="Recargar datos"
                     >
-                        <RefreshCw size={18} className="text-gray-600" />
+                        <RefreshCw size={18} className="text-slate-400" />
                     </button>
                 </div>
             </div>
@@ -328,11 +328,12 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
             {currentKPIs?.kpiRelations && (
                 <KPIRelationsPanel relations={currentKPIs.kpiRelations} />
             )}
+
             {/* Panel de información */}
             {showInfo && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-blue-900 mb-2">Información sobre los KPIs</h3>
-                    <div className="text-sm text-blue-800 space-y-1">
+                <div className="mb-6 p-4 bg-blue-950/30 rounded-lg border border-blue-700">
+                    <h3 className="font-semibold text-blue-300 mb-2">Información sobre los KPIs</h3>
+                    <div className="text-sm text-blue-200 space-y-1">
                         <p>• <strong>Verde:</strong> Operación óptima</p>
                         <p>• <strong>Amarillo:</strong> Requiere atención</p>
                         <p>• <strong>Rojo:</strong> Situación crítica</p>
@@ -351,12 +352,12 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 <div className="mt-4 space-y-2">
                     {/* Alerta Congestión-Productividad */}
                     {currentKPIs?.kpiRelations?.congestionProductividadStatus === 'critical' && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="p-3 bg-red-950/30 border border-red-700 rounded-lg">
                             <div className="flex items-start">
-                                <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-semibold text-red-800">Cuello de botella detectado</p>
-                                    <p className="text-red-700">Alta congestión vehicular ({formatKPIValue('congestionVehicular')})
+                                    <p className="font-semibold text-red-300">Cuello de botella detectado</p>
+                                    <p className="text-red-200">Alta congestión vehicular ({formatKPIValue('congestionVehicular')})
                                         pero baja productividad ({formatKPIValue('productividadOperacional')}).
                                         Posible problema en gates o procesamiento.</p>
                                 </div>
@@ -366,12 +367,12 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
                     {currentKPIs?.kpiRelations?.congestionProductividadStatus === 'warning' &&
                         currentKPIs.congestionVehicular < 30 && (
-                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="p-3 bg-yellow-950/30 border border-yellow-700 rounded-lg">
                                 <div className="flex items-start">
-                                    <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
+                                    <AlertTriangle className="w-5 h-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
                                     <div className="text-sm">
-                                        <p className="font-semibold text-yellow-800">Posible falta de recursos</p>
-                                        <p className="text-yellow-700">Baja congestión y productividad pueden indicar
+                                        <p className="font-semibold text-yellow-300">Posible falta de recursos</p>
+                                        <p className="text-yellow-200">Baja congestión y productividad pueden indicar
                                             insuficiencia de camiones o personal operativo.</p>
                                     </div>
                                 </div>
@@ -380,12 +381,12 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
                     {/* Alerta Utilización-Remanejos */}
                     {currentKPIs?.kpiRelations?.utilizacionRemanejosStatus === 'critical' && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="p-3 bg-red-950/30 border border-red-700 rounded-lg">
                             <div className="flex items-start">
-                                <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-semibold text-red-800">Terminal saturado y desorganizado</p>
-                                    <p className="text-red-700">Alta utilización ({formatKPIValue('utilizacionPorVolumen')})
+                                    <p className="font-semibold text-red-300">Terminal saturado y desorganizado</p>
+                                    <p className="text-red-200">Alta utilización ({formatKPIValue('utilizacionPorVolumen')})
                                         con muchos remanejos ({formatKPIValue('indiceRemanejo')}).
                                         Urgente reorganizar para evitar colapso operativo.</p>
                                 </div>
@@ -395,12 +396,12 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
                     {/* Alerta Balance-Utilización */}
                     {currentKPIs?.kpiRelations?.balanceUtilizacionStatus === 'critical' && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="p-3 bg-red-950/30 border border-red-700 rounded-lg">
                             <div className="flex items-start">
-                                <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-semibold text-red-800">Riesgo crítico de saturación</p>
-                                    <p className="text-red-700">Entran muchos más contenedores de los que salen
+                                    <p className="font-semibold text-red-300">Riesgo crítico de saturación</p>
+                                    <p className="text-red-200">Entran muchos más contenedores de los que salen
                                         (balance: {formatKPIValue('balanceFlujo')}) y el terminal ya está muy lleno
                                         ({formatKPIValue('utilizacionPorVolumen')}). Acelerar salidas urgentemente.</p>
                                 </div>
@@ -411,46 +412,46 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
             )}
 
             {/* Resumen estadístico */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-6 pt-6 border-t border-slate-700">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-700">
+                        <div className="text-2xl font-bold text-slate-300">
                             {historicalData.length}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-500">
                             Registros analizados
                         </div>
                     </div>
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-700">
+                        <div className="text-2xl font-bold text-slate-300">
                             {viewState.level === 'terminal' ? 18 :
                                 viewState.level === 'patio' ?
                                     Object.keys(currentKPIs?.utilizacionPorBloque || {})
                                         .filter(b => b.startsWith(patioFilter?.charAt(0).toUpperCase() || '')).length : 1}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-500">
                             Bloques activos
                         </div>
                     </div>
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-700">
+                        <div className="text-2xl font-bold text-slate-300">
                             {currentKPIs?.horasConActividad || 0}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-500">
                             Horas con actividad
                         </div>
                     </div>
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-700">
+                        <div className="text-2xl font-bold text-slate-300">
                             {currentKPIs?.totalMovimientos || 0}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-500">
                             Movimientos totales
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center justify-between text-sm text-slate-500">
                     <div>
                         Fuente: {dataFilePath.split('/').pop()}
                     </div>

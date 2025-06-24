@@ -4,8 +4,9 @@ import { useViewNavigation } from '../../contexts/ViewNavigationContext';
 import { ChevronLeft, Home } from 'lucide-react';
 import type { Filters } from '../../types';
 import { MultiLevelMap } from '../map/MultiLevelMap';
-import { PortMapLegend } from '../map/PortMapLegend';
-import { MapKPIOverlay } from '../map/MapKPIOverlay'; // IMPORTAR AQUÍ
+import { PortMapLegend } from '../map/_PortMapLegend';
+import { MapKPIOverlay } from '../map/MapKPIOverlay';
+import { TimeControl } from '../shared/TimeControl';
 
 interface MapPanelProps {
   activeTab: string;
@@ -59,12 +60,15 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   }, [zoomToTerminal]);
 
   return (
-    <div className="relative h-full flex flex-col bg-white rounded-lg overflow-hidden">
+    <div className="relative h-full flex flex-col bg-slate-800 rounded-lg overflow-hidden">
       {/* Header con título y navegación integrada */}
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
+      <div className="bg-slate-700 border-b border-slate-600 px-4 py-3 z-50 relative">
+
+        <TimeControl />
+
         <div className="flex items-center justify-between mb-2">
           {/* Título del mapa */}
-          <h2 className="text-lg font-semibold text-gray-800">
+          <h2 className="text-lg font-semibold text-slate-100">
             Mapa de Terminal - {viewState.selectedPatio || 'Vista General'}
           </h2>
 
@@ -76,10 +80,12 @@ export const MapPanel: React.FC<MapPanelProps> = ({
 
         {/* Segunda línea con descripción y navegación */}
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slate-400">
             {viewState.level === 'terminal'
               ? 'Vista general del terminal portuario'
-              : `Vista macro del patio ${viewState.selectedPatio} - Distribución de bloques`
+              : viewState.level === 'patio'
+                ? `Vista macro del patio ${viewState.selectedPatio} - Distribución de bloques`
+                : `Vista micro del bloque ${viewState.selectedBloque}`
             }
           </p>
 
@@ -88,7 +94,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             {viewState.level !== 'terminal' && (
               <button
                 onClick={handleZoomOut}
-                className="flex items-center px-3 py-1 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                className="flex items-center px-3 py-1 bg-slate-800 border border-slate-600 rounded-md hover:bg-slate-700 transition-colors text-sm font-medium text-slate-300"
               >
                 <ChevronLeft size={14} className="mr-1" />
                 Volver
@@ -98,8 +104,8 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             <button
               onClick={handleZoomToTerminal}
               className={`flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewState.level === 'terminal'
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                : 'bg-slate-800 border border-slate-600 text-slate-300 hover:bg-slate-700'
                 }`}
               disabled={viewState.level === 'terminal'}
             >
@@ -110,27 +116,39 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             {/* Breadcrumbs compactos */}
             {viewState.selectedPatio && (
               <>
-                <span className="text-gray-400 text-sm">›</span>
-                <span className="px-3 py-1 bg-blue-100 border border-blue-300 rounded-md text-sm font-medium text-blue-700">
+                <span className="text-slate-500 text-sm">›</span>
+                <span className="px-3 py-1 bg-blue-950/30 border border-blue-700 rounded-md text-sm font-medium text-blue-300">
                   {viewState.selectedPatio}
                 </span>
               </>
             )}
 
+            {viewState.selectedBloque && (
+              <>
+                <span className="text-slate-500 text-sm">›</span>
+                <span className="px-3 py-1 bg-cyan-950/30 border border-cyan-700 rounded-md text-sm font-medium text-cyan-300">
+                  {viewState.selectedBloque}
+                </span>
+              </>
+            )}
+
+            {/* Badge de vista */}
             {viewState.level === 'patio' && (
-              <span className="px-3 py-1 bg-green-100 border border-green-300 rounded-md text-sm font-medium text-green-700 ml-2">
+              <span className="px-3 py-1 bg-green-950/30 border border-green-700 rounded-md text-sm font-medium text-green-300 ml-2">
                 Vista Macro
+              </span>
+            )}
+            {viewState.level === 'bloque' && (
+              <span className="px-3 py-1 bg-teal-950/30 border border-teal-700 rounded-md text-sm font-medium text-teal-300 ml-2">
+                Vista Micro
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* KPIs del área principal - Solo si estamos en vista de patio */}
-
-
       {/* Área del mapa - CONTENEDOR RELATIVO */}
-      <div className="flex-1 relative overflow-hidden bg-gray-100">
+      <div className="flex-1 relative overflow-hidden bg-slate-900">
         <MultiLevelMap
           viewState={viewState}
           filters={filters}
@@ -143,28 +161,17 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           blockCapacities={blockCapacities}
         />
 
-        {/* KPIs Overlay - AQUÍ AL MISMO NIVEL QUE LA LEYENDA */}
-        <MapKPIOverlay
-          dataFilePath="/data/resultados_congestion_SAI_2022.csv"
-          blockCapacities={blockCapacities}
-        />
-
-        {/* Legend en la esquina inferior izquierda */}
-        <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg z-10">
-          <PortMapLegend />
+        {/* KPIs Overlay: posicionamiento absoluto y z-40 */}
+        <div className="absolute top-8 right-8 z-40">
+          <MapKPIOverlay
+            key={`kpi-overlay-${viewState.level}`}
+            dataFilePath="/data/resultados_congestion_SAI_2022.csv"
+            blockCapacities={blockCapacities}
+          />
         </div>
+
+        {/* Leyenda en la esquina inferior izquierda */}
       </div>
-
-      {/* Sección de Bloques del Patio - Solo cuando estamos en vista de patio */}
-      {viewState.level === 'patio' && viewState.selectedPatio === 'costanera' && (
-        <div className="bg-white border-t border-gray-200 p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Bloques del Patio</h3>
-
-          <div className="grid grid-cols-4 gap-4">
-            {/* Bloques existentes... */}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
