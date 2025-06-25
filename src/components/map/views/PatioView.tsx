@@ -490,10 +490,6 @@ export const PatioView: React.FC<PatioViewProps> = ({
                 <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
                 <span>Alto (&gt;85%)</span>
               </div>
-              <div className="flex items-center">
-                <Settings className="text-slate-500 mr-2" size={14} />
-                <span>Mantenimiento</span>
-              </div>
             </div>
             <div className="text-sm text-slate-400">
               Clic en bloque para vista micro

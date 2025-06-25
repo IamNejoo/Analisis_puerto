@@ -60,10 +60,10 @@ export interface CorePortKPIs {
     totalMovimientos?: number;
 
     // ANÁLISIS DE RELACIONES ENTRE KPIs
-    kpiRelations?: {
-        congestionProductividadStatus: 'good' | 'warning' | 'critical' | 'normal';
-        utilizacionRemanejosStatus: 'good' | 'warning' | 'critical' | 'normal';
-        balanceUtilizacionStatus: 'good' | 'warning' | 'critical' | 'normal';
+    kpiRelations?: {  // AGREGAR ESTE TIPO
+        congestionProductividadStatus: 'good' | 'normal' | 'warning' | 'critical';
+        utilizacionRemanejosStatus: 'good' | 'normal' | 'warning' | 'critical';
+        balanceUtilizacionStatus: 'good' | 'normal' | 'warning' | 'critical';
     };
 }
 

@@ -223,39 +223,6 @@ export const MagdalenaKPIPanel: React.FC = () => {
                     isLoading={isLoading}
                 />
             </div>
-
-            {/* Detalles de Movimientos */}
-            {magdalenaMetrics && (
-                <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
-                    <h3 className="font-medium text-slate-200 mb-3">Distribución de Movimientos Optimizados</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-blue-400">
-                                {magdalenaMetrics.movimientosOptimizadosDetalle.Recepcion.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-slate-400">Recepción</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-green-400">
-                                {magdalenaMetrics.movimientosOptimizadosDetalle.Carga.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-slate-400">Carga</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-orange-400">
-                                {magdalenaMetrics.movimientosOptimizadosDetalle.Descarga.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-slate-400">Descarga</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-cyan-400">
-                                {magdalenaMetrics.movimientosOptimizadosDetalle.Entrega.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-slate-400">Entrega</div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

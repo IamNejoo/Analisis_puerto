@@ -25,37 +25,37 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
         switch (status) {
             case 'good':
                 return {
-                    bg: 'bg-gradient-to-br from-green-50 to-emerald-50',
-                    border: 'border-green-200',
-                    icon: <CheckCircle className="w-5 h-5 text-green-600" />,
-                    text: 'text-green-700',
+                    bg: 'bg-gradient-to-br from-green-900/30 to-emerald-900/30',
+                    border: 'border-green-600',
+                    icon: <CheckCircle className="w-5 h-5 text-green-400" />,
+                    text: 'text-green-300',
                     label: 'Óptimo',
                     description: 'Relación eficiente'
                 };
             case 'normal':
                 return {
-                    bg: 'bg-gradient-to-br from-blue-50 to-sky-50',
-                    border: 'border-blue-200',
-                    icon: <Activity className="w-5 h-5 text-blue-600" />,
-                    text: 'text-blue-700',
+                    bg: 'bg-gradient-to-br from-blue-900/30 to-sky-900/30',
+                    border: 'border-blue-600',
+                    icon: <Activity className="w-5 h-5 text-blue-400" />,
+                    text: 'text-blue-300',
                     label: 'Normal',
                     description: 'Dentro de parámetros'
                 };
             case 'warning':
                 return {
-                    bg: 'bg-gradient-to-br from-yellow-50 to-amber-50',
-                    border: 'border-yellow-200',
-                    icon: <AlertTriangle className="w-5 h-5 text-yellow-600" />,
-                    text: 'text-yellow-700',
+                    bg: 'bg-gradient-to-br from-yellow-900/30 to-amber-900/30',
+                    border: 'border-yellow-600',
+                    icon: <AlertTriangle className="w-5 h-5 text-yellow-400" />,
+                    text: 'text-yellow-300',
                     label: 'Alerta',
                     description: 'Requiere atención'
                 };
             case 'critical':
                 return {
-                    bg: 'bg-gradient-to-br from-red-50 to-rose-50',
-                    border: 'border-red-200',
-                    icon: <XCircle className="w-5 h-5 text-red-600" />,
-                    text: 'text-red-700',
+                    bg: 'bg-gradient-to-br from-red-900/30 to-rose-900/30',
+                    border: 'border-red-600',
+                    icon: <XCircle className="w-5 h-5 text-red-400" />,
+                    text: 'text-red-300',
                     label: 'Crítico',
                     description: 'Acción inmediata'
                 };
@@ -87,8 +87,8 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
 
     return (
         <div className="mt-6">
-            <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <Activity className="w-5 h-5 mr-2 text-blue-600" />
+            <h4 className="text-lg font-semibold text-slate-100 mb-4 flex items-center">
+                <Activity className="w-5 h-5 mr-2 text-blue-400" />
                 Análisis de Relaciones entre KPIs
             </h4>
 
@@ -106,7 +106,7 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
               `}
                         >
                             <div className="flex items-start justify-between mb-3">
-                                <div className={`p-2 rounded-lg bg-white shadow-sm ${config.text}`}>
+                                <div className={`p-2 rounded-lg  shadow-sm ${config.text}`}>
                                     {relation.icon}
                                 </div>
                                 {config.icon}
@@ -116,18 +116,18 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
                                 {relation.title}
                             </h5>
 
-                            <p className="text-xs text-gray-600 mb-3">
+                            <p className="text-xs text-slate-400 mb-3">  {/* Cambiar de text-gray-600 a text-slate-400 */}
                                 {relation.description}
                             </p>
 
                             <div className="flex items-center justify-between">
                                 <span className={`
                   px-3 py-1 rounded-full text-xs font-bold
-                  bg-white bg-opacity-80 ${config.text}
+                   bg-opacity-80 ${config.text}
                 `}>
                                     {config.label}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 ml-1">
                                     {config.description}
                                 </span>
                             </div>

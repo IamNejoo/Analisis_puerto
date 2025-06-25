@@ -341,7 +341,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                         <div className="p-4">
                           <CorePortKPIPanel
-                            dataFilePath="/data/resultados_congestion_SAI_2022.csv"
                             blockCapacities={blockCapacities}
                           />
                         </div>

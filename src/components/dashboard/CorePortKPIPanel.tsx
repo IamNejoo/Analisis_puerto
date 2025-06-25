@@ -18,7 +18,6 @@ interface CorePortKPIPanelProps {
 }
 
 export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
-    dataFilePath = '/data/resultados_congestion_SAI_2022.csv',
     blockCapacities,
 }) => {
     const { timeState, isLoadingData } = useTimeContext();
@@ -40,14 +39,13 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
         formatKPIValue,
         refreshData
     } = usePortKPIs({
-        dataFilePath,
-        blockCapacities,
         patioFilter,
         bloqueFilter,
     });
 
     const isLoading = isLoadingKPIs || isLoadingData;
-
+    console.log('CorePortKPIPanel - currentKPIs:', currentKPIs);
+    console.log('CorePortKPIPanel - kpiRelations:', currentKPIs?.kpiRelations);
     if (isLoading) {
         return (
             <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
@@ -166,7 +164,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
             case 'patio':
                 // Vista patio: KPIs filtrados para el patio específico
-                const utilizacionPatio = currentKPIs.utilizacionPorPatio?.[patioFilter || ''] || 0;
+                const utilizacionPatio = currentKPIs.utilizacionPorVolumen || 0;
                 return (
                     <>
                         <KPICard
@@ -325,10 +323,6 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 </div>
             </div>
 
-            {currentKPIs?.kpiRelations && (
-                <KPIRelationsPanel relations={currentKPIs.kpiRelations} />
-            )}
-
             {/* Panel de información */}
             {showInfo && (
                 <div className="mb-6 p-4 bg-blue-950/30 rounded-lg border border-blue-700">
@@ -341,7 +335,17 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                     </div>
                 </div>
             )}
-
+            {/* AGREGAR AQUÍ - Panel de relaciones KPI */}
+            {currentKPIs?.kpiRelations ? (
+                <div className="mb-6">
+                    <KPIRelationsPanel relations={currentKPIs.kpiRelations} />
+                </div>
+            ) : (
+                <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-700 rounded-lg">
+                    <p className="text-yellow-300">No hay datos de relaciones KPI disponibles</p>
+                    <pre className="text-xs mt-2">{JSON.stringify(currentKPIs, null, 2)}</pre>
+                </div>
+            )}
             {/* Grid de KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {getKPIsForLevel()}
@@ -410,56 +414,6 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                     )}
                 </div>
             )}
-
-            {/* Resumen estadístico */}
-            <div className="mt-6 pt-6 border-t border-slate-700">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-slate-300">
-                            {historicalData.length}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Registros analizados
-                        </div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-slate-300">
-                            {viewState.level === 'terminal' ? 18 :
-                                viewState.level === 'patio' ?
-                                    Object.keys(currentKPIs?.utilizacionPorBloque || {})
-                                        .filter(b => b.startsWith(patioFilter?.charAt(0).toUpperCase() || '')).length : 1}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Bloques activos
-                        </div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-slate-300">
-                            {currentKPIs?.horasConActividad || 0}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Horas con actividad
-                        </div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-slate-300">
-                            {currentKPIs?.totalMovimientos || 0}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Movimientos totales
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-slate-500">
-                    <div>
-                        Fuente: {dataFilePath.split('/').pop()}
-                    </div>
-                    <div>
-                        Actualizado: {new Date().toLocaleString('es-CL')}
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
