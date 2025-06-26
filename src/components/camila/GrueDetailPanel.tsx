@@ -5,11 +5,15 @@ import type { CamilaResults } from '../../types';
 interface GrueDetailPanelProps {
     results: CamilaResults;
     hourRange?: { start: number; end: number };
+    selectedGruas?: number[];
+    selectedBlocks?: string[];
 }
 
 export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
     results,
-    hourRange = { start: 8, end: 16 }
+    hourRange = { start: 8, end: 16 },
+    selectedGruas = [],
+    selectedBlocks = []
 }) => {
     const [selectedGrua, setSelectedGrua] = useState<number | null>(null);
     const [viewMode, setViewMode] = useState<'matrix' | 'timeline' | 'summary'>('matrix');
@@ -17,15 +21,8 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
     // DEBUG: Log initial data
     React.useEffect(() => {
         console.log('🚜 [GrueDetailPanel] Results recibidos:', results);
-        console.log('🚜 [GrueDetailPanel] grueAssignment:', results.grueAssignment);
-        console.log('🚜 [GrueDetailPanel] grueAssignment length:', results.grueAssignment?.length);
-        if (results.grueAssignment?.length > 0) {
-            console.log('🚜 [GrueDetailPanel] Primera grúa asignaciones:', results.grueAssignment[0]);
-            // Contar total de asignaciones
-            const totalAsignaciones = results.grueAssignment.flat().filter(v => v === 1).length;
-            console.log('🚜 [GrueDetailPanel] Total asignaciones (1s):', totalAsignaciones);
-        }
-    }, [results]);
+        console.log('🚜 [GrueDetailPanel] Filtros activos:', { selectedGruas, selectedBlocks, hourRange });
+    }, [results, selectedGruas, selectedBlocks, hourRange]);
 
     const blocks = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'];
     const gruas = Array.from({ length: 12 }, (_, i) => `G${i + 1}`);
@@ -35,16 +32,29 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
     const hoursInRange = hourRange.end - hourRange.start;
     const hours = Array.from({ length: hoursInRange }, (_, i) => `${hourRange.start + i}:00`);
 
+    // Filtrar bloques si hay selección
+    const blocksToShow = selectedBlocks.length > 0 ? selectedBlocks : blocks;
+    const blockIndices = blocksToShow.map(b => parseInt(b.replace('C', '')) - 1);
+
     // Calcular estadísticas por grúa
     const gruaStats = useMemo(() => {
-        return gruas.map((_, g) => {
+        const gruasToProcess = selectedGruas.length > 0
+            ? selectedGruas.map(g => g - 1) // Convertir a índices base 0
+            : Array.from({ length: 12 }, (_, i) => i);
+
+        return gruasToProcess.map((g) => {
             let totalAssignments = 0;
             let blocksWorked = new Set<number>();
             let hoursWorked = 0;
 
+            // Si hay bloques seleccionados, solo contar esos
+            const blocksToCheck = selectedBlocks.length > 0
+                ? blockIndices
+                : Array.from({ length: blocks.length }, (_, i) => i);
+
             for (let t = 0; t < hoursInRange; t++) {
                 let assignedInHour = false;
-                for (let b = 0; b < blocks.length; b++) {
+                for (const b of blocksToCheck) {
                     const index = b * 8 + (t + hourOffset);
                     if (results.grueAssignment[g]?.[index] === 1) {
                         totalAssignments++;
@@ -63,27 +73,32 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                 utilization: (hoursWorked / hoursInRange) * 100
             };
         });
-    }, [results.grueAssignment, hourOffset, hoursInRange]);
+    }, [results.grueAssignment, hourOffset, hoursInRange, selectedGruas, selectedBlocks, blockIndices]);
 
     // Calcular asignaciones por bloque y hora
     const blockHourAssignments = useMemo(() => {
-        const assignments: number[][] = Array(blocks.length).fill(null).map(() =>
+        const assignments: number[][] = Array(blocksToShow.length).fill(null).map(() =>
             Array(hoursInRange).fill(0)
         );
 
-        for (let b = 0; b < blocks.length; b++) {
+        for (let bIdx = 0; bIdx < blocksToShow.length; bIdx++) {
+            const b = blockIndices[bIdx];
             for (let t = 0; t < hoursInRange; t++) {
-                for (let g = 0; g < 12; g++) {
+                const gruasToCheck = selectedGruas.length > 0
+                    ? selectedGruas.map(g => g - 1)
+                    : Array.from({ length: 12 }, (_, i) => i);
+
+                for (const g of gruasToCheck) {
                     const index = b * 8 + (t + hourOffset);
                     if (results.grueAssignment[g]?.[index] === 1) {
-                        assignments[b][t]++;
+                        assignments[bIdx][t]++;
                     }
                 }
             }
         }
 
         return assignments;
-    }, [results.grueAssignment, hourOffset, hoursInRange]);
+    }, [results.grueAssignment, hourOffset, hoursInRange, selectedGruas, blocksToShow, blockIndices]);
 
     // Renderizar vista de matriz
     const renderMatrixView = () => (
@@ -106,7 +121,14 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                     {gruas.map((grua, g) => {
-                        const stat = gruaStats[g];
+                        // Si hay grúas seleccionadas y esta no está en la lista, no mostrarla
+                        if (selectedGruas.length > 0 && !selectedGruas.includes(g + 1)) {
+                            return null;
+                        }
+
+                        const stat = gruaStats.find(s => s.grua === g);
+                        if (!stat) return null;
+
                         const isSelected = selectedGrua === g;
 
                         return (
@@ -119,15 +141,19 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                                 <td className="sticky left-0 bg-white px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                     <div className="flex items-center">
                                         <div className={`w-2 h-2 rounded-full mr-2 ${stat.utilization > 80 ? 'bg-red-500' :
-                                                stat.utilization > 60 ? 'bg-yellow-500' :
-                                                    'bg-green-500'
+                                            stat.utilization > 60 ? 'bg-yellow-500' :
+                                                'bg-green-500'
                                             }`}></div>
                                         {grua}
                                     </div>
                                 </td>
                                 {hours.map((_, t) => {
                                     const assignedBlocks: string[] = [];
-                                    for (let b = 0; b < blocks.length; b++) {
+
+                                    // Solo verificar bloques que estén en el filtro
+                                    const blocksToCheck = selectedBlocks.length > 0 ? blockIndices : Array.from({ length: 9 }, (_, i) => i);
+
+                                    for (const b of blocksToCheck) {
                                         const index = b * 8 + (t + hourOffset);
                                         if (results.grueAssignment[g]?.[index] === 1) {
                                             assignedBlocks.push(blocks[b]);
@@ -169,7 +195,13 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
     const renderTimelineView = () => (
         <div className="space-y-4">
             {gruas.map((grua, g) => {
-                const stat = gruaStats[g];
+                // Filtrar si es necesario
+                if (selectedGruas.length > 0 && !selectedGruas.includes(g + 1)) {
+                    return null;
+                }
+
+                const stat = gruaStats.find(s => s.grua === g);
+                if (!stat) return null;
 
                 return (
                     <div key={grua} className="bg-white border rounded-lg p-4">
@@ -189,7 +221,9 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                             <div className="absolute inset-0 bg-gray-100 rounded"></div>
                             {hours.map((_, t) => {
                                 const assignedBlocks: string[] = [];
-                                for (let b = 0; b < blocks.length; b++) {
+                                const blocksToCheck = selectedBlocks.length > 0 ? blockIndices : Array.from({ length: 9 }, (_, i) => i);
+
+                                for (const b of blocksToCheck) {
                                     const index = b * 8 + (t + hourOffset);
                                     if (results.grueAssignment[g]?.[index] === 1) {
                                         assignedBlocks.push(blocks[b]);
@@ -247,8 +281,8 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                                     <div className="w-32 bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${stat.utilization > 80 ? 'bg-red-500' :
-                                                    stat.utilization > 60 ? 'bg-yellow-500' :
-                                                        'bg-green-500'
+                                                stat.utilization > 60 ? 'bg-yellow-500' :
+                                                    'bg-green-500'
                                                 }`}
                                             style={{ width: `${stat.utilization}%` }}
                                         ></div>
@@ -273,13 +307,13 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                         </div>
                     ))}
 
-                    {blocks.map((block, b) => (
+                    {blocksToShow.map((block, bIdx) => (
                         <React.Fragment key={block}>
                             <div className="font-medium text-gray-600 text-right pr-1">
                                 {block}
                             </div>
                             {hours.map((_, t) => {
-                                const gruas = blockHourAssignments[b][t];
+                                const gruas = blockHourAssignments[bIdx][t];
                                 const intensity = gruas === 0 ? 'bg-gray-100' :
                                     gruas === 1 ? 'bg-purple-200' :
                                         gruas === 2 ? 'bg-purple-400' :
@@ -288,7 +322,7 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
 
                                 return (
                                     <div
-                                        key={`${b}-${t}`}
+                                        key={`${bIdx}-${t}`}
                                         className={`aspect-square rounded flex items-center justify-center ${intensity} ${textColor}`}
                                         title={`${block} - ${hours[t]}: ${gruas} grúa${gruas !== 1 ? 's' : ''}`}
                                     >
@@ -316,8 +350,8 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                         <button
                             onClick={() => setViewMode('matrix')}
                             className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'matrix'
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             Matriz
@@ -325,8 +359,8 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                         <button
                             onClick={() => setViewMode('timeline')}
                             className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'timeline'
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             Timeline
@@ -334,8 +368,8 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                         <button
                             onClick={() => setViewMode('summary')}
                             className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'summary'
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             Resumen
@@ -343,6 +377,30 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Mostrar filtros activos */}
+            {(selectedGruas.length > 0 || selectedBlocks.length > 0) && (
+                <div className="bg-purple-950/30 border border-purple-700 rounded-lg p-3">
+                    <div className="flex items-center space-x-4 text-sm">
+                        {selectedGruas.length > 0 && (
+                            <div className="flex items-center space-x-2">
+                                <Filter size={14} className="text-purple-400" />
+                                <span className="text-purple-300">
+                                    Grúas: {selectedGruas.map(g => `G${g}`).join(', ')}
+                                </span>
+                            </div>
+                        )}
+                        {selectedBlocks.length > 0 && (
+                            <div className="flex items-center space-x-2">
+                                <Filter size={14} className="text-purple-400" />
+                                <span className="text-purple-300">
+                                    Bloques: {selectedBlocks.join(', ')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Información del rango de horas */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -364,12 +422,12 @@ export const GrueDetailPanel: React.FC<GrueDetailPanelProps> = ({
                 <StatCard
                     title="Grúas Activas"
                     value={gruaStats.filter(s => s.hoursWorked > 0).length}
-                    subtitle="De 12 disponibles"
+                    subtitle={`De ${selectedGruas.length > 0 ? selectedGruas.length : 12} disponibles`}
                     color="purple"
                 />
                 <StatCard
                     title="Utilización Promedio"
-                    value={`${(gruaStats.reduce((sum, s) => sum + s.utilization, 0) / 12).toFixed(1)}%`}
+                    value={`${(gruaStats.reduce((sum, s) => sum + s.utilization, 0) / gruaStats.length).toFixed(1)}%`}
                     subtitle="Del tiempo disponible"
                     color="blue"
                 />
