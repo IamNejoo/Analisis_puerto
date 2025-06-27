@@ -132,7 +132,7 @@ export const useCamilaData = (
 
             console.log('🏗️ Aplicando filtro de grúas:', gruaIndices);
 
-            filtered.grueAssignment = filtered.grueAssignment.filter((_, idx: number) =>
+            filtered.grueAssignment = filtered.grueAssignment.filter((_: any, idx: number) =>
                 gruaIndices.includes(idx)
             );
         }

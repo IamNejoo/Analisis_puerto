@@ -30,56 +30,99 @@ export interface PortMovementData {
     promedioTeus: number;
 }
 
-// KPIs fundamentales del terminal - 6 PRINCIPALES + RELACIONES
+// Nuevas interfaces para CDT y TTT
+export interface ContainerDwellTime {
+    promedioHoras: number;
+    promedioDias: number;
+    minimo: number;
+    maximo: number;
+    mediana: number;
+    p90: number;
+    p95: number;
+    totalContenedores: number;
+    criticos: number; // Contenedores > 7 días
+}
+
+export interface TruckTurnaroundTime {
+    promedio: number; // minutos
+    minimo: number;
+    maximo: number;
+    mediana: number;
+    p90: number;
+    p95: number;
+    totalCamiones: number;
+}
+
+// KPIs fundamentales del terminal - ACTUALIZADO CON CDT Y TTT
 export interface CorePortKPIs {
-    // 1. UTILIZACIÓN POR VOLUMEN
-    utilizacionPorVolumen: number; // Porcentaje de TEUs vs capacidad máxima
+    // 1. UTILIZACIÓN POR VOLUMEN (mejorado con promedio pre-calculado)
+    utilizacionPorVolumen: number;
+    promedioTeus: number; // Nuevo campo para el valor pre-calculado
+    capacidadTotal: number; // Capacidad del terminal
     utilizacionPorBloque: Record<string, number>;
     utilizacionPorPatio: Record<string, number>;
 
-    // 2. CONGESTIÓN VEHICULAR
-    congestionVehicular: number; // Movimientos/hora en gates
-    congestionPorHora?: Record<string, number>;
+    // 2. FLUJO PROMEDIO EN GATES (antes Congestión Vehicular)
+    flujoPromedioGates: number; // Renombrado
+    gateThroughput: number; // Gate entrada + salida / horas
 
     // 3. BALANCE DE FLUJO ENTRADA/SALIDA
-    balanceFlujo: number; // Ratio entrada/salida
+    balanceFlujo: number;
+    totalEntradas: number;
+    totalSalidas: number;
 
     // 4. PRODUCTIVIDAD OPERACIONAL
-    productividadOperacional: number; // Contenedores/hora
+    productividadOperacional: number;
 
     // 5. ÍNDICE DE REMANEJO
-    indiceRemanejo: number; // Porcentaje sobre total movimientos
+    indiceRemanejo: number;
+    totalRemanejos: number;
 
-    // 6. SATURACIÓN OPERACIONAL
-    saturacionOperacional: number; // Actual vs máximo histórico
+    // 6. VARIABILIDAD OPERACIONAL (reemplaza Saturación Operacional)
+    variabilidadOperacional: number; // Coeficiente de variación
+    rangoOperativo: number; // Máximo - Mínimo TEUs
+    minimoTeus: number;
+    maximoTeus: number;
+    horasCriticas: number; // Horas > 85% capacidad
 
-    // Datos auxiliares para vistas detalladas
+    // 7. TIEMPO DE PERMANENCIA (CDT) - NUEVO
+    tiempoPermanencia: ContainerDwellTime;
+
+    // 8. TIEMPO DE CAMIONES (TTT) - NUEVO
+    tiempoCamiones: TruckTurnaroundTime;
+
+    // Datos auxiliares
     movimientosPorBloque?: Record<string, number>;
     remanejosPorBloque?: Record<string, number>;
     horasConActividad?: number;
     totalMovimientos?: number;
 
-    // ANÁLISIS DE RELACIONES ENTRE KPIs
-    kpiRelations?: {  // AGREGAR ESTE TIPO
+    // ANÁLISIS DE RELACIONES ENTRE KPIs (actualizado)
+    kpiRelations?: {
         congestionProductividadStatus: 'good' | 'normal' | 'warning' | 'critical';
         utilizacionRemanejosStatus: 'good' | 'normal' | 'warning' | 'critical';
         balanceUtilizacionStatus: 'good' | 'normal' | 'warning' | 'critical';
+        // Nuevas relaciones con tiempos de servicio
+        tiempoServicioUtilizacionStatus: 'good' | 'normal' | 'warning' | 'critical';
+        tiempoServicioFlujoStatus: 'good' | 'normal' | 'warning' | 'critical';
     };
 }
 
-// KPIs numéricos que pueden tener deltas
+// KPIs numéricos que pueden tener deltas (actualizado)
 export type NumericKPIs =
     | 'utilizacionPorVolumen'
-    | 'congestionVehicular'
+    | 'flujoPromedioGates'  // Renombrado
     | 'balanceFlujo'
     | 'productividadOperacional'
     | 'indiceRemanejo'
-    | 'saturacionOperacional';
+    | 'variabilidadOperacional'  // Nuevo
+    | 'tiempoPermanencia'  // Nuevo
+    | 'tiempoCamiones';  // Nuevo
 
 // Estados de los KPIs
 export type KPIStatus = 'good' | 'warning' | 'critical' | 'normal';
 
-// Umbrales para cada KPI
+// Umbrales para cada KPI (actualizado)
 export interface KPIThreshold {
     warning: number;
     critical: number;
@@ -92,12 +135,12 @@ export interface KPIThreshold {
 export const CAPACIDADES_BLOQUES: Record<string, number> = {
     'C1': 1008, 'C2': 1008, 'C3': 1008, 'C4': 1008, 'C5': 1008,
     'C6': 1008, 'C7': 1008, 'C8': 1008, 'C9': 1008,
-    'H1': 1008, 'H2': 1008, 'H3': 1008, 'H4': 1008, 'H5': 1008,
-    'T1': 1008, 'T2': 1008, 'T3': 1008, 'T4': 1008
+    'H1': 866, 'H2': 866, 'H3': 866, 'H4': 866, 'H5': 1050,
+    'T1': 714, 'T2': 714, 'T3': 714, 'T4': 714
 };
 
-// Capacidad total del terminal
-export const CAPACIDAD_TOTAL_TERMINAL = 18144; // 18 bloques × 1008 TEUs
+// Capacidad total del terminal (actualizada según documentación)
+export const CAPACIDAD_TOTAL_TERMINAL = 16254; // Suma real de capacidades
 
 // Configuración de patios
 export const PATIO_BLOCKS = {
@@ -106,41 +149,47 @@ export const PATIO_BLOCKS = {
     tebas: ['T1', 'T2', 'T3', 'T4']
 };
 
-// Capacidades por patio
+// Capacidades por patio (actualizadas)
 export const CAPACIDAD_POR_PATIO = {
-    costanera: 9072, // 9 bloques × 1008
-    ohiggins: 5040,  // 5 bloques × 1008
-    tebas: 4032      // 4 bloques × 1008
+    costanera: 9072,  // 9 bloques × 1008
+    ohiggins: 4316,   // H1-H4: 866×4 + H5: 1050
+    tebas: 2856       // 4 bloques × 714
 };
 
-// Descripciones de KPIs
-export const KPI_DESCRIPTIONS: Record<NumericKPIs, string> = {
+// Descripciones de KPIs (actualizadas)
+export const KPI_DESCRIPTIONS: Record<string, string> = {
     utilizacionPorVolumen: 'Porcentaje de TEUs almacenados respecto a la capacidad máxima',
-    congestionVehicular: 'Flujo de vehículos por hora en gates del terminal',
+    flujoPromedioGates: 'Contenedores procesados por hora en gates del terminal',
     balanceFlujo: 'Ratio entre contenedores que entran vs salen',
-    productividadOperacional: 'Contenedores procesados por hora',
+    productividadOperacional: 'Total de movimientos por hora',
     indiceRemanejo: 'Porcentaje de movimientos innecesarios',
-    saturacionOperacional: 'Ocupación actual vs máximo histórico'
+    variabilidadOperacional: 'Estabilidad del inventario en el período',
+    tiempoPermanencia: 'Tiempo promedio de contenedores en el terminal',
+    tiempoCamiones: 'Tiempo promedio de camiones en el terminal'
 };
 
-// Notas y limitaciones de KPIs
-export const KPI_NOTES: Record<NumericKPIs, string> = {
-    utilizacionPorVolumen: 'Solo considera capacidad de apilamiento vertical, no rutas de tránsito',
-    congestionVehicular: 'No incluye cantidad de vehículos ni velocidad. Debe complementarse con otros indicadores',
-    balanceFlujo: 'Valores >1.5 indican riesgo de multas por almacenaje prolongado',
-    productividadOperacional: 'Solo incluye entrada/salida del terminal, no movimientos internos',
+// Notas y limitaciones de KPIs (actualizadas)
+export const KPI_NOTES: Record<string, string> = {
+    utilizacionPorVolumen: 'Basado en promedio de TEUs del período vs capacidad total',
+    flujoPromedioGates: 'Suma de entradas y salidas por gates dividido por horas activas',
+    balanceFlujo: 'Valores >1.5 indican riesgo de saturación',
+    productividadOperacional: 'Incluye todos los movimientos: gates, muelle y remanejos',
     indiceRemanejo: 'Cada remanejo representa doble costo operativo',
-    saturacionOperacional: 'Diferente a utilización que usa capacidad teórica'
+    variabilidadOperacional: 'Menor variabilidad indica operación más estable',
+    tiempoPermanencia: 'Valores > 7 días se consideran críticos',
+    tiempoCamiones: 'Objetivo: < 90 minutos para operación eficiente'
 };
 
-// Unidades de medida
-export const KPI_UNITS: Record<NumericKPIs, string> = {
+// Unidades de medida (actualizadas)
+export const KPI_UNITS: Record<string, string> = {
     utilizacionPorVolumen: '%',
-    congestionVehicular: 'mov/h',
+    flujoPromedioGates: 'cont/h',
     balanceFlujo: 'ratio',
-    productividadOperacional: 'cont/h',
+    productividadOperacional: 'mov/h',
     indiceRemanejo: '%',
-    saturacionOperacional: '%'
+    variabilidadOperacional: '%',
+    tiempoPermanencia: 'días',
+    tiempoCamiones: 'min'
 };
 
 // Comparaciones entre períodos
@@ -159,7 +208,7 @@ export interface AggregatedKPIData {
 
 // Contexto temporal
 export interface TimeContextData {
-    unit: 'hour' | 'shift' | 'day' | 'week';
+    unit: 'hour' | 'shift' | 'day' | 'week' | 'month' | 'year';
     currentTime?: Date;
     startTime?: Date;
     endTime?: Date;
@@ -179,4 +228,6 @@ export interface KPICardProps {
     isInverseDelta?: boolean;
     tooltip?: string;
     note?: string;
+    subtitle?: string;
+    showInfoIcon?: boolean;
 }

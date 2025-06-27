@@ -5,8 +5,8 @@ import { useTimeContext } from '../../contexts/TimeContext';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
 import { KPICard } from './KPICard';
 import {
-    Package, Car, RefreshCw, Zap, Shuffle, Gauge,
-    AlertCircle, Info, AlertTriangle
+    Package, Car, RefreshCw, Zap, Shuffle, Activity,
+    AlertCircle, Info, AlertTriangle, Clock, Truck, TrendingUp
 } from 'lucide-react';
 import { KPI_DESCRIPTIONS, KPI_NOTES } from '../../types/portKpis';
 import { StatusBadge } from '../shared/StatusBadge';
@@ -44,8 +44,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
     });
 
     const isLoading = isLoadingKPIs || isLoadingData;
-    console.log('CorePortKPIPanel - currentKPIs:', currentKPIs);
-    console.log('CorePortKPIPanel - kpiRelations:', currentKPIs?.kpiRelations);
+
     if (isLoading) {
         return (
             <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
@@ -87,35 +86,30 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
     const getKPIsForLevel = () => {
         switch (viewState.level) {
             case 'terminal':
-                // Vista terminal: Los 6 KPIs principales con contexto de relaciones
+                // Vista terminal: 8 KPIs principales (6 originales + 2 nuevos)
                 return (
                     <>
+                        {/* Primera fila - KPIs de capacidad y flujo */}
                         <KPICard
                             title="1. Utilización por Volumen"
                             value={formatKPIValue('utilizacionPorVolumen')}
                             icon={<Package size={20} />}
                             status={getStatusForKPI('utilizacionPorVolumen')}
-                            description={`${KPI_DESCRIPTIONS.utilizacionPorVolumen}${currentKPIs.indiceRemanejo > 5
-                                ? ` (⚠️ ${formatKPIValue('indiceRemanejo')} en remanejos)`
-                                : ''
-                                }`}
-                            tooltip={`Capacidad total: 18,144 TEUs. ${KPI_NOTES.utilizacionPorVolumen}. 
-                                Con ${formatKPIValue('indiceRemanejo')} de remanejos.
-                                Alta utilización + altos remanejos = desorganización.`}
+                            description={KPI_DESCRIPTIONS.utilizacionPorVolumen}
+                            subtitle={`${currentKPIs.promedioTeus.toFixed(0)} TEUs promedio de ${currentKPIs.capacidadTotal}`}
+                            tooltip={`${KPI_NOTES.utilizacionPorVolumen}. 
+                                Rango operativo: ${currentKPIs.rangoOperativo.toFixed(0)} TEUs.
+                                Horas críticas (>85%): ${currentKPIs.horasCriticas}`}
+                            showInfoIcon={true}
                         />
 
                         <KPICard
-                            title="2. Congestión Vehicular"
-                            value={formatKPIValue('congestionVehicular')}
+                            title="2. Flujo Promedio en Gates"
+                            value={formatKPIValue('flujoPromedioGates')}
                             icon={<Car size={20} />}
-                            status={getStatusForKPI('congestionVehicular')}
-                            description={`${KPI_DESCRIPTIONS.congestionVehicular}${currentKPIs.productividadOperacional < 50
-                                ? ' (⚠️ Baja productividad)'
-                                : ''
-                                }`}
-                            tooltip={`${KPI_NOTES.congestionVehicular}. 
-                                Compara con Productividad: si congestión > productividad × 2, hay ineficiencia.`}
-                            note="⚠️ Limitación: No incluye cantidad de vehículos"
+                            status={getStatusForKPI('flujoPromedioGates')}
+                            description={KPI_DESCRIPTIONS.flujoPromedioGates}
+                            tooltip={KPI_NOTES.flujoPromedioGates}
                         />
 
                         <KPICard
@@ -124,20 +118,19 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                             icon={<RefreshCw size={20} />}
                             status={getStatusForKPI('balanceFlujo')}
                             description={KPI_DESCRIPTIONS.balanceFlujo}
-                            tooltip={`Ideal: 0.8-1.2. ${KPI_NOTES.balanceFlujo}. 
-                                Terminal al ${currentKPIs?.utilizacionPorVolumen?.toFixed(1)}% de capacidad. 
-                                Balance alto + alta utilización = riesgo crítico.`}
+                            subtitle={`E: ${currentKPIs.totalEntradas} | S: ${currentKPIs.totalSalidas}`}
+                            tooltip={`${KPI_NOTES.balanceFlujo}. 
+                                Terminal al ${currentKPIs?.utilizacionPorVolumen?.toFixed(1)}% de capacidad.`}
                         />
 
+                        {/* Segunda fila - KPIs de eficiencia */}
                         <KPICard
                             title="4. Productividad Operacional"
                             value={formatKPIValue('productividadOperacional')}
                             icon={<Zap size={20} />}
                             status={getStatusForKPI('productividadOperacional')}
-                            description={`${KPI_DESCRIPTIONS.productividadOperacional}${currentKPIs.indiceRemanejo > 5
-                                ? ` (⚠️ ${formatKPIValue('indiceRemanejo')} en remanejos)`
-                                : ''
-                                }`}
+                            description={KPI_DESCRIPTIONS.productividadOperacional}
+                            subtitle={`Total: ${currentKPIs.totalMovimientos} movimientos`}
                             tooltip={KPI_NOTES.productividadOperacional}
                         />
 
@@ -152,12 +145,43 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                         />
 
                         <KPICard
-                            title="6. Saturación Operacional"
-                            value={formatKPIValue('saturacionOperacional')}
-                            icon={<Gauge size={20} />}
-                            status={getStatusForKPI('saturacionOperacional')}
-                            description={KPI_DESCRIPTIONS.saturacionOperacional}
-                            tooltip={KPI_NOTES.saturacionOperacional}
+                            title="6. Variabilidad Operacional"
+                            value={formatKPIValue('variabilidadOperacional')}
+                            icon={<Activity size={20} />}
+                            status={getStatusForKPI('variabilidadOperacional')}
+                            description={KPI_DESCRIPTIONS.variabilidadOperacional}
+                            subtitle={`Min: ${currentKPIs.minimoTeus} | Max: ${currentKPIs.maximoTeus} TEUs`}
+                            tooltip={KPI_NOTES.variabilidadOperacional}
+                            isInverseDelta={true}
+                        />
+
+                        {/* Tercera fila - Nuevos KPIs de tiempo */}
+                        <KPICard
+                            title="7. Tiempo de Permanencia"
+                            value={formatKPIValue('tiempoPermanencia')}
+                            icon={<Clock size={20} />}
+                            status={getStatusForKPI('tiempoPermanencia')}
+                            description={KPI_DESCRIPTIONS.tiempoPermanencia}
+                            subtitle={`${currentKPIs.tiempoPermanencia?.totalContenedores} contenedores | ${currentKPIs.tiempoPermanencia?.criticos} críticos`}
+                            tooltip={`${KPI_NOTES.tiempoPermanencia}. 
+                                Mediana: ${currentKPIs.tiempoPermanencia?.mediana.toFixed(1)} días.
+                                P90: ${currentKPIs.tiempoPermanencia?.p90.toFixed(1)} días`}
+                            note={currentKPIs.tiempoPermanencia?.criticos > 100 ?
+                                `⚠️ ${currentKPIs.tiempoPermanencia.criticos} contenedores > 7 días` : undefined}
+                            isInverseDelta={true}
+                        />
+
+                        <KPICard
+                            title="8. Tiempo de Camiones"
+                            value={formatKPIValue('tiempoCamiones')}
+                            icon={<Truck size={20} />}
+                            status={getStatusForKPI('tiempoCamiones')}
+                            description={KPI_DESCRIPTIONS.tiempoCamiones}
+                            subtitle={`${currentKPIs.tiempoCamiones?.totalCamiones} camiones procesados`}
+                            tooltip={`${KPI_NOTES.tiempoCamiones}. 
+                                Mediana: ${currentKPIs.tiempoCamiones?.mediana} min.
+                                P90: ${currentKPIs.tiempoCamiones?.p90} min`}
+                            isInverseDelta={true}
                         />
                     </>
                 );
@@ -173,16 +197,16 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                             icon={<Package size={20} />}
                             status={
                                 utilizacionPatio > 85 ? 'critical' :
-                                    utilizacionPatio > 60 ? 'warning' : 'good'
+                                    utilizacionPatio > 70 ? 'warning' : 'good'
                             }
                             description={`Ocupación específica del patio ${patioFilter}`}
                         />
 
                         <KPICard
-                            title="Congestión del Patio"
-                            value={formatKPIValue('congestionVehicular')}
+                            title="Flujo en Gates del Patio"
+                            value={formatKPIValue('flujoPromedioGates')}
                             icon={<Car size={20} />}
-                            status={getStatusForKPI('congestionVehicular')}
+                            status={getStatusForKPI('flujoPromedioGates')}
                             description="Movimientos en gates del patio"
                         />
 
@@ -199,7 +223,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                             value={formatKPIValue('productividadOperacional')}
                             icon={<Zap size={20} />}
                             status={getStatusForKPI('productividadOperacional')}
-                            description="Contenedores/hora en el patio"
+                            description="Movimientos/hora en el patio"
                         />
 
                         <KPICard
@@ -212,11 +236,12 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                         />
 
                         <KPICard
-                            title="Saturación del Patio"
-                            value={formatKPIValue('saturacionOperacional')}
-                            icon={<Gauge size={20} />}
-                            status={getStatusForKPI('saturacionOperacional')}
-                            description="Vs máximo histórico del patio"
+                            title="Variabilidad del Patio"
+                            value={formatKPIValue('variabilidadOperacional')}
+                            icon={<Activity size={20} />}
+                            status={getStatusForKPI('variabilidadOperacional')}
+                            description="Estabilidad operacional"
+                            isInverseDelta={true}
                         />
                     </>
                 );
@@ -239,7 +264,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                                 utilizacionBloque > 95 ? 'critical' :
                                     utilizacionBloque > 85 ? 'warning' : 'good'
                             }
-                            description={`Capacidad: 1,008 TEUs`}
+                            description={`Capacidad: ${blockCapacities?.[bloqueFilter || ''] || 'N/A'} TEUs`}
                             tooltip="Basado en promedio de TEUs del período"
                         />
 
@@ -276,11 +301,11 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                         />
 
                         <KPICard
-                            title="Saturación del Bloque"
-                            value={formatKPIValue('saturacionOperacional')}
-                            icon={<Gauge size={20} />}
-                            status={getStatusForKPI('saturacionOperacional')}
-                            description="Histórico del bloque"
+                            title="Variabilidad del Bloque"
+                            value={formatKPIValue('variabilidadOperacional')}
+                            icon={<Activity size={20} />}
+                            status={getStatusForKPI('variabilidadOperacional')}
+                            description="Coeficiente de variación"
                         />
                     </>
                 );
@@ -298,7 +323,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                         KPIs de Congestión del Terminal
                     </h2>
                     <p className="text-sm text-slate-400 mt-1">
-                        {viewState.level === 'terminal' && 'Vista general - 6 KPIs principales'}
+                        {viewState.level === 'terminal' && 'Vista general - 8 KPIs principales con tiempos de servicio'}
                         {viewState.level === 'patio' && `KPIs del patio ${patioFilter}`}
                         {viewState.level === 'bloque' && `KPIs del bloque ${bloqueFilter}`}
                     </p>
@@ -331,57 +356,41 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                         <p>• <strong>Verde:</strong> Operación óptima</p>
                         <p>• <strong>Amarillo:</strong> Requiere atención</p>
                         <p>• <strong>Rojo:</strong> Situación crítica</p>
-                        <p className="mt-2">Los KPIs se complementan entre sí para dar una visión completa.</p>
+                        <p className="mt-2">Los KPIs incluyen ahora tiempos de servicio (CDT y TTT) para una visión completa.</p>
                     </div>
                 </div>
             )}
-            {/* AGREGAR AQUÍ - Panel de relaciones KPI */}
-            {currentKPIs?.kpiRelations ? (
-                <div className="mb-6">
-                    <KPIRelationsPanel relations={currentKPIs.kpiRelations} />
-                </div>
-            ) : (
-                <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-700 rounded-lg">
-                    <p className="text-yellow-300">No hay datos de relaciones KPI disponibles</p>
-                    <pre className="text-xs mt-2">{JSON.stringify(currentKPIs, null, 2)}</pre>
-                </div>
+
+            {/* Panel de relaciones KPI */}
+            {currentKPIs?.kpiRelations && viewState.level === 'terminal' && (
+                <KPIRelationsPanel relations={currentKPIs.kpiRelations} />
             )}
+
             {/* Grid de KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={`grid gap-4 ${viewState.level === 'terminal'
+                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+                    : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                }`}>
                 {getKPIsForLevel()}
             </div>
 
             {/* ALERTAS DE RELACIONES ENTRE KPIs */}
             {viewState.level === 'terminal' && (
                 <div className="mt-4 space-y-2">
-                    {/* Alerta Congestión-Productividad */}
+                    {/* Alerta Flujo-Productividad */}
                     {currentKPIs?.kpiRelations?.congestionProductividadStatus === 'critical' && (
                         <div className="p-3 bg-red-950/30 border border-red-700 rounded-lg">
                             <div className="flex items-start">
                                 <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-semibold text-red-300">Cuello de botella detectado</p>
-                                    <p className="text-red-200">Alta congestión vehicular ({formatKPIValue('congestionVehicular')})
+                                    <p className="text-red-200">Flujo en gates bajo ({formatKPIValue('flujoPromedioGates')})
                                         pero baja productividad ({formatKPIValue('productividadOperacional')}).
                                         Posible problema en gates o procesamiento.</p>
                                 </div>
                             </div>
                         </div>
                     )}
-
-                    {currentKPIs?.kpiRelations?.congestionProductividadStatus === 'warning' &&
-                        currentKPIs.congestionVehicular < 30 && (
-                            <div className="p-3 bg-yellow-950/30 border border-yellow-700 rounded-lg">
-                                <div className="flex items-start">
-                                    <AlertTriangle className="w-5 h-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
-                                    <div className="text-sm">
-                                        <p className="font-semibold text-yellow-300">Posible falta de recursos</p>
-                                        <p className="text-yellow-200">Baja congestión y productividad pueden indicar
-                                            insuficiencia de camiones o personal operativo.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                     {/* Alerta Utilización-Remanejos */}
                     {currentKPIs?.kpiRelations?.utilizacionRemanejosStatus === 'critical' && (
@@ -408,6 +417,35 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                                     <p className="text-red-200">Entran muchos más contenedores de los que salen
                                         (balance: {formatKPIValue('balanceFlujo')}) y el terminal ya está muy lleno
                                         ({formatKPIValue('utilizacionPorVolumen')}). Acelerar salidas urgentemente.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Nueva alerta: Tiempo de Servicio vs Utilización */}
+                    {currentKPIs?.kpiRelations?.tiempoServicioUtilizacionStatus === 'critical' && (
+                        <div className="p-3 bg-red-950/30 border border-red-700 rounded-lg">
+                            <div className="flex items-start">
+                                <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-semibold text-red-300">Tiempos de permanencia críticos</p>
+                                    <p className="text-red-200">Alta utilización ({formatKPIValue('utilizacionPorVolumen')})
+                                        con tiempo de permanencia elevado ({formatKPIValue('tiempoPermanencia')}).
+                                        Los contenedores no están saliendo lo suficientemente rápido.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Nueva alerta: Tiempo de Camiones vs Flujo */}
+                    {currentKPIs?.kpiRelations?.tiempoServicioFlujoStatus === 'warning' && (
+                        <div className="p-3 bg-yellow-950/30 border border-yellow-700 rounded-lg">
+                            <div className="flex items-start">
+                                <AlertTriangle className="w-5 h-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-semibold text-yellow-300">Ineficiencia en gates</p>
+                                    <p className="text-yellow-200">Tiempo de camiones elevado ({formatKPIValue('tiempoCamiones')})
+                                        con flujo moderado. Revisar procesos en gates y documentación.</p>
                                 </div>
                             </div>
                         </div>
