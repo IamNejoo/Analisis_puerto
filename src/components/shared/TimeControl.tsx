@@ -1,3 +1,4 @@
+// src/components/shared/TimeControl.tsx
 import React, { useMemo } from 'react';
 import {
     ChevronLeft,
@@ -19,6 +20,7 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
     const {
         timeState,
         setTimeUnit,
+        setCurrentDate, // Ahora está disponible
         goToPreviousPeriod,
         goToNextPeriod,
         resetToNow,
@@ -121,11 +123,9 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
     }, [timeState.currentDate, timeState.unit]);
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newDate = new Date(e.target.value);
-        if (!isNaN(newDate.getTime())) {
-            // Actualizar el contexto con la nueva fecha
-            // Necesitaríamos agregar setCurrentDate al contexto
-            console.log('Nueva fecha seleccionada:', newDate);
+        const newDate = e.target.value;
+        if (newDate) {
+            setCurrentDate(newDate); // Ahora funciona correctamente
         }
     };
 
@@ -259,7 +259,7 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                             {getGranularityDescription()}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-slate-400">
-
+                            {/* Aquí podrías agregar indicadores adicionales si es necesario */}
                         </div>
                     </div>
                 </div>

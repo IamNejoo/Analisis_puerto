@@ -7,13 +7,17 @@ import {
     XCircle,
     Activity,
     Shuffle,
-    BarChart3
+    BarChart3,
+    Clock,
+    Truck
 } from 'lucide-react';
 
 interface KPIRelation {
     congestionProductividadStatus: 'good' | 'normal' | 'warning' | 'critical';
     utilizacionRemanejosStatus: 'good' | 'normal' | 'warning' | 'critical';
     balanceUtilizacionStatus: 'good' | 'normal' | 'warning' | 'critical';
+    tiempoServicioUtilizacionStatus?: 'good' | 'normal' | 'warning' | 'critical';
+    tiempoServicioFlujoStatus?: 'good' | 'normal' | 'warning' | 'critical';
 }
 
 interface KPIRelationsPanelProps {
@@ -35,6 +39,7 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
             case 'normal':
                 return {
                     bg: 'bg-gradient-to-br from-blue-900/30 to-sky-900/30',
+                    // src/components/shared/KPIRelationsPanel.tsx (continuación)
                     border: 'border-blue-600',
                     icon: <Activity className="w-5 h-5 text-blue-400" />,
                     text: 'text-blue-300',
@@ -66,7 +71,7 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
 
     const relationConfigs = [
         {
-            title: 'Congestión vs Productividad',
+            title: 'Flujo vs Productividad',
             status: relations.congestionProductividadStatus,
             icon: <TrendingUp className="w-6 h-6" />,
             description: 'Evalúa el balance entre flujo vehicular y rendimiento operacional'
@@ -82,6 +87,19 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
             status: relations.balanceUtilizacionStatus,
             icon: <BarChart3 className="w-6 h-6" />,
             description: 'Monitorea el equilibrio entrada/salida contra capacidad del terminal'
+        },
+        // Nuevas relaciones con tiempos de servicio
+        {
+            title: 'Tiempo Permanencia vs Utilización',
+            status: relations.tiempoServicioUtilizacionStatus || 'normal',
+            icon: <Clock className="w-6 h-6" />,
+            description: 'Relaciona el CDT con el nivel de ocupación del terminal'
+        },
+        {
+            title: 'Tiempo Camiones vs Flujo',
+            status: relations.tiempoServicioFlujoStatus || 'normal',
+            icon: <Truck className="w-6 h-6" />,
+            description: 'Evalúa la eficiencia de gates según TTT y throughput'
         }
     ];
 
@@ -92,7 +110,7 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
                 Análisis de Relaciones entre KPIs
             </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {relationConfigs.map((relation, index) => {
                     const config = getStatusConfig(relation.status);
 
@@ -100,13 +118,13 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
                         <div
                             key={index}
                             className={`
-                relative overflow-hidden rounded-xl p-4 border-2 
-                ${config.bg} ${config.border}
-                transform transition-all duration-300 hover:scale-105 hover:shadow-lg
-              `}
+                                relative overflow-hidden rounded-xl p-4 border-2 
+                                ${config.bg} ${config.border}
+                                transform transition-all duration-300 hover:scale-105 hover:shadow-lg
+                            `}
                         >
                             <div className="flex items-start justify-between mb-3">
-                                <div className={`p-2 rounded-lg  shadow-sm ${config.text}`}>
+                                <div className={`p-2 rounded-lg shadow-sm ${config.text}`}>
                                     {relation.icon}
                                 </div>
                                 {config.icon}
@@ -116,30 +134,39 @@ export const KPIRelationsPanel: React.FC<KPIRelationsPanelProps> = ({ relations 
                                 {relation.title}
                             </h5>
 
-                            <p className="text-xs text-slate-400 mb-3">  {/* Cambiar de text-gray-600 a text-slate-400 */}
+                            <p className="text-xs text-slate-400 mb-3">
                                 {relation.description}
                             </p>
 
                             <div className="flex items-center justify-between">
                                 <span className={`
-                  px-3 py-1 rounded-full text-xs font-bold
-                   bg-opacity-80 ${config.text}
-                `}>
+                                    px-3 py-1 rounded-full text-xs font-bold
+                                    bg-opacity-80 ${config.text}
+                                `}>
                                     {config.label}
                                 </span>
-                                <span className="text-xs text-gray-500 ml-1">
+                                <span className="text-xs text-slate-500 ml-1">
                                     {config.description}
                                 </span>
                             </div>
 
                             {/* Elemento decorativo */}
                             <div className={`
-                absolute -right-8 -bottom-8 w-24 h-24 rounded-full
-                ${config.bg} opacity-20
-              `} />
+                                absolute -right-8 -bottom-8 w-24 h-24 rounded-full
+                                ${config.bg} opacity-20
+                            `} />
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Leyenda explicativa para las nuevas relaciones */}
+            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+                <p className="text-xs text-slate-400">
+                    <strong className="text-slate-300">Nuevas métricas:</strong> El análisis ahora incluye
+                    relaciones con tiempos de servicio (CDT y TTT) para identificar cuellos de botella
+                    operacionales y evaluar la eficiencia integral del terminal.
+                </p>
             </div>
         </div>
     );

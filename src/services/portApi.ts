@@ -14,10 +14,10 @@ export interface KPIFilters {
     unit?: string;
     patioFilter?: string;
     bloqueFilter?: string;
-    operationType?: 'import' | 'export'; // Nuevo para CDT/TTT
+    operationType?: 'import' | 'export';
 }
 
-// Interfaz para la respuesta completa del backend
+// Interfaz corregida basada en la respuesta real del backend
 interface ComprehensiveKPIResponse {
     capacidad: {
         utilizacionPorVolumen: number;
@@ -32,7 +32,8 @@ interface ComprehensiveKPIResponse {
     flujos: {
         gateEntrada: number;
         gateSalida: number;
-        gateThroughput: number;
+        congestionVehicular: number;
+        horasConGate: number;
         muelleEntrada: number;
         muelleSalida: number;
         totalMovimientos: number;
@@ -49,6 +50,7 @@ interface ComprehensiveKPIResponse {
             p90: number;
             p95: number;
             totalCamiones: number;
+            camionesEficientes: number;
         };
         cdt: {
             promedioHoras: number;
@@ -62,22 +64,18 @@ interface ComprehensiveKPIResponse {
             criticos: number;
         };
     };
-    congestion: {
-        saturacionOperacional: number;
-        percentil95Maximos: number;
-        nivelInventario: string;
-        indiceFlujo: number;
-    };
     kpiRelations: {
         congestionProductividadStatus: 'good' | 'normal' | 'warning' | 'critical';
         utilizacionRemanejosStatus: 'good' | 'normal' | 'warning' | 'critical';
         balanceUtilizacionStatus: 'good' | 'normal' | 'warning' | 'critical';
+        tttCongestionStatus?: 'good' | 'normal' | 'warning' | 'critical';
     };
     metadata: {
         periodo: {
             inicio: string;
             fin: string;
             granularidad: string;
+            diasAnalizados: number;
         };
         totalRegistros: number;
         horasUnicas: number;
@@ -85,6 +83,11 @@ interface ComprehensiveKPIResponse {
             patio: string | null;
             bloque: string | null;
             operacion: string | null;
+        };
+        calidad: {
+            completitudMovimientos: number;
+            registrosTTT: number;
+            registrosCDT: number;
         };
     };
 }
@@ -151,7 +154,6 @@ class PortApiService {
         }
     }
 
-    // Método actualizado para usar el endpoint comprehensive
     async calculateKPIs(filters: KPIFilters): Promise<CorePortKPIs> {
         const params = new URLSearchParams({
             start_date: this.formatDate(filters.startDate),
@@ -173,16 +175,16 @@ class PortApiService {
 
             // Mapear la respuesta al formato CorePortKPIs
             return {
-                // 1. Utilización por Volumen (usando promedio pre-calculado)
+                // 1. Utilización por Volumen
                 utilizacionPorVolumen: data.capacidad.utilizacionPorVolumen,
                 promedioTeus: data.capacidad.promedioTeus,
                 capacidadTotal: data.capacidad.capacidadTotal,
-                utilizacionPorBloque: {}, // TODO: Solicitar al backend si es necesario
+                utilizacionPorBloque: {},
                 utilizacionPorPatio: {},
 
-                // 2. Flujo Promedio en Gates (antes Congestión Vehicular)
-                flujoPromedioGates: data.flujos.gateThroughput,
-                gateThroughput: data.flujos.gateThroughput,
+                // 2. Flujo Promedio en Gates
+                flujoPromedioGates: data.flujos.congestionVehicular,
+                gateThroughput: data.flujos.gateEntrada + data.flujos.gateSalida,
 
                 // 3. Balance de Flujo
                 balanceFlujo: data.flujos.balanceFlujo,
@@ -194,9 +196,10 @@ class PortApiService {
 
                 // 5. Índice de Remanejo
                 indiceRemanejo: data.flujos.indiceRemanejos,
-                totalRemanejos: 0, // TODO: Calcular si es necesario
+                totalRemanejos: Math.round(data.flujos.totalMovimientos * (data.flujos.indiceRemanejos / 100)),
 
-                // 6. Variabilidad Operacional (reemplaza Saturación)
+                // 6. Variabilidad Operacional
+                // CORRECCIÓN: Usar coeficienteVariacion de capacidad, no de inventario
                 variabilidadOperacional: data.capacidad.coeficienteVariacion,
                 rangoOperativo: data.capacidad.rangoOperativo,
                 minimoTeus: data.capacidad.minimoTeus,
@@ -230,18 +233,20 @@ class PortApiService {
                 // Datos auxiliares
                 totalMovimientos: data.flujos.totalMovimientos,
                 horasConActividad: data.metadata.horasUnicas,
+                movimientosPorBloque: {},
+                remanejosPorBloque: {},
 
-                // Relaciones KPI (extendidas con nuevas relaciones)
+                // Relaciones KPI
                 kpiRelations: {
                     ...data.kpiRelations,
-                    // Calcular nuevas relaciones basadas en tiempos de servicio
+                    // Calcular nuevas relaciones si no vienen del backend
                     tiempoServicioUtilizacionStatus: this.calcularRelacionTiempoUtilizacion(
                         data.tiemposServicio.cdt.promedioDias,
                         data.capacidad.utilizacionPorVolumen
                     ),
                     tiempoServicioFlujoStatus: this.calcularRelacionTiempoFlujo(
                         data.tiemposServicio.ttt.promedio,
-                        data.flujos.gateThroughput
+                        data.flujos.congestionVehicular
                     )
                 }
             };

@@ -1,7 +1,7 @@
 // src/components/dashboard/KPICard.tsx
 import React from 'react';
 import type { ReactNode } from 'react';
-import { TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Info } from 'lucide-react';
 
 interface KPICardProps {
     title: string;
@@ -13,6 +13,8 @@ interface KPICardProps {
     isInverseDelta?: boolean;
     tooltip?: string;
     note?: string;
+    subtitle?: string;
+    showInfoIcon?: boolean;
 }
 
 export const KPICard: React.FC<KPICardProps> = ({
@@ -24,7 +26,9 @@ export const KPICard: React.FC<KPICardProps> = ({
     description,
     isInverseDelta = false,
     tooltip,
-    note
+    note,
+    subtitle,
+    showInfoIcon = false
 }) => {
     const getStatusColor = () => {
         switch (status) {
@@ -73,7 +77,12 @@ export const KPICard: React.FC<KPICardProps> = ({
 
             {/* Header con título e icono */}
             <div className="flex justify-between items-start mb-3">
-                <div className="text-sm font-semibold pr-2">{title}</div>
+                <div className="flex items-center">
+                    <span className="text-sm font-semibold pr-2">{title}</span>
+                    {showInfoIcon && (
+                        <Info size={14} className="text-slate-400 hover:text-slate-300 cursor-help" />
+                    )}
+                </div>
                 <div className="p-2 rounded-full bg-slate-700/60 flex-shrink-0">
                     {icon}
                 </div>
@@ -81,6 +90,13 @@ export const KPICard: React.FC<KPICardProps> = ({
 
             {/* Valor principal */}
             <div className="text-2xl font-bold mb-2">{value}</div>
+
+            {/* Subtítulo si existe */}
+            {subtitle && (
+                <div className="text-xs text-slate-400 mb-2">
+                    {subtitle}
+                </div>
+            )}
 
             {/* Nota de advertencia si existe */}
             {note && (

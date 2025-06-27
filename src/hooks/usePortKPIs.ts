@@ -288,6 +288,9 @@ export const usePortKPIs = ({
 
             case 'flujoPromedioGates':
                 value = currentKPIs.flujoPromedioGates;
+                if (value === null || value === undefined || isNaN(value)) {
+                    return '0';
+                }
                 return value !== undefined ? `${value.toFixed(0)} cont/h` : 'N/A';
 
             case 'balanceFlujo':
