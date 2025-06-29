@@ -1,4 +1,4 @@
-// src/components/dashboard/MapPanel.tsx - ACTUALIZACIÓN COMPLETA
+// src/components/dashboard/MapPanel.tsx
 import React from 'react';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
 import { ChevronLeft, Home } from 'lucide-react';
@@ -6,6 +6,7 @@ import type { Filters } from '../../types';
 import { MultiLevelMap } from '../map/MultiLevelMap';
 import { PortMapLegend } from '../map/_PortMapLegend';
 import { MapKPIOverlay } from '../map/MapKPIOverlay';
+import { MovementAnalysisPanel } from '../map/MovementAnalysisPanel';
 import { TimeControl } from '../shared/TimeControl';
 
 interface MapPanelProps {
@@ -160,6 +161,11 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           getColorForOcupacion={getColorForOcupacion}
           blockCapacities={blockCapacities}
         />
+
+        {/* Panel de Análisis de Movimientos - esquina superior izquierda */}
+        <div className="absolute top-8 left-8 z-40">
+          <MovementAnalysisPanel />
+        </div>
 
         {/* KPIs Overlay: posicionamiento absoluto y z-40 */}
         <div className="absolute top-8 right-8 z-40">

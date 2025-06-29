@@ -368,8 +368,8 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
             {/* Grid de KPIs */}
             <div className={`grid gap-4 ${viewState.level === 'terminal'
-                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-                    : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
                 }`}>
                 {getKPIsForLevel()}
             </div>

@@ -32,58 +32,19 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
         return null;
     }
 
-    const timeUnits: {
-        value: TimeUnit;
-        label: string;
-        icon: React.ReactNode;
-        description: string;
-    }[] = [
-            {
-                value: 'year' as TimeUnit,
-                label: 'Año',
-                icon: <Calendar className="w-4 h-4" />,
-                description: 'Vista anual'
-            },
-            {
-                value: 'month' as TimeUnit,
-                label: 'Mes',
-                icon: <CalendarDays className="w-4 h-4" />,
-                description: 'Vista mensual'
-            },
-            {
-                value: 'week' as TimeUnit,
-                label: 'Semana',
-                icon: <BarChart3 className="w-4 h-4" />,
-                description: 'Vista semanal'
-            },
-            {
-                value: 'day' as TimeUnit,
-                label: 'Día',
-                icon: <Calendar className="w-4 h-4" />,
-                description: 'Vista diaria'
-            },
-            {
-                value: 'hour' as TimeUnit,
-                label: 'Hora',
-                icon: <Clock className="w-4 h-4" />,
-                description: 'Vista por hora'
-            }
-        ];
+    // Actualizar las opciones de granularidad
+    const timeUnits: { value: TimeUnit; label: string; icon: React.ReactNode }[] = [
+        { value: 'week', label: 'Semana', icon: <Calendar size={16} /> },
+        { value: 'day', label: 'Día', icon: <CalendarDays size={16} /> },
+        { value: 'shift', label: 'Turno', icon: <Clock size={16} /> },
+        { value: 'hour', label: 'Hora', icon: <Timer size={16} /> }
+    ];
 
     // Formatear la fecha actual según la unidad
     const formatCurrentPeriod = useMemo(() => {
         const date = new Date(timeState.currentDate);
 
         switch (timeState.unit) {
-            case 'year':
-                return date.getFullYear().toString();
-
-            case 'month':
-                return date.toLocaleDateString('es-CL', {
-                    month: 'long',
-                    year: 'numeric'
-                });
-
             case 'week': {
                 const weekStart = new Date(date);
                 weekStart.setDate(date.getDate() - date.getDay());
@@ -147,10 +108,6 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
 
     const getGranularityDescription = () => {
         switch (timeState.unit) {
-            case 'year':
-                return 'Mostrando resumen anual de datos';
-            case 'month':
-                return 'Mostrando resumen mensual de datos';
             case 'week':
                 return 'Mostrando resumen semanal de datos';
             case 'day':
@@ -185,7 +142,6 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                                             : 'bg-slate-800 text-slate-300 hover:bg-slate-600 border border-slate-600'
                                         }
                   `}
-                                    title={tu.description}
                                 >
                                     {tu.icon}
                                     <span className="hidden lg:inline">{tu.label}</span>
@@ -202,7 +158,7 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                             title={`${timeState.unit === 'hour' ? 'Hora' :
                                 timeState.unit === 'day' ? 'Día' :
                                     timeState.unit === 'week' ? 'Semana' :
-                                        timeState.unit === 'month' ? 'Mes' : 'Año'} anterior`}
+                                        'Año'} anterior`}
                         >
                             <ChevronLeft className="w-5 h-5 text-slate-300" />
                         </button>
@@ -234,7 +190,7 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                             title={`${timeState.unit === 'hour' ? 'Hora' :
                                 timeState.unit === 'day' ? 'Día' :
                                     timeState.unit === 'week' ? 'Semana' :
-                                        timeState.unit === 'month' ? 'Mes' : 'Año'} siguiente`}
+                                        'Año'} siguiente`}
                         >
                             <ChevronRight className="w-5 h-5 text-slate-300" />
                         </button>

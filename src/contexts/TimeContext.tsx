@@ -44,12 +44,12 @@ interface ExtendedTimeProviderProps {
 export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ children }) => {
   const [timeState, setTimeState] = useState<ExtendedTimeState>({
     unit: 'week',
-    currentDate: new Date(),
+    currentDate: new Date('2022-01-01T00:00:00'),
     dataSource: 'historical',
     magdalenaConfig: {
-      participacion: 69,
+      participacion: 68,
       conDispersion: true,
-      semana: 3
+      semana: 1
     },
     camilaConfig: {
       modelType: 'minmax',
@@ -88,7 +88,7 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
         ...prev,
         dataSource,
         magdalenaConfig: prev.magdalenaConfig || {
-          participacion: 69,
+          participacion: 68,
           conDispersion: true,
           semana: 3
         }
@@ -134,23 +134,17 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
       const newDate = new Date(prev.currentDate);
 
       switch (prev.unit) {
-        case 'year':
-          newDate.setFullYear(newDate.getFullYear() - 1);
-          break;
-        case 'month':
-          newDate.setMonth(newDate.getMonth() - 1);
-          break;
         case 'week':
           newDate.setDate(newDate.getDate() - 7);
           break;
         case 'day':
           newDate.setDate(newDate.getDate() - 1);
           break;
-        case 'hour':
-          newDate.setHours(newDate.getHours() - 1);
-          break;
         case 'shift':
           newDate.setHours(newDate.getHours() - 8);
+          break;
+        case 'hour':
+          newDate.setHours(newDate.getHours() - 1);
           break;
       }
 
@@ -164,23 +158,17 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
       const newDate = new Date(prev.currentDate);
 
       switch (prev.unit) {
-        case 'year':
-          newDate.setFullYear(newDate.getFullYear() + 1);
-          break;
-        case 'month':
-          newDate.setMonth(newDate.getMonth() + 1);
-          break;
         case 'week':
           newDate.setDate(newDate.getDate() + 7);
           break;
         case 'day':
           newDate.setDate(newDate.getDate() + 1);
           break;
-        case 'hour':
-          newDate.setHours(newDate.getHours() + 1);
-          break;
         case 'shift':
           newDate.setHours(newDate.getHours() + 8);
+          break;
+        case 'hour':
+          newDate.setHours(newDate.getHours() + 1);
           break;
       }
 
@@ -244,12 +232,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
     };
 
     switch (unit) {
-      case 'year':
-        return `Histórico Anual - ${currentDate.getFullYear()}`;
-
-      case 'month':
-        return `Histórico Mensual - ${currentDate.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}`;
-
       case 'week':
         const startOfWeek = new Date(currentDate);
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());

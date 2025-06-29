@@ -25,7 +25,7 @@ export interface PortMovementData {
     minimoContenedores: number;
     minimoTeus: number;
     maximoContenedores: number;
-    maximosTeus: number;
+    maximoTeus: number;
     promedioContenedores: number;
     promedioTeus: number;
 }
@@ -230,4 +230,84 @@ export interface KPICardProps {
     note?: string;
     subtitle?: string;
     showInfoIcon?: boolean;
+}
+
+
+
+// src/types/congestion.ts
+
+export interface CongestionData {
+    bloque: string;
+    hora: string;
+
+    // Movimientos productivos (contenedores)
+    gateEntradaContenedores: number;
+    gateSalidaContenedores: number;
+    muelleEntradaContenedores: number;
+    muelleSalidaContenedores: number;
+
+    // Movimientos productivos (TEUs)
+    gateEntradaTeus: number;
+    gateSalidaTeus: number;
+    muelleEntradaTeus: number;
+    muelleSalidaTeus: number;
+
+    // Movimientos no productivos (contenedores)
+    remanejosContenedores: number;
+    patioEntradaContenedores: number;
+    patioSalidaContenedores: number;
+    terminalEntradaContenedores: number;
+    terminalSalidaContenedores: number;
+
+    // Movimientos no productivos (TEUs)
+    remanejosTeus: number;
+    patioEntradaTeus: number;
+    patioSalidaTeus: number;
+    terminalEntradaTeus: number;
+    terminalSalidaTeus: number;
+
+    // Inventarios (contenedores)
+    minimoContenedores: number;
+    maximoContenedores: number;
+    promedioContenedores: number;
+
+    // Inventarios (TEUs)
+    minimoTeus: number;
+    maximoTeus: number;
+    promedioTeus: number;
+}
+
+export interface PercentileData {
+    label: string;
+    p50: number;
+    p70: number;
+    p90: number;
+    p95: number;
+    max: number;
+    current: number;
+}
+
+export interface MovementTypeAnalysis {
+    hora: string;
+    productivos: number;
+    noProductivos: number;
+    reacomodosBloque: number;
+    entreBloques: number;
+    entrePatios: number;
+    total: number;
+}
+
+export interface CongestionPattern {
+    dayOfWeek: string;
+    hourOfDay: number;
+    avgCongestion: number;
+    peakCongestion: number;
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface BottleneckAnalysisData {
+    location: 'gate' | 'muelle' | 'patio' | 'organizacion';
+    severity: number;
+    indicators: string[];
+    recommendation: string;
 }

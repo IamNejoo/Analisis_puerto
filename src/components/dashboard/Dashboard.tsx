@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { MapPanel } from './MapPanel';
 import { CorePortKPIPanel } from './CorePortKPIPanel';
+import { CongestionAnalyticsPanel } from './CongestionAnalyticsPanel';
 
 import MagdalenaKPIPanel from '../magdalena/MagdalenaKPIPanel';
 import MagdalenaComparisonPanel from '../magdalena/ComparisonPanel';
@@ -22,12 +23,9 @@ import {
   Calendar,
   User,
   Settings,
-  Filter,
-  BarChart2,
   MapPin
 } from 'lucide-react';
 import { DataSourceSelector } from '../shared/DataSourceSelector';
-import type { Filters } from '../../types';
 
 interface DashboardProps {
   portDataPath?: string;
@@ -35,14 +33,14 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  portDataPath = '/data/Prueba.csv',
   blockCapacities
 }) => {
   const [activeTab, setActiveTab] = useState('operativo');
   const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
   const [showMagdalenaComparison, setShowMagdalenaComparison] = useState(false);
   const [showCamilaDetail, setShowCamilaDetail] = useState(false);
-
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  console.log('showAnalytics:', showAnalytics);
   const {
     getColorForOcupacion,
     currentOcupacion,
@@ -331,13 +329,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {/* KPIs FUNDAMENTALES */}
                       <div className="bg-slate-800 rounded-xl border-2 border-slate-700 shadow-lg"> {/* CAMBIADO: bg-white border-gray-200 a bg-slate-800 border-slate-700 */}
                         <div className="p-4 border-b bg-gradient-to-r from-blue-900/50 to-blue-800/50 border-slate-700"> {/* CAMBIADO: colores oscuros */}
-                          <h3 className="font-bold text-blue-200 text-lg flex items-center"> {/* CAMBIADO: text-blue-900 a text-blue-200 */}
-                            <BarChart3 size={20} className="mr-3" />
-                            KPIs de Congestión del Terminal
-                          </h3>
-                          <p className="text-blue-300 text-sm"> {/* CAMBIADO: text-blue-700 a text-blue-300 */}
-                            KPIs del patio {viewState.selectedPatio}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-bold text-blue-200 text-lg flex items-center"> {/* CAMBIADO: text-blue-900 a text-blue-200 */}
+                                <BarChart3 size={20} className="mr-3" />
+                                KPIs de Congestión del Terminal
+                              </h3>
+
+                              <p className="text-blue-300 text-sm"> {/* CAMBIADO: text-blue-700 a text-blue-300 */}
+                                KPIs del patio {viewState.selectedPatio}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setShowAnalytics(!showAnalytics)}
+                              className={`p-2 rounded-lg transition-colors ${showAnalytics
+                                ? 'bg-cyan-500 text-white'
+                                : 'hover:bg-slate-700 text-slate-400'
+                                }`}
+                              title="Análisis avanzado"
+                            >
+                              <BarChart3 size={18} />
+                            </button>
+                          </div>
                         </div>
                         <div className="p-4">
                           <CorePortKPIPanel
@@ -345,6 +358,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           />
                         </div>
                       </div>
+
+                      {/* Panel de Análisis Avanzado */}
+                      {showAnalytics && (
+                        <CongestionAnalyticsPanel
+                          patioFilter={viewState.selectedPatio}
+                          bloqueFilter={undefined}
+                        />
+                      )}
 
                       {/* KPIs DE MODELOS SI ESTÁN ACTIVOS */}
                       {isMagdalenaActive && (

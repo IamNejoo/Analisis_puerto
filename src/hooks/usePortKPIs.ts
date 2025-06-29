@@ -19,6 +19,7 @@ interface UsePortKPIsOptions {
 interface UsePortKPIsReturn {
     currentKPIs: CorePortKPIs | null;
     historicalData: PortMovementData[];
+    maximoTeus: number;
     aggregatedData: any[];
     isLoading: boolean;
     error: string | null;
@@ -144,19 +145,6 @@ export const usePortKPIs = ({
         const endDate = new Date(currentDate);
 
         switch (unit) {
-            case 'year':
-                startDate.setMonth(0, 1);
-                startDate.setHours(0, 0, 0, 0);
-                endDate.setMonth(11, 31);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-
-            case 'month':
-                startDate.setDate(1);
-                startDate.setHours(0, 0, 0, 0);
-                endDate.setMonth(endDate.getMonth() + 1, 0);
-                endDate.setHours(23, 59, 59, 999);
-                break;
 
             case 'week':
                 const dayOfWeek = startDate.getDay();
@@ -198,12 +186,16 @@ export const usePortKPIs = ({
                 bloqueFilter,
                 operationType
             };
-
-            const [kpisData] = await Promise.all([
-                portApi.calculateKPIs(filters)
+            // En loadDataFromAPI
+            console.log('Llamando API con unit:', unit);
+            console.log('Filters completos:', filters);
+            const [kpisData, historicalMovements] = await Promise.all([
+                portApi.calculateKPIs(filters),
+                portApi.getHistoricalMovements(filters)
             ]);
 
             setCurrentKPIs(kpisData);
+            setHistoricalData(historicalMovements);
             setAggregatedData([]);
 
         } catch (err) {
@@ -215,6 +207,7 @@ export const usePortKPIs = ({
             setIsLoading(false);
             fetchingRef.current = false;
         }
+
     }, [getDateRange, unit, patioFilter, bloqueFilter, operationType]);
 
     useEffect(() => {
@@ -315,10 +308,13 @@ export const usePortKPIs = ({
         currentKPIs,
         historicalData,
         aggregatedData,
+        maximoTeus: currentKPIs ? currentKPIs.maximoTeus : 0,
         isLoading,
         error,
         getStatusForKPI,
         formatKPIValue,
         refreshData
     };
+
+
 };

@@ -101,19 +101,27 @@ export interface BahiaData {
 
 // src/types/index.ts o donde tengas definido BloqueData
 
+// src/types/index.ts (agregar a BloqueData si no existe)
 export interface BloqueData {
   id: string;
   patioId: string;
   name: string;
   ocupacion: number;
-  ocupacionPromedio?: number; // Agregar esta línea
   capacidadTotal: number;
   bahias: BahiaData[];
-  tipo: 'contenedores' | 'carga_general' | 'granel';
+  tipo: 'contenedores' | 'OHiggins' | 'Tebas' | 'IMO' | 'Espingon';
   bounds: { x: number; y: number; width: number; height: number };
-  operationalStatus: 'active' | 'restricted' | 'maintenance';
-  equipmentType?: 'rtg' | 'reachstacker' | 'toploader';
-  ocupacionPorTurno?: number[]; // Agregar esta línea
+  lastUpdate?: Date;
+  operationalStatus?: 'active' | 'maintenance' | 'restricted';
+  equipmentType?: 'rtg' | 'rmg' | 'reach_stacker';
+  stats?: {
+    entradas: number;
+    salidas: number;
+    remanejos: number;
+    teusActuales: number;
+    bahiasTotales: number;
+    bahiasReefer: number;
+  };
 }
 
 export interface PatioData {
@@ -200,7 +208,7 @@ export interface BloqueInfoPanelProps {
 
 
 // Nuevos tipos para la navegación temporal
-export type TimeUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'shift';
+export type TimeUnit = 'week' | 'day' | 'hour' | 'shift';
 export type DataSource = 'historical' | 'modelMagdalena' | 'modelCamila';
 
 export interface TimeState {
@@ -434,13 +442,15 @@ export interface MagdalenaMetrics {
   // Datos adicionales
   capacidadesPorBloque: { [key: string]: number };
   teusPorSegregacion: { [key: string]: number };
-  segregacionesInfo: { [key: string]: {
-    id: string;
-    nombre: string;
-    teu: number;
-  }};
+  segregacionesInfo: {
+    [key: string]: {
+      id: string;
+      nombre: string;
+      teu: number;
+    }
+  };
   bahiasPorBloque: { [key: string]: any };
-  
+
   // AGREGAR ESTAS DOS:
   volumenPorBloque: { [key: string]: any };
   segregacionesColores?: { [key: string]: string };

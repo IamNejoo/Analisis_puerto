@@ -103,6 +103,7 @@ class PortApiService {
         const params = new URLSearchParams({
             start_date: this.formatDate(filters.startDate),
             end_date: this.formatDate(filters.endDate),
+            force_detail: 'true',  // Siempre forzar detalle
             ...(filters.patioFilter && { patio: filters.patioFilter }),
             ...(filters.bloqueFilter && { bloque: filters.bloqueFilter })
         });
