@@ -10,7 +10,6 @@ import { BarChart3 } from 'lucide-react';
 import { MovementTypesAnalysis } from './congestion/MovementTypesAnalysis';
 import { BottleneckAnalysis } from './congestion/BottleneckAnalysis';
 import { ControlChartsAnalysis } from './congestion/ControlChartsAnalysis';
-import { CongestionPatternsAnalysis } from './congestion/CongestionPatternsAnalysis';
 
 // Importar los tipos (puedes moverlos a un archivo types.ts separado)
 interface PercentileData {
@@ -300,65 +299,6 @@ export const CongestionAnalyticsPanel: React.FC<CongestionAnalyticsPanelProps> =
             .sort((a, b) => parseInt(a.hora) - parseInt(b.hora));
     }, [historicalData, currentLevel, currentBloque, currentPatio]);
 
-    // Patrones de congestión
-    const congestionPatterns = useMemo((): CongestionPattern[] => {
-        if (!historicalData || historicalData.length === 0) return [];
-
-        const patterns = new Map<string, number[]>();
-
-        historicalData.forEach(data => {
-            const dateStr = data.hora;
-            let date: Date;
-            let hour: number;
-
-            if (dateStr.includes('T')) {
-                date = new Date(dateStr);
-                const timePart = dateStr.split('T')[1];
-                hour = parseInt(timePart.split(':')[0]);
-            } else {
-                date = new Date(dateStr);
-                hour = date.getHours();
-            }
-
-            const dayOfWeek = date.toLocaleDateString('es-CL', { weekday: 'short' }).toLowerCase();
-            const key = `${dayOfWeek}-${hour}`;
-
-            const congestion = data.gateEntradaContenedores + data.gateSalidaContenedores;
-
-            if (!patterns.has(key)) {
-                patterns.set(key, []);
-            }
-            patterns.get(key)!.push(congestion);
-        });
-
-        const results: CongestionPattern[] = [];
-        patterns.forEach((values, key) => {
-            const [dayOfWeek, hourStr] = key.split('-');
-            const hour = parseInt(hourStr);
-            const avg = values.reduce((a, b) => a + b, 0) / values.length;
-            const peak = Math.max(...values);
-
-            let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
-            if (avg > 50) riskLevel = 'critical';
-            else if (avg > 30) riskLevel = 'high';
-            else if (avg > 15) riskLevel = 'medium';
-
-            results.push({
-                dayOfWeek,
-                hourOfDay: hour,
-                avgCongestion: avg,
-                peakCongestion: peak,
-                riskLevel
-            });
-        });
-
-        return results.sort((a, b) => {
-            const daysOrder = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
-            const dayDiff = daysOrder.indexOf(a.dayOfWeek) - daysOrder.indexOf(b.dayOfWeek);
-            if (dayDiff !== 0) return dayDiff;
-            return a.hourOfDay - b.hourOfDay;
-        });
-    }, [historicalData]);
 
     if (isLoading) {
         return (
@@ -436,15 +376,6 @@ export const CongestionAnalyticsPanel: React.FC<CongestionAnalyticsPanelProps> =
                         >
                             Cuellos de Botella
                         </button>
-                        <button
-                            onClick={() => setSelectedAnalysis('patterns')}
-                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${selectedAnalysis === 'patterns'
-                                ? 'bg-cyan-500 text-white'
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
-                        >
-                            Patrones
-                        </button>
                     </div>
                 </div>
             </div>
@@ -483,15 +414,6 @@ export const CongestionAnalyticsPanel: React.FC<CongestionAnalyticsPanelProps> =
                     />
                 )}
 
-                {/* Patrones de Congestión */}
-                {selectedAnalysis === 'patterns' && (
-                    <CongestionPatternsAnalysis
-                        currentLevel={currentLevel}
-                        currentPatio={currentPatio}
-                        currentBloque={currentBloque}
-                        congestionPatterns={congestionPatterns}
-                    />
-                )}
             </div>
 
             {/* Footer con información contextual */}

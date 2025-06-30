@@ -72,7 +72,7 @@ export const RealComparisonPanel: React.FC = () => {
     const { timeState } = useTimeContext();
     const { magdalenaMetrics, realMetrics, comparison, isLoading, error } = useMagdalenaData(
         timeState.magdalenaConfig?.semana || 3,
-        timeState.magdalenaConfig?.participacion || 69,
+        timeState.magdalenaConfig?.participacion || 68,
         timeState.magdalenaConfig?.conDispersion ?? true
     );
 
@@ -126,24 +126,6 @@ export const RealComparisonPanel: React.FC = () => {
             improvementType: 'positive',
             icon: <CheckCircle size={16} />
         },
-        {
-            metric: 'Segregaciones Gestionadas',
-            realValue: magdalenaMetrics?.segregacionesInfo ?
-                `${Object.keys(magdalenaMetrics.segregacionesInfo).length} totales` :
-                '182 totales',
-            optimizedValue: `${magdalenaMetrics.segregacionesActivas} (${timeState.magdalenaConfig?.participacion || 69}% participación)`,
-            improvement: `Optimizadas para ${timeState.magdalenaConfig?.participacion || 69}%`,
-            improvementType: 'positive',
-            icon: <BarChart3 size={16} />
-        },
-        {
-            metric: 'Balance de Carga',
-            realValue: 'Desbalanceado',
-            optimizedValue: magdalenaMetrics.balanceWorkload.toFixed(1),
-            improvement: magdalenaMetrics.balanceWorkload < 50 ? 'Optimizado' : 'Mejorado',
-            improvementType: magdalenaMetrics.balanceWorkload < 50 ? 'positive' : 'neutral',
-            icon: <Target size={16} />
-        }
     ];
 
     return (
@@ -270,4 +252,4 @@ export const RealComparisonPanel: React.FC = () => {
     );
 };
 
-export default RealComparisonPanel;
+export default RealComparisonPanel; 

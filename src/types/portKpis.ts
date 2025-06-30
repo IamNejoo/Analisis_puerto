@@ -1,4 +1,5 @@
 // src/types/portKpis.ts
+import type { DataSource } from './index';
 
 // Datos base de movimientos portuarios
 export interface PortMovementData {
@@ -212,7 +213,7 @@ export interface TimeContextData {
     currentTime?: Date;
     startTime?: Date;
     endTime?: Date;
-    dataSource: 'historical' | 'modelMagdalena' | 'modelCamila';
+    dataSource: DataSource;
 }
 
 export type TimeState = TimeContextData;

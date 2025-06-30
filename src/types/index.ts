@@ -209,14 +209,24 @@ export interface BloqueInfoPanelProps {
 
 // Nuevos tipos para la navegación temporal
 export type TimeUnit = 'week' | 'day' | 'hour' | 'shift';
+// src/types/index.ts o src/types/portKpis.ts
 export type DataSource = 'historical' | 'modelMagdalena' | 'modelCamila';
+
+export interface HourRange {
+  start: number;
+  end: number;
+}
 
 export interface TimeState {
   unit: TimeUnit;
   currentDate: Date;
   dataSource: DataSource;
+}
+
+export interface ExtendedTimeState extends TimeState {
   magdalenaConfig?: MagdalenaConfig;
   camilaConfig?: CamilaConfig;
+  hourRange: HourRange;
 }
 
 // Tipos para indicadores de congestión
@@ -498,6 +508,10 @@ export interface RealDataMetrics {
   bloquesUnicos: string[];
   turnos: number[];
   carriers: number;
+
+  totalSegregaciones?: number;       // Total de segregaciones en el sistema
+  segregacionesActivas?: number;     // Segregaciones con bloques asignados
+  balanceWorkload?: number;
 }
 
 export interface ComparisonMetrics {

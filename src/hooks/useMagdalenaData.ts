@@ -15,8 +15,8 @@ export interface MagdalenaDataResult {
 }
 
 export const useMagdalenaData = (
-    semana: number = 3,
-    participacion: 68 | 69 | 70 = 69,
+    semana: number = 1,
+    participacion: 68 | 69 | 70 = 68,
     conDispersion: boolean = true
 ): MagdalenaDataResult => {
     const [magdalenaMetrics, setMagdalenaMetrics] = useState<MagdalenaMetrics | null>(null);

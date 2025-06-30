@@ -15,6 +15,25 @@ interface KPICardProps {
     note?: string;
     subtitle?: string;
     showInfoIcon?: boolean;
+    // Nuevas props para información adicional
+    kpiName?: string;
+    currentValue?: number;
+    additionalData?: {
+        current?: number;
+        total?: number;
+        min?: number;
+        max?: number;
+        count?: number;
+        hours?: number;
+        entries?: number;
+        exits?: number;
+        movements?: number;
+        rehandles?: number;
+        containers?: number;
+        trucks?: number;
+        critical?: number;
+        p90?: number;
+    };
 }
 
 export const KPICard: React.FC<KPICardProps> = ({
@@ -28,7 +47,10 @@ export const KPICard: React.FC<KPICardProps> = ({
     tooltip,
     note,
     subtitle,
-    showInfoIcon = false
+    showInfoIcon = false,
+    kpiName,
+    currentValue,
+    additionalData
 }) => {
     const getStatusColor = () => {
         switch (status) {
@@ -57,11 +79,120 @@ export const KPICard: React.FC<KPICardProps> = ({
         };
     };
 
+    // Función para obtener descripción contextual de cada KPI
+    const getKPIContext = (kpiName: string, value?: number) => {
+        const val = value || currentValue || 0;
+
+        switch (kpiName) {
+            case 'utilizacionPorVolumen':
+                if (val < 50) return "Terminal con mucha capacidad libre";
+                if (val < 70) return "Operación normal con margen";
+                if (val < 85) return "Acercándose al límite operativo";
+                return "Terminal cerca de saturación";
+
+            case 'flujoPromedioGates':
+                if (val < 30) return "Flujo muy bajo, posible inactividad";
+                if (val < 50) return "Flujo moderado";
+                if (val < 70) return "Flujo activo";
+                return "Alta actividad en gates";
+
+            case 'balanceFlujo':
+                if (val < 0.9) return "Más salidas que entradas";
+                if (val <= 1.1) return "Flujo equilibrado";
+                if (val <= 1.3) return "Acumulación moderada";
+                return "Acumulación crítica";
+
+            case 'productividadOperacional':
+                if (val < 50) return "Baja eficiencia operativa";
+                if (val < 80) return "Productividad aceptable";
+                if (val < 100) return "Buena productividad";
+                return "Excelente rendimiento";
+
+            case 'indiceRemanejo':
+                if (val < 3) return "Excelente organización";
+                if (val < 5) return "Nivel aceptable";
+                if (val < 8) return "Requiere optimización";
+                return "Urgente reorganizar";
+
+            case 'variabilidadOperacional':
+                if (val < 30) return "Operación muy estable";
+                if (val < 50) return "Variabilidad normal";
+                if (val < 70) return "Operación inestable";
+                return "Alta volatilidad";
+
+            case 'tiempoPermanencia':
+                if (val < 3) return "Rotación rápida";
+                if (val < 5) return "Tiempo normal";
+                if (val < 7) return "Permanencia elevada";
+                return "Contenedores estancados";
+
+            case 'tiempoCamiones':
+                if (val < 60) return "Proceso ágil";
+                if (val < 90) return "Tiempo aceptable";
+                if (val < 120) return "Demoras moderadas";
+                return "Colas significativas";
+
+            default:
+                return "";
+        }
+    };
+
+    // Función para obtener información adicional específica del KPI
+    const getAdditionalInfo = () => {
+        if (!kpiName || !additionalData) return null;
+
+        switch (kpiName) {
+            case 'utilizacionPorVolumen':
+                if (additionalData.current && additionalData.total) {
+                    return `${additionalData.current.toFixed(0)} de ${additionalData.total} TEUs`;
+                }
+                break;
+            case 'flujoPromedioGates':
+                if (additionalData.hours) {
+                    return `en ${additionalData.hours} hrs activas`;
+                }
+                break;
+            case 'balanceFlujo':
+                if (additionalData.entries && additionalData.exits) {
+                    return `E:${additionalData.entries} / S:${additionalData.exits}`;
+                }
+                break;
+            case 'productividadOperacional':
+                if (additionalData.movements) {
+                    return `${additionalData.movements} mov total`;
+                }
+                break;
+            case 'indiceRemanejo':
+                if (additionalData.rehandles) {
+                    return `${additionalData.rehandles} movimientos`;
+                }
+                break;
+            case 'variabilidadOperacional':
+                if (additionalData.min && additionalData.max) {
+                    return `${additionalData.min}-${additionalData.max} TEUs`;
+                }
+                break;
+            case 'tiempoPermanencia':
+                if (additionalData.containers) {
+                    return `${additionalData.containers} contenedores`;
+                }
+                break;
+            case 'tiempoCamiones':
+                if (additionalData.trucks) {
+                    return `${additionalData.trucks} camiones`;
+                }
+                break;
+        }
+        return null;
+    };
+
     const deltaInfo = getDeltaInfo();
+    const contextDescription = kpiName ? getKPIContext(kpiName) : null;
+    const additionalInfo = getAdditionalInfo();
 
     return (
         <div
-            className={`rounded-lg border p-4 h-full flex flex-col ${getStatusColor()} relative group`}
+            className={`rounded-lg border p-4 h-full flex flex-col ${getStatusColor()} relative group transition-transform hover:scale-[1.02]`}
             title={tooltip}
         >
             {/* Tooltip mejorado */}
@@ -91,10 +222,36 @@ export const KPICard: React.FC<KPICardProps> = ({
             {/* Valor principal */}
             <div className="text-2xl font-bold mb-2">{value}</div>
 
+            {/* Información adicional del KPI */}
+            {additionalInfo && (
+                <div className="text-xs text-slate-400 mb-2">
+                    {additionalInfo}
+                </div>
+            )}
+
+            {/* Contexto del KPI */}
+            {contextDescription && (
+                <div className="text-xs text-slate-500 mb-2 italic">
+                    {contextDescription}
+                </div>
+            )}
+
             {/* Subtítulo si existe */}
             {subtitle && (
                 <div className="text-xs text-slate-400 mb-2">
                     {subtitle}
+                </div>
+            )}
+
+            {/* Alertas críticas específicas */}
+            {kpiName === 'tiempoPermanencia' && additionalData?.critical && additionalData.critical > 100 && (
+                <div className="text-xs text-red-400 font-medium mb-2">
+                    ⚠️ {additionalData.critical} críticos
+                </div>
+            )}
+            {kpiName === 'tiempoCamiones' && additionalData?.p90 && additionalData.p90 > 120 && (
+                <div className="text-xs text-red-400 font-medium mb-2">
+                    ⚠️ P90: {additionalData.p90}min
                 </div>
             )}
 

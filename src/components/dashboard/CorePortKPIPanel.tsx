@@ -247,12 +247,15 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 );
 
             case 'bloque':
-                // Vista bloque: KPIs muy específicos del bloque
-                const utilizacionBloque = currentKPIs.utilizacionPorBloque?.[bloqueFilter || ''] || 0;
-                const movimientosBloque = currentKPIs.movimientosPorBloque?.[bloqueFilter || ''] || 0;
-                const remanejosBloque = currentKPIs.remanejosPorBloque?.[bloqueFilter || ''] || 0;
-                const indiceRemanejoBloque = movimientosBloque > 0 ?
-                    (remanejosBloque / movimientosBloque) * 100 : 0;
+                // 🔥 USAR DIRECTAMENTE LOS CAMPOS DE currentKPIs QUE VIENEN DEL BACKEND
+                // Recuerda: los nombres exactos deben coincidir con el JSON de tu backend
+                const utilizacionBloque = currentKPIs.utilizacionPorVolumen ?? 0;
+                const capacidadBloque = currentKPIs.capacidadTotal ?? blockCapacities?.[bloqueFilter || ''] ?? 'N/A';
+                const movimientosBloque = currentKPIs.totalMovimientos ?? 0;
+                const productividadBloque = currentKPIs.productividadOperacional ?? 0;
+                const remanejosBloque = currentKPIs.indiceRemanejo ?? 0;
+                const balanceBloque = currentKPIs.balanceFlujo ?? 0;
+                const variabilidadBloque = currentKPIs.variabilidadOperacional ?? 0;
 
                 return (
                     <>
@@ -260,11 +263,9 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                             title={`Ocupación del Bloque ${bloqueFilter}`}
                             value={`${utilizacionBloque.toFixed(1)}%`}
                             icon={<Package size={20} />}
-                            status={
-                                utilizacionBloque > 95 ? 'critical' :
-                                    utilizacionBloque > 85 ? 'warning' : 'good'
-                            }
-                            description={`Capacidad: ${blockCapacities?.[bloqueFilter || ''] || 'N/A'} TEUs`}
+                            status={utilizacionBloque > 95 ? 'critical' :
+                                utilizacionBloque > 85 ? 'warning' : 'good'}
+                            description={`Capacidad: ${capacidadBloque} TEUs`}
                             tooltip="Basado en promedio de TEUs del período"
                         />
 
@@ -278,7 +279,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
                         <KPICard
                             title="Productividad Local"
-                            value={`${(movimientosBloque / (historicalData.filter(d => d.bloque === bloqueFilter).length || 1)).toFixed(1)} mov/h`}
+                            value={`${productividadBloque.toFixed(1)} mov/h`}
                             icon={<Zap size={20} />}
                             status="normal"
                             description="Promedio por hora"
@@ -288,13 +289,13 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                             title="Remanejos del Bloque"
                             value={`${remanejosBloque}`}
                             icon={<Shuffle size={20} />}
-                            status={indiceRemanejoBloque > 5 ? 'critical' : indiceRemanejoBloque > 3 ? 'warning' : 'good'}
-                            description={`${indiceRemanejoBloque.toFixed(1)}% del total`}
+                            status={remanejosBloque > 5 ? 'critical' : remanejosBloque > 3 ? 'warning' : 'good'}
+                            description={`% del total`}
                         />
 
                         <KPICard
                             title="Balance del Bloque"
-                            value={formatKPIValue('balanceFlujo')}
+                            value={balanceBloque.toFixed(2)}
                             icon={<RefreshCw size={20} />}
                             status={getStatusForKPI('balanceFlujo')}
                             description="Entrada vs Salida"
@@ -302,13 +303,14 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
                         <KPICard
                             title="Variabilidad del Bloque"
-                            value={formatKPIValue('variabilidadOperacional')}
+                            value={`${variabilidadBloque.toFixed(1)}%`}
                             icon={<Activity size={20} />}
                             status={getStatusForKPI('variabilidadOperacional')}
                             description="Coeficiente de variación"
                         />
                     </>
                 );
+
 
             default:
                 return null;

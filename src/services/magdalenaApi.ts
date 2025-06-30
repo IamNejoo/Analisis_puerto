@@ -116,6 +116,9 @@ interface BackendMetricsResponse {
         bloquesUnicos: string[];
         turnos: number[];
         carriers: number;
+        totalSegregaciones?: number;
+        segregacionesActivas?: number;
+        balanceWorkload?: number;
     };
     comparison: {
         eliminacionReubicaciones: number;
@@ -155,7 +158,7 @@ export const magdalenaApi = {
         }
     },
 
-    // Obtener métricas completas - MAPEO DIRECTO
+    // Obtener métricas completas - SIN HARDCODING
     async getMetrics(
         semana: number,
         participacion: 68 | 69 | 70,
@@ -166,9 +169,10 @@ export const magdalenaApi = {
         comparison: ComparisonMetrics;
     }> {
         try {
+            // USAR EL PARÁMETRO TAL COMO VIENE, NO HARDCODEAR
             const params = {
                 semana,
-                participacion,
+                participacion,  // ← USAR EL VALOR RECIBIDO
                 dispersion: conDispersion ? 'K' : 'C'
             };
 
@@ -212,7 +216,7 @@ export const magdalenaApi = {
         try {
             const params = {
                 semana,
-                participacion,
+                participacion,  // ← USAR EL VALOR RECIBIDO
                 dispersion: conDispersion ? 'K' : 'C',
                 ...(bloque && { bloque })
             };
@@ -234,9 +238,10 @@ export const magdalenaApi = {
         conDispersion: boolean
     ): Promise<SegregationDetail> {
         try {
+            // USAR EL PARÁMETRO TAL COMO VIENE
             const params = {
                 semana,
-                participacion,
+                participacion,  // ← USAR EL VALOR RECIBIDO
                 dispersion: conDispersion ? 'K' : 'C'
             };
 
@@ -309,10 +314,11 @@ export const magdalenaApi = {
     ): Promise<boolean> {
         try {
             const configs = await this.getAvailableConfigs();
+            // USAR EL PARÁMETRO TAL COMO VIENE
             return configs.some(
                 config =>
                     config.semana === semana &&
-                    config.participacion === participacion &&
+                    config.participacion === participacion &&  // ← USAR EL VALOR RECIBIDO
                     config.dispersion === (conDispersion ? 'K' : 'C')
             );
         } catch (error) {

@@ -2,13 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import { useTimeContext } from '../../../contexts/TimeContext';
 import { useMagdalenaData } from '../../../hooks/useMagdalenaData';
+import { useSAIData } from '../../../hooks/useSAIData';
 import {
   Package, Clock, AlertCircle, Filter, Layers,
   SkipBack, SkipForward, ChevronLeft, ChevronRight,
   Info, BarChart3, Grid3X3, Activity, TrendingUp,
   AlertTriangle, Database
 } from 'lucide-react';
-import { CorePortKPIPanel } from '../../dashboard/CorePortKPIPanel';
+import type { DataSource } from '../../../types/index';
 
 interface BloqueViewProps {
   patioId: string;
@@ -35,13 +36,29 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
   const [showOccupancyInfo, setShowOccupancyInfo] = useState(false);
 
   const { timeState } = useTimeContext();
+  const { dataSource } = timeState;
 
   // Hook para datos de Magdalena
-  const { magdalenaMetrics, isLoading, error } = useMagdalenaData(
-    timeState.magdalenaConfig?.semana || 3,
-    timeState.magdalenaConfig?.participacion || 69,
+  const { magdalenaMetrics, isLoading: isLoadingMagdalena, error: errorMagdalena } = useMagdalenaData(
+    timeState.magdalenaConfig?.semana,
+    timeState.magdalenaConfig?.participacion,
     timeState.magdalenaConfig?.conDispersion !== false
   );
+
+  // Hook para datos SAI (históricos)
+  const { saiMetrics, isLoading: isLoadingSAI, error: errorSAI } = useSAIData(
+    dataSource === 'historical' ? timeState.currentDate : null,
+    currentTurno
+  );
+
+  // Determinar qué datos y estado de carga usar según la fuente
+  const isLoading = dataSource === 'modelMagdalena' ? isLoadingMagdalena :
+    dataSource === 'historical' ? isLoadingSAI :
+      false;
+
+  const error = dataSource === 'modelMagdalena' ? errorMagdalena :
+    dataSource === 'historical' ? errorSAI :
+      null;
 
   // Función para asignar colores consistentes a segregaciones
   const getSegregationColor = (segregationId: string): string => {
@@ -70,7 +87,12 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     let totalVolumenTEUs = 0;
     let totalCapacidadTEUs = 0;
 
-    if (!magdalenaMetrics || timeState.dataSource !== 'modelMagdalena') {
+    // Determinar qué métricas usar según la fuente de datos
+    const metrics = dataSource === 'modelMagdalena' ? magdalenaMetrics :
+      dataSource === 'historical' ? saiMetrics :
+        null;
+
+    if (!metrics) {
       return {
         occupancyMatrix: matrix,
         segregacionesStats: stats,
@@ -80,16 +102,16 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       };
     }
 
-    // Buscar datos para este bloque y turno
-    const bahiasPorBloque = magdalenaMetrics.bahiasPorBloque || {};
-    const volumenPorBloque = magdalenaMetrics.volumenPorBloque || {};
-    const capacidadesPorBloque = magdalenaMetrics.capacidadesPorBloque || {};
-    const teusPorSegregacion = magdalenaMetrics.teusPorSegregacion || {};
-    const segregacionesInfo = magdalenaMetrics.segregacionesInfo || {};
+    // Usar los datos de las métricas (estructura unificada)
+    const bahiasPorBloque = metrics.bahiasPorBloque || {};
+    const volumenPorBloque = metrics.volumenPorBloque || {};
+    const capacidadesPorBloque = metrics.capacidadesPorBloque || {};
+    const teusPorSegregacion = metrics.teusPorSegregacion || {};
+    const segregacionesInfo = metrics.segregacionesInfo || {};
 
     // Normalizar el ID del bloque - asegurar formato C1, C2, etc.
     let normalizedBloqueId = bloqueId;
-    if (!bloqueId.startsWith('C')) {
+    if (!bloqueId.startsWith('C') && !bloqueId.startsWith('H') && !bloqueId.startsWith('T')) {
       normalizedBloqueId = `C${bloqueId}`;
     }
 
@@ -196,11 +218,11 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       ocupacionReal: ocupacionRealPorcentaje,
       segregacionesTotales: totalSegregaciones
     };
-  }, [magdalenaMetrics, bloqueId, currentTurno, timeState.dataSource]);
+  }, [magdalenaMetrics, saiMetrics, bloqueId, currentTurno, dataSource]);
 
   const rowLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
   const totalColumns = 30;
-  const maxTurnos = 21;
+  const maxTurnos = dataSource === 'historical' ? 3 : 21; // 3 turnos para histórico, 21 para Magdalena
 
   // Función para navegar entre turnos
   const navigateToTurno = (turno: number) => {
@@ -233,9 +255,11 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                 {patioId} - Bloque {bloqueId}
               </h2>
               <p className="text-slate-400 text-sm mt-1">
-                {timeState.dataSource === 'modelMagdalena'
+                {dataSource === 'modelMagdalena'
                   ? `Semana ${timeState.magdalenaConfig?.semana || 3} - Turno ${currentTurno} de ${maxTurnos}`
-                  : 'Vista detallada'} • Vista micro de bahías
+                  : dataSource === 'historical'
+                    ? `Datos Históricos - ${timeState.currentDate.toLocaleDateString('es-CL')} - Turno ${currentTurno}`
+                    : 'Vista detallada'} • Vista micro de bahías
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -269,8 +293,8 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
             </div>
           )}
 
-          {/* Controles de navegación temporal para Magdalena */}
-          {timeState.dataSource === 'modelMagdalena' && (
+          {/* Controles de navegación temporal */}
+          {(dataSource === 'modelMagdalena' || dataSource === 'historical') && (
             <div className="bg-slate-700 rounded-lg p-3">
               <div className="flex items-center space-x-4">
                 {/* Navegación */}
@@ -362,10 +386,12 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                     <Package size={14} className="mr-1" />
                     <span>Segregaciones: <strong className="text-slate-300">{segregacionesStats.size}</strong> de {segregacionesTotales} totales</span>
                   </div>
-                  <div className="flex items-center">
-                    <TrendingUp size={14} className="mr-1" />
-                    <span>Participación: <strong className="text-slate-300">{timeState.magdalenaConfig?.participacion || 69}%</strong></span>
-                  </div>
+                  {dataSource === 'modelMagdalena' && (
+                    <div className="flex items-center">
+                      <TrendingUp size={14} className="mr-1" />
+                      <span>Participación: <strong className="text-slate-300">{timeState.magdalenaConfig?.participacion || 69}%</strong></span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -561,7 +587,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                   {Array.from(segregacionesStats.values()).reduce((sum, stat) => sum + stat.count, 0)} de 210
                 </span>
               </div>
-              {timeState.magdalenaConfig?.conDispersion !== false && (
+              {dataSource === 'modelMagdalena' && timeState.magdalenaConfig?.conDispersion !== false && (
                 <div className="flex justify-between p-2 bg-cyan-950/20 rounded border border-cyan-800">
                   <span className="text-cyan-400">Dispersión:</span>
                   <span className="font-medium text-cyan-300">Activa (máx. 5 bloques)</span>
@@ -676,7 +702,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
           )}
 
           {/* Información del modelo */}
-          {timeState.dataSource === 'modelMagdalena' && magdalenaMetrics && (
+          {dataSource === 'modelMagdalena' && magdalenaMetrics && (
             <div className="mb-4 p-3 bg-blue-950/20 rounded-lg border border-blue-800">
               <h4 className="font-medium text-blue-300 mb-2 text-sm">
                 Configuración del Modelo
@@ -707,6 +733,34 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
               </div>
             </div>
           )}
+
+          {/* Información para datos históricos */}
+          {dataSource === 'historical' && saiMetrics && (
+            <div className="mb-4 p-3 bg-green-950/20 rounded-lg border border-green-800">
+              <h4 className="font-medium text-green-300 mb-2 text-sm">
+                Datos Históricos SAI
+              </h4>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-green-400">Fecha:</span>
+                  <span className="font-medium text-slate-300">
+                    {timeState.currentDate.toLocaleDateString('es-CL')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-400">Hora turno:</span>
+                  <span className="font-medium text-slate-300">
+                    {currentTurno === 1 ? '08:00' : currentTurno === 2 ? '15:30' : '23:00'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-400">Fuente:</span>
+                  <span className="font-medium text-slate-300">SAI 2022</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Nota informativa mejorada */}
           <div className="mt-4 p-2 bg-blue-950/20 rounded-lg border border-blue-800">
             <div className="flex items-start">

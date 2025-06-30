@@ -11,13 +11,13 @@ import { patioData } from '../data/patioData';
 // Hook para centralizar todos los datos del puerto
 export const usePortData = () => {
   // Datos actuales (último punto de datos)
-  const currentOcupacion = useMemo(() => 
+  const currentOcupacion = useMemo(() =>
     ocupacionData[ocupacionData.length - 1].value, []);
-  
-  const currentProductividad = useMemo(() => 
+
+  const currentProductividad = useMemo(() =>
     productividadData[productividadData.length - 1], []);
-  
-  const currentTiempoCamion = useMemo(() => 
+
+  const currentTiempoCamion = useMemo(() =>
     tiempoCamionData[tiempoCamionData.length - 1].tiempo, []);
 
   // Función para determinar el color según el nivel de ocupación
@@ -36,7 +36,7 @@ export const usePortData = () => {
   const getAverageOccupancyByType = (tipo: string) => {
     const blocks = getBlocksByType(tipo);
     if (blocks.length === 0) return 0;
-    
+
     const sum = blocks.reduce((acc, block) => acc + block.ocupacion, 0);
     return Math.round(sum / blocks.length);
   };
@@ -56,12 +56,12 @@ export const usePortData = () => {
   const getTerminalStats = useMemo(() => {
     const totalPatios = patioData.length;
     const totalBloques = patioData.reduce((sum, patio) => sum + patio.bloques.length, 0);
-    const totalCapacidad = patioData.reduce((sum, patio) => 
+    const totalCapacidad = patioData.reduce((sum, patio) =>
       sum + patio.bloques.reduce((bloqueSum, bloque) => bloqueSum + bloque.capacidadTotal, 0), 0);
-    const totalOcupado = patioData.reduce((sum, patio) => 
-      sum + patio.bloques.reduce((bloqueSum, bloque) => 
+    const totalOcupado = patioData.reduce((sum, patio) =>
+      sum + patio.bloques.reduce((bloqueSum, bloque) =>
         bloqueSum + Math.round(bloque.capacidadTotal * bloque.ocupacion / 100), 0), 0);
-    
+
     return {
       totalPatios,
       totalBloques,
@@ -99,8 +99,8 @@ export const usePortData = () => {
     patioData.forEach(patio => {
       patio.bloques.forEach(bloque => {
         bloque.bahias.forEach(bahia => {
-          if (bahia.containerId && 
-              bahia.containerId.toLowerCase().includes(searchTerm.toLowerCase())) {
+          if (bahia.containerId &&
+            bahia.containerId.toLowerCase().includes(searchTerm.toLowerCase())) {
             results.push({
               containerId: bahia.containerId,
               bahiaId: bahia.id,
@@ -127,19 +127,19 @@ export const usePortData = () => {
     alertasData,
     navesData,
     patioData,
-    
+
     // Valores actuales
     currentOcupacion,
     currentProductividad,
     currentTiempoCamion,
-    
+
     // Utilidades
     getColorForOcupacion,
     getBlocksByType,
     getAverageOccupancyByType,
     getPatioById,
     getBloqueById,
-    
+
     // Estadísticas avanzadas
     getTerminalStats,
     getCriticalPatios,

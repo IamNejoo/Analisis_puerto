@@ -13,13 +13,65 @@ interface UseRealPatioDataReturn {
     refreshData: () => void;
 }
 
+// Mapeo de semanas a fechas (AÑADIR)
+const weekToDateMap: { [key: number]: string } = {
+    1: '2022-01-03', 2: '2022-01-10', 3: '2022-01-17', 4: '2022-01-24', 5: '2022-01-31',
+    6: '2022-02-07', 7: '2022-02-14', 8: '2022-02-21', 9: '2022-02-28', 10: '2022-03-07',
+    11: '2022-03-14', 12: '2022-03-21', 13: '2022-03-28', 14: '2022-04-04', 15: '2022-04-11',
+    16: '2022-04-18', 17: '2022-04-25', 18: '2022-05-02', 19: '2022-05-09', 20: '2022-05-16',
+    21: '2022-05-23', 22: '2022-05-30', 23: '2022-06-06', 24: '2022-06-13', 25: '2022-06-20',
+    26: '2022-06-27', 27: '2022-07-04', 28: '2022-07-11', 29: '2022-07-18', 30: '2022-07-25',
+    31: '2022-08-01', 32: '2022-08-08', 33: '2022-08-15', 34: '2022-08-22', 35: '2022-08-29',
+    36: '2022-09-05', 37: '2022-09-12', 38: '2022-09-19', 39: '2022-09-26', 40: '2022-10-03',
+    41: '2022-10-10', 42: '2022-10-17', 43: '2022-10-24', 44: '2022-10-31', 45: '2022-11-07',
+    46: '2022-11-14', 47: '2022-11-21', 48: '2022-11-28', 49: '2022-12-05', 50: '2022-12-12',
+    51: '2022-12-19', 52: '2022-12-26'
+};
+
+// Función helper para obtener el rango de fechas de una semana
+const getWeekDateRange = (weekNumber: number) => {
+    const startDateStr = weekToDateMap[weekNumber];
+    if (!startDateStr) return null;
+
+    const startDate = new Date(startDateStr);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { startDate, endDate };
+};
+
+// Función para obtener el número de semana desde una fecha
+const getWeekNumberFromDate = (date: Date): number => {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+    // Buscar coincidencia exacta
+    for (const [week, weekDate] of Object.entries(weekToDateMap)) {
+        if (weekDate === dateStr) {
+            return parseInt(week);
+        }
+    }
+
+    // Buscar en qué rango cae
+    for (let week = 1; week <= 52; week++) {
+        const range = getWeekDateRange(week);
+        if (range && date >= range.startDate && date <= range.endDate) {
+            return week;
+        }
+    }
+
+    return 1;
+};
+
 export const useRealPatioData = (): UseRealPatioDataReturn => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [movementData, setMovementData] = useState<PortMovementData[]>([]);
 
     const { timeState } = useTimeContext();
-    const { currentDate, unit } = timeState;
+    const { currentDate, unit, magdalenaConfig } = timeState;
 
     // Calcular rango de fechas según la unidad de tiempo
     const getDateRange = () => {
@@ -28,6 +80,20 @@ export const useRealPatioData = (): UseRealPatioDataReturn => {
 
         switch (unit) {
             case 'week':
+                // USAR EL MAPEO DE SEMANAS EN LUGAR DEL CÁLCULO ESTÁNDAR
+                const weekNumber = magdalenaConfig?.semana || getWeekNumberFromDate(startDate);
+                const weekRange = getWeekDateRange(weekNumber);
+
+                if (weekRange) {
+                    console.log('🗓️ Usando mapeo de semanas:', {
+                        weekNumber,
+                        startDate: weekRange.startDate.toISOString(),
+                        endDate: weekRange.endDate.toISOString()
+                    });
+                    return weekRange;
+                }
+
+                // Fallback al cálculo estándar si algo falla
                 const dayOfWeek = startDate.getDay();
                 startDate.setDate(startDate.getDate() - dayOfWeek);
                 startDate.setHours(0, 0, 0, 0);
@@ -41,23 +107,34 @@ export const useRealPatioData = (): UseRealPatioDataReturn => {
                 break;
 
             case 'shift':
-                // Determinar turno actual (3 turnos de 8 horas)
+                // Determinar turno actual según el mapeo del TimeControl
                 const hour = startDate.getHours();
-                if (hour >= 0 && hour < 8) {
-                    startDate.setHours(0, 0, 0, 0);
-                    endDate.setHours(7, 59, 59, 999);
-                } else if (hour >= 8 && hour < 16) {
-                    startDate.setHours(8, 0, 0, 0);
-                    endDate.setHours(15, 59, 59, 999);
+                if (hour >= 6 && hour < 14) {
+                    startDate.setHours(6, 0, 0, 0);
+                    endDate.setHours(13, 59, 59, 999);
+                } else if (hour >= 14 && hour < 22) {
+                    startDate.setHours(14, 0, 0, 0);
+                    endDate.setHours(21, 59, 59, 999);
                 } else {
-                    startDate.setHours(16, 0, 0, 0);
-                    endDate.setHours(23, 59, 59, 999);
+                    // Turno nocturno (22:00 - 06:00)
+                    if (hour >= 22) {
+                        startDate.setHours(22, 0, 0, 0);
+                        endDate.setDate(endDate.getDate() + 1);
+                        endDate.setHours(5, 59, 59, 999);
+                    } else {
+                        // Si es de madrugada (00:00-05:59)
+                        startDate.setDate(startDate.getDate() - 1);
+                        startDate.setHours(22, 0, 0, 0);
+                        endDate.setHours(5, 59, 59, 999);
+                    }
                 }
                 break;
 
             case 'hour':
-                startDate.setMinutes(0, 0, 0);
-                endDate.setMinutes(59, 59, 999);
+                // Para hora, usar el rango de horas del contexto
+                const hourRange = timeState.hourRange || { start: 8, end: 16 };
+                startDate.setHours(hourRange.start, 0, 0, 0);
+                endDate.setHours(hourRange.end - 1, 59, 59, 999);
                 break;
         }
 
@@ -71,6 +148,13 @@ export const useRealPatioData = (): UseRealPatioDataReturn => {
 
         try {
             const { startDate, endDate } = getDateRange();
+
+            console.log('📊 Cargando datos de patios:', {
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+                unit,
+                semana: unit === 'week' ? (magdalenaConfig?.semana || getWeekNumberFromDate(currentDate)) : undefined
+            });
 
             const movements = await portApi.getHistoricalMovements({
                 startDate,
@@ -87,9 +171,17 @@ export const useRealPatioData = (): UseRealPatioDataReturn => {
         }
     };
 
+    // Cargar datos cuando cambien las dependencias relevantes
     useEffect(() => {
+        // Solo cargar datos si estamos en modo histórico
+        if (timeState.dataSource !== 'historical') {
+            setMovementData([]);
+            setIsLoading(false);
+            return;
+        }
+
         loadData();
-    }, [currentDate, unit]);
+    }, [currentDate, unit, magdalenaConfig?.semana, timeState.dataSource, timeState.hourRange]);
 
     // Transformar datos de movimientos a estructura de PatioData
     const patioData = useMemo(() => {
