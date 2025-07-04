@@ -1,0 +1,1615 @@
+.
+├── Dockerfile
+├── README.md
+├── arbol-proyecto.txt
+├── docker-compose.yml
+├── eslint.config.js
+├── index.html
+├── nginx.conf
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── public
+│   ├── data
+│   │   ├── camila
+│   │   │   ├── resultados_Semana_3_max_min_Modelo2.xlsx
+│   │   │   ├── resultados_Semana_3_min_max_Modelo1.xlsx
+│   │   │   └── resultados_congestion_SAI_2022.csv
+│   │   ├── data_2022-01-03.json
+│   │   ├── data_bahias.json
+│   │   ├── data_calor.json
+│   │   ├── data_flujos.json
+│   │   ├── magdalena
+│   │   │   ├── resultado_10_69_K.xlsx
+│   │   │   ├── resultado_11_69_K.xlsx
+│   │   │   ├── resultado_12_69_K.xlsx
+│   │   │   ├── resultado_13_69_K.xlsx
+│   │   │   ├── resultado_14_69_K.xlsx
+│   │   │   ├── resultado_15_69_K.xlsx
+│   │   │   ├── resultado_16_69_K.xlsx
+│   │   │   ├── resultado_17_69_K.xlsx
+│   │   │   ├── resultado_18_69_K.xlsx
+│   │   │   ├── resultado_19_69_K.xlsx
+│   │   │   ├── resultado_1_69_K.xlsx
+│   │   │   ├── resultado_20_69_K.xlsx
+│   │   │   ├── resultado_21_69_K.xlsx
+│   │   │   ├── resultado_22_69_K.xlsx
+│   │   │   ├── resultado_23_69_K.xlsx
+│   │   │   ├── resultado_24_69_K.xlsx
+│   │   │   ├── resultado_25_69_K.xlsx
+│   │   │   ├── resultado_26_69_K.xlsx
+│   │   │   ├── resultado_27_69_K.xlsx
+│   │   │   ├── resultado_28_69_K.xlsx
+│   │   │   ├── resultado_29_69_K.xlsx
+│   │   │   ├── resultado_2_69_K.xlsx
+│   │   │   ├── resultado_30_69_K.xlsx
+│   │   │   ├── resultado_31_69_K.xlsx
+│   │   │   ├── resultado_32_69_K.xlsx
+│   │   │   ├── resultado_33_69_K.xlsx
+│   │   │   ├── resultado_34_69_K.xlsx
+│   │   │   ├── resultado_35_69_K.xlsx
+│   │   │   ├── resultado_36_69_K.xlsx
+│   │   │   ├── resultado_37_69_K.xlsx
+│   │   │   ├── resultado_38_69_K.xlsx
+│   │   │   ├── resultado_39_69_K.xlsx
+│   │   │   ├── resultado_3_69_K.xlsx
+│   │   │   ├── resultado_40_69_K.xlsx
+│   │   │   ├── resultado_41_69_K.xlsx
+│   │   │   ├── resultado_42_69_K.xlsx
+│   │   │   ├── resultado_43_69_K.xlsx
+│   │   │   ├── resultado_44_69_K.xlsx
+│   │   │   ├── resultado_45_69_K.xlsx
+│   │   │   ├── resultado_46_69_K.xlsx
+│   │   │   ├── resultado_47_69_K.xlsx
+│   │   │   ├── resultado_48_69_K.xlsx
+│   │   │   ├── resultado_49_69_K.xlsx
+│   │   │   ├── resultado_4_69_K.xlsx
+│   │   │   ├── resultado_50_69_K.xlsx
+│   │   │   ├── resultado_51_69_K.xlsx
+│   │   │   ├── resultado_52_69_K.xlsx
+│   │   │   ├── resultado_5_69_K.xlsx
+│   │   │   ├── resultado_6_69_K.xlsx
+│   │   │   ├── resultado_7_69_K.xlsx
+│   │   │   ├── resultado_8_69_K.xlsx
+│   │   │   └── resultado_9_69_K.xlsx
+│   │   ├── scrip.py
+│   │   ├── semanas
+│   │   │   ├── Semana 1
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Evolución por turnos Semana 1.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 1.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w1.xlsx
+│   │   │   │   ├── Flujos_w1.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_60.xlsx
+│   │   │   │   ├── Instancia_1_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_60_K.xlsx
+│   │   │   │   ├── Instancia_1_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_68.xlsx
+│   │   │   │   ├── Instancia_1_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_68_K.xlsx
+│   │   │   │   ├── Instancia_1_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_69.xlsx
+│   │   │   │   ├── Instancia_1_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_69_K.xlsx
+│   │   │   │   ├── Instancia_1_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_70.xlsx
+│   │   │   │   ├── Instancia_1_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_1_70_K.xlsx
+│   │   │   │   ├── Instancia_1_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w1_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w1_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w1_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w1_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 10
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 10.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 10.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w10.xlsx
+│   │   │   │   ├── Flujos_w10.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_60.xlsx
+│   │   │   │   ├── Instancia_10_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_60_K.xlsx
+│   │   │   │   ├── Instancia_10_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_68.xlsx
+│   │   │   │   ├── Instancia_10_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_68_K.xlsx
+│   │   │   │   ├── Instancia_10_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_69.xlsx
+│   │   │   │   ├── Instancia_10_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_69_K.xlsx
+│   │   │   │   ├── Instancia_10_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_70.xlsx
+│   │   │   │   ├── Instancia_10_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_10_70_K.xlsx
+│   │   │   │   ├── Instancia_10_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w10_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w10_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w10_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w10_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 11
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 11.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 11.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w11.xlsx
+│   │   │   │   ├── Flujos_w11.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_60.xlsx
+│   │   │   │   ├── Instancia_11_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_60_K.xlsx
+│   │   │   │   ├── Instancia_11_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_68.xlsx
+│   │   │   │   ├── Instancia_11_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_68_K.xlsx
+│   │   │   │   ├── Instancia_11_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_69.xlsx
+│   │   │   │   ├── Instancia_11_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_69_K.xlsx
+│   │   │   │   ├── Instancia_11_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_70.xlsx
+│   │   │   │   ├── Instancia_11_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_11_70_K.xlsx
+│   │   │   │   ├── Instancia_11_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w11_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w11_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w11_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w11_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 12
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 12.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 12.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w12.xlsx
+│   │   │   │   ├── Flujos_w12.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_60.xlsx
+│   │   │   │   ├── Instancia_12_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_60_K.xlsx
+│   │   │   │   ├── Instancia_12_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_68.xlsx
+│   │   │   │   ├── Instancia_12_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_68_K.xlsx
+│   │   │   │   ├── Instancia_12_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_69.xlsx
+│   │   │   │   ├── Instancia_12_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_69_K.xlsx
+│   │   │   │   ├── Instancia_12_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_70.xlsx
+│   │   │   │   ├── Instancia_12_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_12_70_K.xlsx
+│   │   │   │   ├── Instancia_12_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w12_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w12_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w12_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w12_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 13
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 13.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 13.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w13.xlsx
+│   │   │   │   ├── Flujos_w13.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_60.xlsx
+│   │   │   │   ├── Instancia_13_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_60_K.xlsx
+│   │   │   │   ├── Instancia_13_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_68.xlsx
+│   │   │   │   ├── Instancia_13_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_68_K.xlsx
+│   │   │   │   ├── Instancia_13_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_69.xlsx
+│   │   │   │   ├── Instancia_13_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_69_K.xlsx
+│   │   │   │   ├── Instancia_13_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_70.xlsx
+│   │   │   │   ├── Instancia_13_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_13_70_K.xlsx
+│   │   │   │   ├── Instancia_13_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w13_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w13_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w13_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w13_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 14
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 14.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 14.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w14.xlsx
+│   │   │   │   ├── Flujos_w14.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_60.xlsx
+│   │   │   │   ├── Instancia_14_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_60_K.xlsx
+│   │   │   │   ├── Instancia_14_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_68.xlsx
+│   │   │   │   ├── Instancia_14_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_68_K.xlsx
+│   │   │   │   ├── Instancia_14_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_69.xlsx
+│   │   │   │   ├── Instancia_14_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_69_K.xlsx
+│   │   │   │   ├── Instancia_14_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_70.xlsx
+│   │   │   │   ├── Instancia_14_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_14_70_K.xlsx
+│   │   │   │   ├── Instancia_14_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w14_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w14_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w14_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w14_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 15
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 15.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 15.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w15.xlsx
+│   │   │   │   ├── Flujos_w15.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_60.xlsx
+│   │   │   │   ├── Instancia_15_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_60_K.xlsx
+│   │   │   │   ├── Instancia_15_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_68.xlsx
+│   │   │   │   ├── Instancia_15_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_68_K.xlsx
+│   │   │   │   ├── Instancia_15_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_69.xlsx
+│   │   │   │   ├── Instancia_15_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_69_K.xlsx
+│   │   │   │   ├── Instancia_15_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_70.xlsx
+│   │   │   │   ├── Instancia_15_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_15_70_K.xlsx
+│   │   │   │   ├── Instancia_15_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w15_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w15_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w15_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w15_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 16
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 16.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 16.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w16.xlsx
+│   │   │   │   ├── Flujos_w16.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_60.xlsx
+│   │   │   │   ├── Instancia_16_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_60_K.xlsx
+│   │   │   │   ├── Instancia_16_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_68.xlsx
+│   │   │   │   ├── Instancia_16_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_68_K.xlsx
+│   │   │   │   ├── Instancia_16_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_69.xlsx
+│   │   │   │   ├── Instancia_16_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_69_K.xlsx
+│   │   │   │   ├── Instancia_16_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_70.xlsx
+│   │   │   │   ├── Instancia_16_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_16_70_K.xlsx
+│   │   │   │   ├── Instancia_16_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w16_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w16_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w16_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w16_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 17
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 17.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 17.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w17.xlsx
+│   │   │   │   ├── Flujos_w17.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_60.xlsx
+│   │   │   │   ├── Instancia_17_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_60_K.xlsx
+│   │   │   │   ├── Instancia_17_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_68.xlsx
+│   │   │   │   ├── Instancia_17_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_68_K.xlsx
+│   │   │   │   ├── Instancia_17_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_69.xlsx
+│   │   │   │   ├── Instancia_17_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_69_K.xlsx
+│   │   │   │   ├── Instancia_17_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_70.xlsx
+│   │   │   │   ├── Instancia_17_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_17_70_K.xlsx
+│   │   │   │   ├── Instancia_17_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w17_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w17_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w17_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w17_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 18
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 18.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 18.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w18.xlsx
+│   │   │   │   ├── Flujos_w18.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_60.xlsx
+│   │   │   │   ├── Instancia_18_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_60_K.xlsx
+│   │   │   │   ├── Instancia_18_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_68.xlsx
+│   │   │   │   ├── Instancia_18_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_68_K.xlsx
+│   │   │   │   ├── Instancia_18_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_69.xlsx
+│   │   │   │   ├── Instancia_18_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_69_K.xlsx
+│   │   │   │   ├── Instancia_18_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_70.xlsx
+│   │   │   │   ├── Instancia_18_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_18_70_K.xlsx
+│   │   │   │   ├── Instancia_18_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w18_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w18_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w18_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w18_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 19
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 19.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 19.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w19.xlsx
+│   │   │   │   ├── Flujos_w19.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_60.xlsx
+│   │   │   │   ├── Instancia_19_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_60_K.xlsx
+│   │   │   │   ├── Instancia_19_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_68.xlsx
+│   │   │   │   ├── Instancia_19_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_68_K.xlsx
+│   │   │   │   ├── Instancia_19_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_69.xlsx
+│   │   │   │   ├── Instancia_19_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_69_K.xlsx
+│   │   │   │   ├── Instancia_19_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_70.xlsx
+│   │   │   │   ├── Instancia_19_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_19_70_K.xlsx
+│   │   │   │   ├── Instancia_19_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w19_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w19_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w19_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w19_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 2
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Archivos_ext
+│   │   │   │   ├── Evolución por turnos Semana 2.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 2.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w2.xlsx
+│   │   │   │   ├── Flujos_w2.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_60.xlsx
+│   │   │   │   ├── Instancia_2_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_60_K.xlsx
+│   │   │   │   ├── Instancia_2_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_68.xlsx
+│   │   │   │   ├── Instancia_2_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_68_K.xlsx
+│   │   │   │   ├── Instancia_2_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_69.xlsx
+│   │   │   │   ├── Instancia_2_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_69_K.xlsx
+│   │   │   │   ├── Instancia_2_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_70.xlsx
+│   │   │   │   ├── Instancia_2_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_2_70_K.xlsx
+│   │   │   │   ├── Instancia_2_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w2_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w2_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w2_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w2_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 20
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 20.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 20.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w20.xlsx
+│   │   │   │   ├── Flujos_w20.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_60.xlsx
+│   │   │   │   ├── Instancia_20_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_60_K.xlsx
+│   │   │   │   ├── Instancia_20_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_68.xlsx
+│   │   │   │   ├── Instancia_20_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_68_K.xlsx
+│   │   │   │   ├── Instancia_20_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_69.xlsx
+│   │   │   │   ├── Instancia_20_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_69_K.xlsx
+│   │   │   │   ├── Instancia_20_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_70.xlsx
+│   │   │   │   ├── Instancia_20_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_20_70_K.xlsx
+│   │   │   │   ├── Instancia_20_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w20_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w20_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w20_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w20_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 21
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 21.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 21.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w21.xlsx
+│   │   │   │   ├── Flujos_w21.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_60.xlsx
+│   │   │   │   ├── Instancia_21_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_60_K.xlsx
+│   │   │   │   ├── Instancia_21_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_68.xlsx
+│   │   │   │   ├── Instancia_21_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_68_K.xlsx
+│   │   │   │   ├── Instancia_21_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_69.xlsx
+│   │   │   │   ├── Instancia_21_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_69_K.xlsx
+│   │   │   │   ├── Instancia_21_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_70.xlsx
+│   │   │   │   ├── Instancia_21_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_21_70_K.xlsx
+│   │   │   │   ├── Instancia_21_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w21_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w21_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w21_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w21_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 22
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 22.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 22.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w22.xlsx
+│   │   │   │   ├── Flujos_w22.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_60.xlsx
+│   │   │   │   ├── Instancia_22_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_60_K.xlsx
+│   │   │   │   ├── Instancia_22_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_68.xlsx
+│   │   │   │   ├── Instancia_22_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_68_K.xlsx
+│   │   │   │   ├── Instancia_22_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_69.xlsx
+│   │   │   │   ├── Instancia_22_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_69_K.xlsx
+│   │   │   │   ├── Instancia_22_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_70.xlsx
+│   │   │   │   ├── Instancia_22_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_22_70_K.xlsx
+│   │   │   │   ├── Instancia_22_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w22_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w22_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w22_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w22_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 23
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 23.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 23.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w23.xlsx
+│   │   │   │   ├── Flujos_w23.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_60.xlsx
+│   │   │   │   ├── Instancia_23_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_60_K.xlsx
+│   │   │   │   ├── Instancia_23_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_68.xlsx
+│   │   │   │   ├── Instancia_23_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_68_K.xlsx
+│   │   │   │   ├── Instancia_23_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_69.xlsx
+│   │   │   │   ├── Instancia_23_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_69_K.xlsx
+│   │   │   │   ├── Instancia_23_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_70.xlsx
+│   │   │   │   ├── Instancia_23_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_23_70_K.xlsx
+│   │   │   │   ├── Instancia_23_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w23_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w23_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w23_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w23_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 24
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 24.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 24.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w24.xlsx
+│   │   │   │   ├── Flujos_w24.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_60.xlsx
+│   │   │   │   ├── Instancia_24_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_60_K.xlsx
+│   │   │   │   ├── Instancia_24_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_68.xlsx
+│   │   │   │   ├── Instancia_24_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_68_K.xlsx
+│   │   │   │   ├── Instancia_24_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_69.xlsx
+│   │   │   │   ├── Instancia_24_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_69_K.xlsx
+│   │   │   │   ├── Instancia_24_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_70.xlsx
+│   │   │   │   ├── Instancia_24_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_24_70_K.xlsx
+│   │   │   │   ├── Instancia_24_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w24_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w24_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w24_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w24_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 25
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 25.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 25.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w25.xlsx
+│   │   │   │   ├── Flujos_w25.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_60.xlsx
+│   │   │   │   ├── Instancia_25_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_60_K.xlsx
+│   │   │   │   ├── Instancia_25_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_68.xlsx
+│   │   │   │   ├── Instancia_25_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_68_K.xlsx
+│   │   │   │   ├── Instancia_25_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_69.xlsx
+│   │   │   │   ├── Instancia_25_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_69_K.xlsx
+│   │   │   │   ├── Instancia_25_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_70.xlsx
+│   │   │   │   ├── Instancia_25_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_25_70_K.xlsx
+│   │   │   │   ├── Instancia_25_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w25_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w25_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w25_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w25_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 26
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 26.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 26.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w26.xlsx
+│   │   │   │   ├── Flujos_w26.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_60.xlsx
+│   │   │   │   ├── Instancia_26_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_60_K.xlsx
+│   │   │   │   ├── Instancia_26_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_68.xlsx
+│   │   │   │   ├── Instancia_26_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_68_K.xlsx
+│   │   │   │   ├── Instancia_26_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_69.xlsx
+│   │   │   │   ├── Instancia_26_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_69_K.xlsx
+│   │   │   │   ├── Instancia_26_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_70.xlsx
+│   │   │   │   ├── Instancia_26_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_26_70_K.xlsx
+│   │   │   │   ├── Instancia_26_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w26_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w26_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w26_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w26_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 27
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 27.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 27.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w27.xlsx
+│   │   │   │   ├── Flujos_w27.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_60.xlsx
+│   │   │   │   ├── Instancia_27_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_60_K.xlsx
+│   │   │   │   ├── Instancia_27_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_68.xlsx
+│   │   │   │   ├── Instancia_27_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_68_K.xlsx
+│   │   │   │   ├── Instancia_27_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_69.xlsx
+│   │   │   │   ├── Instancia_27_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_69_K.xlsx
+│   │   │   │   ├── Instancia_27_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_70.xlsx
+│   │   │   │   ├── Instancia_27_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_27_70_K.xlsx
+│   │   │   │   ├── Instancia_27_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w27_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w27_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w27_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w27_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 28
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 28.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 28.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w28.xlsx
+│   │   │   │   ├── Flujos_w28.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_60.xlsx
+│   │   │   │   ├── Instancia_28_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_60_K.xlsx
+│   │   │   │   ├── Instancia_28_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_68.xlsx
+│   │   │   │   ├── Instancia_28_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_68_K.xlsx
+│   │   │   │   ├── Instancia_28_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_69.xlsx
+│   │   │   │   ├── Instancia_28_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_69_K.xlsx
+│   │   │   │   ├── Instancia_28_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_70.xlsx
+│   │   │   │   ├── Instancia_28_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_28_70_K.xlsx
+│   │   │   │   ├── Instancia_28_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w28_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w28_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w28_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w28_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 29
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 29.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 29.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w29.xlsx
+│   │   │   │   ├── Flujos_w29.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_60.xlsx
+│   │   │   │   ├── Instancia_29_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_60_K.xlsx
+│   │   │   │   ├── Instancia_29_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_68.xlsx
+│   │   │   │   ├── Instancia_29_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_68_K.xlsx
+│   │   │   │   ├── Instancia_29_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_69.xlsx
+│   │   │   │   ├── Instancia_29_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_69_K.xlsx
+│   │   │   │   ├── Instancia_29_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_70.xlsx
+│   │   │   │   ├── Instancia_29_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_29_70_K.xlsx
+│   │   │   │   ├── Instancia_29_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w29_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w29_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w29_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w29_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 3
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 3.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 3.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w3.xlsx
+│   │   │   │   ├── Flujos_w3.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_60.xlsx
+│   │   │   │   ├── Instancia_3_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_60_K.xlsx
+│   │   │   │   ├── Instancia_3_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_68.xlsx
+│   │   │   │   ├── Instancia_3_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_68_K.xlsx
+│   │   │   │   ├── Instancia_3_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_69.xlsx
+│   │   │   │   ├── Instancia_3_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_69_K.xlsx
+│   │   │   │   ├── Instancia_3_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_70.xlsx
+│   │   │   │   ├── Instancia_3_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_3_70_K.xlsx
+│   │   │   │   ├── Instancia_3_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w3_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w3_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w3_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w3_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 30
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 30.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 30.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w30.xlsx
+│   │   │   │   ├── Flujos_w30.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_60.xlsx
+│   │   │   │   ├── Instancia_30_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_60_K.xlsx
+│   │   │   │   ├── Instancia_30_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_68.xlsx
+│   │   │   │   ├── Instancia_30_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_68_K.xlsx
+│   │   │   │   ├── Instancia_30_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_69.xlsx
+│   │   │   │   ├── Instancia_30_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_69_K.xlsx
+│   │   │   │   ├── Instancia_30_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_70.xlsx
+│   │   │   │   ├── Instancia_30_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_30_70_K.xlsx
+│   │   │   │   ├── Instancia_30_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w30_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w30_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w30_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w30_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 31
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 31.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 31.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w31.xlsx
+│   │   │   │   ├── Flujos_w31.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_60.xlsx
+│   │   │   │   ├── Instancia_31_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_60_K.xlsx
+│   │   │   │   ├── Instancia_31_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_68.xlsx
+│   │   │   │   ├── Instancia_31_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_68_K.xlsx
+│   │   │   │   ├── Instancia_31_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_69.xlsx
+│   │   │   │   ├── Instancia_31_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_69_K.xlsx
+│   │   │   │   ├── Instancia_31_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_70.xlsx
+│   │   │   │   ├── Instancia_31_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_31_70_K.xlsx
+│   │   │   │   ├── Instancia_31_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w31_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w31_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w31_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w31_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 32
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 32.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 32.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w32.xlsx
+│   │   │   │   ├── Flujos_w32.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_60.xlsx
+│   │   │   │   ├── Instancia_32_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_60_K.xlsx
+│   │   │   │   ├── Instancia_32_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_68.xlsx
+│   │   │   │   ├── Instancia_32_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_68_K.xlsx
+│   │   │   │   ├── Instancia_32_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_69.xlsx
+│   │   │   │   ├── Instancia_32_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_69_K.xlsx
+│   │   │   │   ├── Instancia_32_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_70.xlsx
+│   │   │   │   ├── Instancia_32_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_32_70_K.xlsx
+│   │   │   │   ├── Instancia_32_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w32_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w32_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w32_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w32_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 33
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 33.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 33.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w33.xlsx
+│   │   │   │   ├── Flujos_w33.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_60.xlsx
+│   │   │   │   ├── Instancia_33_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_60_K.xlsx
+│   │   │   │   ├── Instancia_33_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_68.xlsx
+│   │   │   │   ├── Instancia_33_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_68_K.xlsx
+│   │   │   │   ├── Instancia_33_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_69.xlsx
+│   │   │   │   ├── Instancia_33_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_69_K.xlsx
+│   │   │   │   ├── Instancia_33_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_70.xlsx
+│   │   │   │   ├── Instancia_33_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_33_70_K.xlsx
+│   │   │   │   ├── Instancia_33_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w33_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w33_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w33_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w33_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 34
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 34.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 34.xlsx:Zone.Identifier
+│   │   │   │   ├── Evolución por turnos Semana 34_v2.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 34_v2.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w34.xlsx
+│   │   │   │   ├── Flujos_w34.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_60.xlsx
+│   │   │   │   ├── Instancia_34_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_60_K.xlsx
+│   │   │   │   ├── Instancia_34_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_68.xlsx
+│   │   │   │   ├── Instancia_34_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_68_K.xlsx
+│   │   │   │   ├── Instancia_34_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_69.xlsx
+│   │   │   │   ├── Instancia_34_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_69_K.xlsx
+│   │   │   │   ├── Instancia_34_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_70.xlsx
+│   │   │   │   ├── Instancia_34_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_34_70_K.xlsx
+│   │   │   │   ├── Instancia_34_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w34_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w34_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w34_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w34_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 35
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 35.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 35.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w35.xlsx
+│   │   │   │   ├── Flujos_w35.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_60.xlsx
+│   │   │   │   ├── Instancia_35_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_60_K.xlsx
+│   │   │   │   ├── Instancia_35_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_68.xlsx
+│   │   │   │   ├── Instancia_35_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_68_K.xlsx
+│   │   │   │   ├── Instancia_35_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_69.xlsx
+│   │   │   │   ├── Instancia_35_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_69_K.xlsx
+│   │   │   │   ├── Instancia_35_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_70.xlsx
+│   │   │   │   ├── Instancia_35_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_35_70_K.xlsx
+│   │   │   │   ├── Instancia_35_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w35_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w35_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w35_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w35_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 36
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 36.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 36.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w36.xlsx
+│   │   │   │   ├── Flujos_w36.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_60.xlsx
+│   │   │   │   ├── Instancia_36_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_60_K.xlsx
+│   │   │   │   ├── Instancia_36_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_68.xlsx
+│   │   │   │   ├── Instancia_36_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_68_K.xlsx
+│   │   │   │   ├── Instancia_36_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_69.xlsx
+│   │   │   │   ├── Instancia_36_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_69_K.xlsx
+│   │   │   │   ├── Instancia_36_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_70.xlsx
+│   │   │   │   ├── Instancia_36_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_36_70_K.xlsx
+│   │   │   │   ├── Instancia_36_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w36_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w36_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w36_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w36_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 37
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 37.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 37.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w37.xlsx
+│   │   │   │   ├── Flujos_w37.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_60.xlsx
+│   │   │   │   ├── Instancia_37_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_60_K.xlsx
+│   │   │   │   ├── Instancia_37_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_68.xlsx
+│   │   │   │   ├── Instancia_37_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_68_K.xlsx
+│   │   │   │   ├── Instancia_37_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_69.xlsx
+│   │   │   │   ├── Instancia_37_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_69_K.xlsx
+│   │   │   │   ├── Instancia_37_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_70.xlsx
+│   │   │   │   ├── Instancia_37_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_37_70_K.xlsx
+│   │   │   │   ├── Instancia_37_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w37_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w37_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w37_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w37_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 38
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 38.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 38.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w38.xlsx
+│   │   │   │   ├── Flujos_w38.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_60.xlsx
+│   │   │   │   ├── Instancia_38_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_60_K.xlsx
+│   │   │   │   ├── Instancia_38_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_68.xlsx
+│   │   │   │   ├── Instancia_38_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_68_K.xlsx
+│   │   │   │   ├── Instancia_38_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_69.xlsx
+│   │   │   │   ├── Instancia_38_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_69_K.xlsx
+│   │   │   │   ├── Instancia_38_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_70.xlsx
+│   │   │   │   ├── Instancia_38_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_38_70_K.xlsx
+│   │   │   │   ├── Instancia_38_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w38_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w38_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w38_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w38_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 39
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 39.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 39.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w39.xlsx
+│   │   │   │   ├── Flujos_w39.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_60.xlsx
+│   │   │   │   ├── Instancia_39_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_60_K.xlsx
+│   │   │   │   ├── Instancia_39_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_68.xlsx
+│   │   │   │   ├── Instancia_39_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_68_K.xlsx
+│   │   │   │   ├── Instancia_39_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_69.xlsx
+│   │   │   │   ├── Instancia_39_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_69_K.xlsx
+│   │   │   │   ├── Instancia_39_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_70.xlsx
+│   │   │   │   ├── Instancia_39_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_39_70_K.xlsx
+│   │   │   │   ├── Instancia_39_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w39_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w39_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w39_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w39_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 4
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 4.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 4.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w4.xlsx
+│   │   │   │   ├── Flujos_w4.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_60.xlsx
+│   │   │   │   ├── Instancia_4_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_60_K.xlsx
+│   │   │   │   ├── Instancia_4_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_68.xlsx
+│   │   │   │   ├── Instancia_4_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_68_K.xlsx
+│   │   │   │   ├── Instancia_4_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_69.xlsx
+│   │   │   │   ├── Instancia_4_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_69_K.xlsx
+│   │   │   │   ├── Instancia_4_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_70.xlsx
+│   │   │   │   ├── Instancia_4_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_4_70_K.xlsx
+│   │   │   │   ├── Instancia_4_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w4_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w4_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w4_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w4_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 40
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 40.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 40.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w40.xlsx
+│   │   │   │   ├── Flujos_w40.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_60.xlsx
+│   │   │   │   ├── Instancia_40_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_60_K.xlsx
+│   │   │   │   ├── Instancia_40_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_68.xlsx
+│   │   │   │   ├── Instancia_40_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_68_K.xlsx
+│   │   │   │   ├── Instancia_40_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_69.xlsx
+│   │   │   │   ├── Instancia_40_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_69_K.xlsx
+│   │   │   │   ├── Instancia_40_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_70.xlsx
+│   │   │   │   ├── Instancia_40_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_40_70_K.xlsx
+│   │   │   │   ├── Instancia_40_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w40_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w40_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w40_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w40_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 41
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 41.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 41.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w41.xlsx
+│   │   │   │   ├── Flujos_w41.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_60.xlsx
+│   │   │   │   ├── Instancia_41_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_60_K.xlsx
+│   │   │   │   ├── Instancia_41_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_68.xlsx
+│   │   │   │   ├── Instancia_41_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_68_K.xlsx
+│   │   │   │   ├── Instancia_41_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_69.xlsx
+│   │   │   │   ├── Instancia_41_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_69_K.xlsx
+│   │   │   │   ├── Instancia_41_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_70.xlsx
+│   │   │   │   ├── Instancia_41_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_41_70_K.xlsx
+│   │   │   │   ├── Instancia_41_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w41_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w41_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w41_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w41_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 42
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 42.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 42.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w42.xlsx
+│   │   │   │   ├── Flujos_w42.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_60.xlsx
+│   │   │   │   ├── Instancia_42_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_60_K.xlsx
+│   │   │   │   ├── Instancia_42_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_68.xlsx
+│   │   │   │   ├── Instancia_42_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_68_K.xlsx
+│   │   │   │   ├── Instancia_42_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_69.xlsx
+│   │   │   │   ├── Instancia_42_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_69_K.xlsx
+│   │   │   │   ├── Instancia_42_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_70.xlsx
+│   │   │   │   ├── Instancia_42_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_42_70_K.xlsx
+│   │   │   │   ├── Instancia_42_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w42_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w42_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w42_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w42_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 43
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 43.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 43.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w43.xlsx
+│   │   │   │   ├── Flujos_w43.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_60.xlsx
+│   │   │   │   ├── Instancia_43_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_60_K.xlsx
+│   │   │   │   ├── Instancia_43_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_68.xlsx
+│   │   │   │   ├── Instancia_43_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_68_K.xlsx
+│   │   │   │   ├── Instancia_43_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_69.xlsx
+│   │   │   │   ├── Instancia_43_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_69_K.xlsx
+│   │   │   │   ├── Instancia_43_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_70.xlsx
+│   │   │   │   ├── Instancia_43_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_43_70_K.xlsx
+│   │   │   │   ├── Instancia_43_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w43_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w43_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w43_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w43_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 44
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 44.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 44.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w44.xlsx
+│   │   │   │   ├── Flujos_w44.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_60.xlsx
+│   │   │   │   ├── Instancia_44_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_60_K.xlsx
+│   │   │   │   ├── Instancia_44_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_68.xlsx
+│   │   │   │   ├── Instancia_44_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_68_K.xlsx
+│   │   │   │   ├── Instancia_44_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_69.xlsx
+│   │   │   │   ├── Instancia_44_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_69_K.xlsx
+│   │   │   │   ├── Instancia_44_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_70.xlsx
+│   │   │   │   ├── Instancia_44_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_44_70_K.xlsx
+│   │   │   │   ├── Instancia_44_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w44_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w44_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w44_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w44_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 45
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 45.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 45.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w45.xlsx
+│   │   │   │   ├── Flujos_w45.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_60.xlsx
+│   │   │   │   ├── Instancia_45_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_60_K.xlsx
+│   │   │   │   ├── Instancia_45_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_68.xlsx
+│   │   │   │   ├── Instancia_45_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_68_K.xlsx
+│   │   │   │   ├── Instancia_45_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_69.xlsx
+│   │   │   │   ├── Instancia_45_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_69_K.xlsx
+│   │   │   │   ├── Instancia_45_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_70.xlsx
+│   │   │   │   ├── Instancia_45_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_45_70_K.xlsx
+│   │   │   │   ├── Instancia_45_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w45_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w45_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w45_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w45_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 46
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 46.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 46.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w46.xlsx
+│   │   │   │   ├── Flujos_w46.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_60.xlsx
+│   │   │   │   ├── Instancia_46_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_60_K.xlsx
+│   │   │   │   ├── Instancia_46_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_68.xlsx
+│   │   │   │   ├── Instancia_46_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_68_K.xlsx
+│   │   │   │   ├── Instancia_46_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_69.xlsx
+│   │   │   │   ├── Instancia_46_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_69_K.xlsx
+│   │   │   │   ├── Instancia_46_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_70.xlsx
+│   │   │   │   ├── Instancia_46_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_46_70_K.xlsx
+│   │   │   │   ├── Instancia_46_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w46_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w46_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w46_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w46_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 47
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 47.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 47.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w47.xlsx
+│   │   │   │   ├── Flujos_w47.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_60.xlsx
+│   │   │   │   ├── Instancia_47_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_60_K.xlsx
+│   │   │   │   ├── Instancia_47_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_68.xlsx
+│   │   │   │   ├── Instancia_47_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_68_K.xlsx
+│   │   │   │   ├── Instancia_47_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_69.xlsx
+│   │   │   │   ├── Instancia_47_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_69_K.xlsx
+│   │   │   │   ├── Instancia_47_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_70.xlsx
+│   │   │   │   ├── Instancia_47_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_47_70_K.xlsx
+│   │   │   │   ├── Instancia_47_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w47_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w47_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w47_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w47_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 48
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 48.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 48.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w48.xlsx
+│   │   │   │   ├── Flujos_w48.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_60.xlsx
+│   │   │   │   ├── Instancia_48_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_60_K.xlsx
+│   │   │   │   ├── Instancia_48_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_68.xlsx
+│   │   │   │   ├── Instancia_48_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_68_K.xlsx
+│   │   │   │   ├── Instancia_48_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_69.xlsx
+│   │   │   │   ├── Instancia_48_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_69_K.xlsx
+│   │   │   │   ├── Instancia_48_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_70.xlsx
+│   │   │   │   ├── Instancia_48_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_48_70_K.xlsx
+│   │   │   │   ├── Instancia_48_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w48_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w48_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w48_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w48_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 49
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 49.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 49.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w49.xlsx
+│   │   │   │   ├── Flujos_w49.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_60.xlsx
+│   │   │   │   ├── Instancia_49_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_60_K.xlsx
+│   │   │   │   ├── Instancia_49_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_68.xlsx
+│   │   │   │   ├── Instancia_49_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_68_K.xlsx
+│   │   │   │   ├── Instancia_49_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_69.xlsx
+│   │   │   │   ├── Instancia_49_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_69_K.xlsx
+│   │   │   │   ├── Instancia_49_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_70.xlsx
+│   │   │   │   ├── Instancia_49_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_49_70_K.xlsx
+│   │   │   │   ├── Instancia_49_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w49_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w49_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w49_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w49_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 5
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 5.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 5.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w5.xlsx
+│   │   │   │   ├── Flujos_w5.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_60.xlsx
+│   │   │   │   ├── Instancia_5_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_60_K.xlsx
+│   │   │   │   ├── Instancia_5_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_68.xlsx
+│   │   │   │   ├── Instancia_5_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_68_K.xlsx
+│   │   │   │   ├── Instancia_5_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_69.xlsx
+│   │   │   │   ├── Instancia_5_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_69_K.xlsx
+│   │   │   │   ├── Instancia_5_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_70.xlsx
+│   │   │   │   ├── Instancia_5_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_5_70_K.xlsx
+│   │   │   │   ├── Instancia_5_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w5_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w5_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w5_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w5_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 50
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 50.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 50.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w50.xlsx
+│   │   │   │   ├── Flujos_w50.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_60.xlsx
+│   │   │   │   ├── Instancia_50_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_60_K.xlsx
+│   │   │   │   ├── Instancia_50_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_68.xlsx
+│   │   │   │   ├── Instancia_50_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_68_K.xlsx
+│   │   │   │   ├── Instancia_50_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_69.xlsx
+│   │   │   │   ├── Instancia_50_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_69_K.xlsx
+│   │   │   │   ├── Instancia_50_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_70.xlsx
+│   │   │   │   ├── Instancia_50_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_50_70_K.xlsx
+│   │   │   │   ├── Instancia_50_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Manual
+│   │   │   │   ├── analisis_flujos_w50_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w50_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w50_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w50_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 51
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 51.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 51.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w51.xlsx
+│   │   │   │   ├── Flujos_w51.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_60.xlsx
+│   │   │   │   ├── Instancia_51_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_60_K.xlsx
+│   │   │   │   ├── Instancia_51_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_68.xlsx
+│   │   │   │   ├── Instancia_51_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_68_K.xlsx
+│   │   │   │   ├── Instancia_51_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_69.xlsx
+│   │   │   │   ├── Instancia_51_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_69_K.xlsx
+│   │   │   │   ├── Instancia_51_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_70.xlsx
+│   │   │   │   ├── Instancia_51_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_51_70_K.xlsx
+│   │   │   │   ├── Instancia_51_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w51_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w51_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w51_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w51_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 52
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Distancias_Modelo_1_K.xlsx
+│   │   │   │   ├── Distancias_Modelo_1_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Distancias_Modelo_2_K.xlsx
+│   │   │   │   ├── Distancias_Modelo_2_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Evolución por turnos Semana 52.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 52.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w52.xlsx
+│   │   │   │   ├── Flujos_w52.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_60.xlsx
+│   │   │   │   ├── Instancia_52_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_60_K.xlsx
+│   │   │   │   ├── Instancia_52_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_68.xlsx
+│   │   │   │   ├── Instancia_52_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_68_K.xlsx
+│   │   │   │   ├── Instancia_52_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_69.xlsx
+│   │   │   │   ├── Instancia_52_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_69_K.xlsx
+│   │   │   │   ├── Instancia_52_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_70.xlsx
+│   │   │   │   ├── Instancia_52_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_52_70_K.xlsx
+│   │   │   │   ├── Instancia_52_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w52_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w52_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w52_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w52_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 6
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 6.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 6.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w6.xlsx
+│   │   │   │   ├── Flujos_w6.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_60.xlsx
+│   │   │   │   ├── Instancia_6_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_60_K.xlsx
+│   │   │   │   ├── Instancia_6_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_68.xlsx
+│   │   │   │   ├── Instancia_6_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_68_K.xlsx
+│   │   │   │   ├── Instancia_6_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_69.xlsx
+│   │   │   │   ├── Instancia_6_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_69_K.xlsx
+│   │   │   │   ├── Instancia_6_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_70.xlsx
+│   │   │   │   ├── Instancia_6_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_6_70_K.xlsx
+│   │   │   │   ├── Instancia_6_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w6_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w6_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w6_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w6_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 7
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 7.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 7.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w7.xlsx
+│   │   │   │   ├── Flujos_w7.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_60.xlsx
+│   │   │   │   ├── Instancia_7_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_60_K.xlsx
+│   │   │   │   ├── Instancia_7_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_68.xlsx
+│   │   │   │   ├── Instancia_7_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_68_K.xlsx
+│   │   │   │   ├── Instancia_7_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_69.xlsx
+│   │   │   │   ├── Instancia_7_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_69_K.xlsx
+│   │   │   │   ├── Instancia_7_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_70.xlsx
+│   │   │   │   ├── Instancia_7_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_7_70_K.xlsx
+│   │   │   │   ├── Instancia_7_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w7_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w7_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w7_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w7_ci_all.xlsx:Zone.Identifier
+│   │   │   ├── Semana 8
+│   │   │   │   ├── Archivos Máquina
+│   │   │   │   ├── Archivos_0
+│   │   │   │   ├── Evolución por turnos Semana 8.xlsx
+│   │   │   │   ├── Evolución por turnos Semana 8.xlsx:Zone.Identifier
+│   │   │   │   ├── Flujos_w8.xlsx
+│   │   │   │   ├── Flujos_w8.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_60.xlsx
+│   │   │   │   ├── Instancia_8_60.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_60_K.xlsx
+│   │   │   │   ├── Instancia_8_60_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_68.xlsx
+│   │   │   │   ├── Instancia_8_68.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_68_K.xlsx
+│   │   │   │   ├── Instancia_8_68_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_68_K_2.xlsx
+│   │   │   │   ├── Instancia_8_68_K_2.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_69.xlsx
+│   │   │   │   ├── Instancia_8_69.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_69_K.xlsx
+│   │   │   │   ├── Instancia_8_69_K.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_70.xlsx
+│   │   │   │   ├── Instancia_8_70.xlsx:Zone.Identifier
+│   │   │   │   ├── Instancia_8_70_K.xlsx
+│   │   │   │   ├── Instancia_8_70_K.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w8_ci.xlsx
+│   │   │   │   ├── analisis_flujos_w8_ci.xlsx:Zone.Identifier
+│   │   │   │   ├── analisis_flujos_w8_ci_all.xlsx
+│   │   │   │   └── analisis_flujos_w8_ci_all.xlsx:Zone.Identifier
+│   │   │   └── Semana 9
+│   │   │       ├── Archivos Máquina
+│   │   │       ├── Archivos_0
+│   │   │       ├── Evolución por turnos Semana 9.xlsx
+│   │   │       ├── Evolución por turnos Semana 9.xlsx:Zone.Identifier
+│   │   │       ├── Flujos_w9.xlsx
+│   │   │       ├── Flujos_w9.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_60.xlsx
+│   │   │       ├── Instancia_9_60.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_60_K.xlsx
+│   │   │       ├── Instancia_9_60_K.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_68.xlsx
+│   │   │       ├── Instancia_9_68.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_68_K.xlsx
+│   │   │       ├── Instancia_9_68_K.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_69.xlsx
+│   │   │       ├── Instancia_9_69.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_69_K.xlsx
+│   │   │       ├── Instancia_9_69_K.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_70.xlsx
+│   │   │       ├── Instancia_9_70.xlsx:Zone.Identifier
+│   │   │       ├── Instancia_9_70_K.xlsx
+│   │   │       ├── Instancia_9_70_K.xlsx:Zone.Identifier
+│   │   │       ├── analisis_flujos_w9_ci.xlsx
+│   │   │       ├── analisis_flujos_w9_ci.xlsx:Zone.Identifier
+│   │   │       ├── analisis_flujos_w9_ci_all.xlsx
+│   │   │       └── analisis_flujos_w9_ci_all.xlsx:Zone.Identifier
+│   │   └── semanass
+│   │       └── analisis_flujos_w3_ci.xlsx
+│   ├── test-files.html
+│   └── vite.svg
+├── src
+│   ├── App.css
+│   ├── App.tsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── components
+│   │   ├── PuertoSVG.tsx
+│   │   ├── Toolbar.tsx
+│   │   ├── Untitled 2.html
+│   │   ├── Untitled 3.html
+│   │   ├── Untitled 4.html
+│   │   ├── Untitled.html
+│   │   ├── camila
+│   │   │   ├── CamilaComparisonPanel.tsx
+│   │   │   ├── CamilaFilters.tsx
+│   │   │   ├── CamilaIntegratedPanel.tsx
+│   │   │   ├── CamilaKPIPanel.tsx
+│   │   │   ├── CamilaModelSelector.tsx
+│   │   │   ├── CuotasRecomendadasPanel.tsx
+│   │   │   ├── GrueDetailPanel.tsx
+│   │   │   ├── HeatmapGruasPanel.tsx
+│   │   │   └── HourRangeSelector.tsx
+│   │   ├── caminos.tsx
+│   │   ├── dashboard
+│   │   │   ├── CongestionAnalyticsPanel.tsx
+│   │   │   ├── CorePortKPIPanel.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── KPICard.tsx
+│   │   │   ├── MapPanel.tsx
+│   │   │   └── congestion
+│   │   │       ├── BottleneckAnalysis.tsx
+│   │   │       ├── ControlChartsAnalysis.tsx
+│   │   │       └── MovementTypesAnalysis.tsx
+│   │   ├── layout
+│   │   │   ├── _Header.tsx
+│   │   │   ├── _MainLayout.tsx
+│   │   │   └── _Sidebar.tsx
+│   │   ├── magdalena
+│   │   │   ├── ComparisonPanel.tsx
+│   │   │   ├── MagdalenaKPIPanel.tsx
+│   │   │   ├── ModelSelector.tsx
+│   │   │   ├── RealComparisonPanel.tsx
+│   │   │   ├── SegregationHeatmap.tsx
+│   │   │   └── WorkloadChart.tsx
+│   │   ├── map
+│   │   │   ├── MapKPIOverlay.tsx
+│   │   │   ├── MovementAnalysisPanel.tsx
+│   │   │   ├── MultiLevelMap.tsx
+│   │   │   ├── NavigationBreadcrumb.tsx
+│   │   │   ├── PortMap.tsx
+│   │   │   ├── _PortMapLegend.tsx
+│   │   │   ├── entities
+│   │   │   │   ├── ContainerYardEntity.tsx
+│   │   │   │   ├── CraneEntity.tsx
+│   │   │   │   ├── CustomsEntity.tsx
+│   │   │   │   ├── EspingonEntity.tsx
+│   │   │   │   ├── GateEntity.tsx
+│   │   │   │   ├── IMOEntity.tsx
+│   │   │   │   ├── OHigginsEntity.tsx
+│   │   │   │   ├── PassengerTerminalEntity.tsx
+│   │   │   │   └── TebasEntity.tsx
+│   │   │   ├── overlays
+│   │   │   │   └── MovementRings.tsx
+│   │   │   └── views
+│   │   │       ├── BloqueView.tsx
+│   │   │       ├── PatioView.tsx
+│   │   │       └── TerminalView.tsx
+│   │   └── shared
+│   │       ├── DataSourceSelector.tsx
+│   │       ├── FilterToggle.tsx
+│   │       ├── KPIRelationsPanel.tsx
+│   │       ├── OccupancyInfoBadge.tsx
+│   │       ├── StatusBadge.tsx
+│   │       ├── Tabs.tsx
+│   │       └── TimeControl.tsx
+│   ├── constants
+│   │   └── blockCapacities.ts
+│   ├── contexts
+│   │   ├── PortContext.tsx
+│   │   ├── TimeContext.tsx
+│   │   └── ViewNavigationContext.tsx
+│   ├── data
+│   │   ├── alertsData.ts
+│   │   ├── blockOccupancyData.ts
+│   │   ├── occupancyData.ts
+│   │   ├── patioData.ts
+│   │   ├── productivityData.ts
+│   │   ├── shipsData.ts
+│   │   ├── truckTimeData.ts
+│   │   └── yardOccupancyData.ts
+│   ├── estructura_actual.txt
+│   ├── hooks
+│   │   ├── useCamilaData.ts
+│   │   ├── useFilters.ts
+│   │   ├── useMagdalenaData.ts
+│   │   ├── usePortData.ts
+│   │   ├── usePortKPIs.ts
+│   │   ├── useRealPatioData.ts
+│   │   ├── useSAIData.ts
+│   │   └── useTemporalAggregation.ts
+│   ├── index.css
+│   ├── legacy-config.json
+│   ├── main.tsx
+│   ├── services
+│   │   ├── camilaApi.ts
+│   │   ├── magdalenaApi.ts
+│   │   ├── portApi.ts
+│   │   └── saiApi.ts
+│   ├── types
+│   │   ├── camila.ts
+│   │   ├── index.ts
+│   │   └── portKpis.ts
+│   ├── utils
+│   │   └── weekDateMapping.ts
+│   └── vite-env.d.ts
+├── tailwind.config.js
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+184 directories, 1429 files

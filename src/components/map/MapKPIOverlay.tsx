@@ -3,7 +3,8 @@ import React from 'react';
 import { usePortKPIs } from '../../hooks/usePortKPIs';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
 import {
-    Package, Car, RefreshCw, Zap, Shuffle, Activity, Clock, Truck
+    Package, Truck, RefreshCw, Activity, Shuffle, Clock,
+    Timer, Anchor, Warehouse
 } from 'lucide-react';
 
 interface MapKPIOverlayProps {
@@ -16,6 +17,7 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
 }) => {
     const { viewState } = useViewNavigation();
     const patioFilter = viewState.level === 'patio' ? viewState.selectedPatio : undefined;
+    const bloqueFilter = viewState.level === 'bloque' ? viewState.selectedBloque : undefined;
 
     const {
         currentKPIs,
@@ -24,9 +26,11 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
         getStatusForKPI,
         error
     } = usePortKPIs({
-        patioFilter
+        patioFilter,
+        bloqueFilter
     });
 
+    // SOLO mostrar en vista terminal, patio o bloque
     // SOLO mostrar en vista terminal
     if (viewState.level !== 'terminal') {
         return null;
@@ -65,50 +69,86 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
         }
     };
 
-    // Función para obtener descripción contextual de cada KPI
+    // Función para obtener el ícono apropiado según el contexto y tipo de movimiento
+    const getMovementIcon = (index: number) => {
+        const context = currentKPIs.vistaContexto || 'terminal';
+
+        if (index === 1) { // Siempre Gate
+            return <Truck className="w-4 h-4 text-cyan-400 mb-1" />;
+        } else if (index === 2) { // Variable según contexto
+            if (context === 'terminal') return <Warehouse className="w-4 h-4 text-purple-400 mb-1" />;
+            if (context === 'patio') return <Activity className="w-4 h-4 text-purple-400 mb-1" />;
+            return <Shuffle className="w-4 h-4 text-purple-400 mb-1" />; // bloque - remanejos
+        } else { // index === 3
+            if (context === 'terminal') return <Anchor className="w-4 h-4 text-blue-400 mb-1" />;
+            if (context === 'patio') return <RefreshCw className="w-4 h-4 text-orange-400 mb-1" />;
+            return <Activity className="w-4 h-4 text-teal-400 mb-1" />; // bloque - otros bloques
+        }
+    };
+
+    // Función para formatear los KPIs de movimientos
+    const formatMovementKPI = (value: number | undefined, showTotal: boolean = true) => {
+        if (value === undefined || value === null || isNaN(value)) {
+            return '0 mov';
+        }
+        return showTotal ? `${value.toLocaleString()} mov` : `${Math.round(value)} mov/h`;
+    };
+
+    // Función para obtener descripción contextual mejorada
     const getKPIContext = (kpiName: string) => {
         switch (kpiName) {
+            case 'movimientosGate':
+                const gate = currentKPIs.movimientosGateHora || 0;
+                if (gate < 30) return "Flujo muy bajo";
+                if (gate < 50) return "Flujo moderado";
+                if (gate < 70) return "Flujo activo";
+                return "Alta actividad";
+
+            case 'movimientosPatio':
+            case 'movimientosInternos':
+            case 'remanejos':
+                const patio = currentKPIs.movimientosPatioHora || 0;
+                if (patio < 20) return "Operación eficiente";
+                if (patio < 40) return "Actividad normal";
+                if (patio < 60) return "Alta actividad interna";
+                return "Exceso de movimientos";
+
+            case 'movimientosMuelle':
+            case 'movimientosInterPatios':
+            case 'movimientosOtrosBloques':
+                const muelle = currentKPIs.movimientosMuelleHora || 0;
+                if (muelle < 30) return "Baja actividad";
+                if (muelle < 50) return "Actividad normal";
+                if (muelle < 70) return "Alta operación";
+                return "Operación intensa";
+
             case 'utilizacionPorVolumen':
                 const util = currentKPIs.utilizacionPorVolumen;
-                if (util < 50) return "Terminal con mucha capacidad libre";
-                if (util < 70) return "Operación normal con margen";
-                if (util < 85) return "Acercándose al límite operativo";
-                return "Terminal cerca de saturación";
-
-            case 'flujoPromedioGates':
-                const flujo = currentKPIs.flujoPromedioGates;
-                if (flujo < 30) return "Flujo muy bajo, posible inactividad";
-                if (flujo < 50) return "Flujo moderado";
-                if (flujo < 70) return "Flujo activo";
-                return "Alta actividad en gates";
-
-            case 'balanceFlujo':
-                const balance = currentKPIs.balanceFlujo;
-                if (balance < 0.9) return "Más salidas que entradas";
-                if (balance <= 1.1) return "Flujo equilibrado";
-                if (balance <= 1.3) return "Acumulación moderada";
-                return "Acumulación crítica";
-
-            case 'productividadOperacional':
-                const prod = currentKPIs.productividadOperacional;
-                if (prod < 50) return "Baja eficiencia operativa";
-                if (prod < 80) return "Productividad aceptable";
-                if (prod < 100) return "Buena productividad";
-                return "Excelente rendimiento";
-
-            case 'indiceRemanejo':
-                const rem = currentKPIs.indiceRemanejo;
-                if (rem < 3) return "Excelente organización";
-                if (rem < 5) return "Nivel aceptable";
-                if (rem < 8) return "Requiere optimización";
-                return "Urgente reorganizar";
+                if (util < 50) return "Mucha capacidad libre";
+                if (util < 70) return "Operación normal";
+                if (util < 85) return "Cerca del límite";
+                return "Terminal saturado";
 
             case 'variabilidadOperacional':
                 const var_ = currentKPIs.variabilidadOperacional;
-                if (var_ < 30) return "Operación muy estable";
-                if (var_ < 50) return "Variabilidad normal";
-                if (var_ < 70) return "Operación inestable";
+                if (var_ < 20) return "Muy estable";
+                if (var_ < 40) return "Variabilidad normal";
+                if (var_ < 60) return "Operación inestable";
                 return "Alta volatilidad";
+
+            case 'balanceFlujo':
+                const balance = currentKPIs.balanceFlujo;
+                if (balance < 0.9) return "Más salidas";
+                if (balance <= 1.1) return "Equilibrado";
+                if (balance <= 1.3) return "Acumulación moderada";
+                return "Acumulación crítica";
+
+            case 'indiceRemanejo':
+                const rem = currentKPIs.indiceRemanejo;
+                if (rem < 3) return "Excelente";
+                if (rem < 5) return "Aceptable";
+                if (rem < 8) return "Requiere mejora";
+                return "Crítico";
 
             case 'tiempoPermanencia':
                 const cdt = currentKPIs.tiempoPermanencia?.promedioDias || 0;
@@ -129,142 +169,104 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
         }
     };
 
-    // Función para determinar si hay alguna alerta crítica
-    const hasCriticalAlert = () => {
-        return currentKPIs?.kpiRelations?.congestionProductividadStatus === 'critical' ||
-            currentKPIs?.kpiRelations?.utilizacionRemanejosStatus === 'critical' ||
-            currentKPIs?.kpiRelations?.balanceUtilizacionStatus === 'critical' ||
-            currentKPIs?.kpiRelations?.tiempoServicioUtilizacionStatus === 'critical' ||
-            currentKPIs?.kpiRelations?.tiempoServicioFlujoStatus === 'critical';
-    };
+    // Obtener etiquetas dinámicas o usar defaults
+    const movLabel1 = currentKPIs.labelMovimientos1 || "Movimientos Gate";
+    const movLabel2 = currentKPIs.labelMovimientos2 || "Movimientos Patio";
+    const movLabel3 = currentKPIs.labelMovimientos3 || "Movimientos Muelle";
 
-    // Verificar si los tiempos de servicio están en estado crítico
-    const hasTimeCriticalAlert = () => {
-        return getStatusForKPI('tiempoPermanencia') === 'critical' ||
-            getStatusForKPI('tiempoCamiones') === 'critical';
+    // Determinar título según contexto
+    const getOverlayTitle = () => {
+        if (viewState.level === 'bloque') {
+            return `KPIs Bloque ${viewState.selectedBloque}`;
+        } else if (viewState.level === 'patio') {
+            return `KPIs Patio ${viewState.selectedPatio?.charAt(0).toUpperCase()}${viewState.selectedPatio?.slice(1)}`;
+        }
+        return "KPIs de la Terminal";
     };
 
     return (
         <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20 border border-slate-700/50">
-            <div className="min-w-[380px] max-w-[420px]">
+            <div className="min-w-[400px] max-w-[450px]">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-700/50">
                     <h3 className="text-sm font-bold text-slate-100">
-                        KPIs del Terminal
+                        {getOverlayTitle()}
                     </h3>
-                    <div className="flex items-center space-x-1">
-                        {hasCriticalAlert() ? (
-                            <>
-                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                <span className="text-xs text-red-400">Alerta</span>
-                            </>
-                        ) : (
-                            <>
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span className="text-xs text-gray-400">Normal</span>
-                            </>
-                        )}
-                    </div>
                 </div>
 
-                {/* Grid 4x2 con los 8 KPIs principales - MÁS DETALLADO */}
-                <div className="grid grid-cols-4 gap-2">
-                    {/* 1. Utilización */}
+                {/* Grid 3x3 con los 9 KPIs reorganizados */}
+                <div className="grid grid-cols-3 gap-2">
+
+                    {/* FILA 1: MOVIMIENTOS */}
+                    {/* 1. Movimientos Gate */}
+                    <div className={`rounded-lg p-2 border ${getStatusBg('flujoPromedioGates')} hover:scale-105 transition-transform cursor-help`}>
+                        <div className="flex flex-col">
+                            {getMovementIcon(1)}
+                            <span className="text-xs text-gray-300 truncate">{movLabel1}</span>
+                            <div className="text-sm font-bold text-cyan-400">
+                                {formatMovementKPI(currentKPIs.totalMovimientosGate)}
+                            </div>
+                            <div className="mt-1">
+                                <div className="text-[10px] text-gray-400">
+                                    {currentKPIs.movimientosGateHora?.toFixed(0)} mov/h promedio
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. Movimientos Patio/Internos/Remanejos */}
+                    <div className={`rounded-lg p-2 border bg-gray-700/50 border-gray-600/30 hover:scale-105 transition-transform cursor-help`}>
+                        <div className="flex flex-col">
+                            {getMovementIcon(2)}
+                            <span className="text-xs text-gray-300 truncate">{movLabel2}</span>
+                            <div className="text-sm font-bold text-purple-400">
+                                {formatMovementKPI(currentKPIs.movimientosPatioHora)}
+                            </div>
+                            <div className="mt-1">
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext(movLabel2.toLowerCase().replace(' ', ''))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Movimientos Muelle/Inter-Patios/Otros Bloques */}
+                    <div className={`rounded-lg p-2 border bg-gray-700/50 border-gray-600/30 hover:scale-105 transition-transform cursor-help`}>
+                        <div className="flex flex-col">
+                            {getMovementIcon(3)}
+                            <span className="text-xs text-gray-300 truncate">{movLabel3}</span>
+                            <div className="text-sm font-bold text-blue-400">
+                                {formatMovementKPI(currentKPIs.movimientosMuelleHora)}
+                            </div>
+                            <div className="mt-1">
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext(movLabel3.toLowerCase().replace(' ', ''))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* FILA 2: CAPACIDAD/INVENTARIO */}
+                    {/* 4. % Utilización */}
                     <div className={`rounded-lg p-2 border ${getStatusBg('utilizacionPorVolumen')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
-                            <Package className="w-4 h-4 text-blue-400 mb-1" />
-                            <span className="text-xs text-gray-300">Utilización</span>
+                            <Package className="w-4 h-4 text-green-400 mb-1" />
+                            <span className="text-xs text-gray-300">% Utilización</span>
                             <div className={`text-sm font-bold ${getStatusColor('utilizacionPorVolumen')}`}>
                                 {formatKPIValue('utilizacionPorVolumen')}
                             </div>
                             <div className="mt-1">
                                 <div className="text-[10px] text-gray-400">
-                                    {currentKPIs.promedioTeus?.toFixed(0)} de {currentKPIs.capacidadTotal} TEUs
+                                    {currentKPIs.promedioTeus?.toFixed(0)}/{currentKPIs.capacidadTotal}
                                 </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
+                                <div className="text-[9px] text-gray-500">
                                     {getKPIContext('utilizacionPorVolumen')}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Flujo en Gates */}
-                    <div className={`rounded-lg p-2 border ${getStatusBg('flujoPromedioGates')} hover:scale-105 transition-transform cursor-help`}>
-                        <div className="flex flex-col">
-                            <Car className="w-4 h-4 text-cyan-400 mb-1" />
-                            <span className="text-xs text-gray-300">Flujo Gates</span>
-                            <div className={`text-sm font-bold ${getStatusColor('flujoPromedioGates')}`}>
-                                {formatKPIValue('flujoPromedioGates')}
-                            </div>
-                            <div className="mt-1">
-                                <div className="text-[10px] text-gray-400">
-                                    en {currentKPIs.horasConActividad} hrs activas
-                                </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
-                                    {getKPIContext('flujoPromedioGates')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 3. Balance */}
-                    <div className={`rounded-lg p-2 border ${getStatusBg('balanceFlujo')} hover:scale-105 transition-transform cursor-help`}>
-                        <div className="flex flex-col">
-                            <RefreshCw className="w-4 h-4 text-purple-400 mb-1" />
-                            <span className="text-xs text-gray-300">Balance</span>
-                            <div className={`text-sm font-bold ${getStatusColor('balanceFlujo')}`}>
-                                {formatKPIValue('balanceFlujo')}
-                            </div>
-                            <div className="mt-1">
-                                <div className="text-[10px] text-gray-400">
-                                    E:{currentKPIs.totalEntradas} / S:{currentKPIs.totalSalidas}
-                                </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
-                                    {getKPIContext('balanceFlujo')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 4. Productividad */}
-                    <div className={`rounded-lg p-2 border ${getStatusBg('productividadOperacional')} hover:scale-105 transition-transform cursor-help`}>
-                        <div className="flex flex-col">
-                            <Zap className="w-4 h-4 text-green-400 mb-1" />
-                            <span className="text-xs text-gray-300">Product.</span>
-                            <div className={`text-sm font-bold ${getStatusColor('productividadOperacional')}`}>
-                                {formatKPIValue('productividadOperacional')}
-                            </div>
-                            <div className="mt-1">
-                                <div className="text-[10px] text-gray-400">
-                                    {currentKPIs.totalMovimientos} mov total
-                                </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
-                                    {getKPIContext('productividadOperacional')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 5. Remanejos */}
-                    <div className={`rounded-lg p-2 border ${getStatusBg('indiceRemanejo')} hover:scale-105 transition-transform cursor-help`}>
-                        <div className="flex flex-col">
-                            <Shuffle className="w-4 h-4 text-orange-400 mb-1" />
-                            <span className="text-xs text-gray-300">Remanejos</span>
-                            <div className={`text-sm font-bold ${getStatusColor('indiceRemanejo')}`}>
-                                {formatKPIValue('indiceRemanejo')}
-                            </div>
-                            <div className="mt-1">
-                                <div className="text-[10px] text-gray-400">
-                                    {currentKPIs.totalRemanejos} movimientos
-                                </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
-                                    {getKPIContext('indiceRemanejo')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 6. Variabilidad */}
+                    {/* 5. Variabilidad */}
                     <div className={`rounded-lg p-2 border ${getStatusBg('variabilidadOperacional')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             <Activity className="w-4 h-4 text-indigo-400 mb-1" />
@@ -274,16 +276,55 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                             </div>
                             <div className="mt-1">
                                 <div className="text-[10px] text-gray-400">
-                                    {currentKPIs.minimoTeus}-{currentKPIs.maximoTeus} TEUs
+                                    Rango: {currentKPIs.rangoOperativo} TEUs
                                 </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
+                                <div className="text-[9px] text-gray-500">
                                     {getKPIContext('variabilidadOperacional')}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 7. Tiempo Permanencia (CDT) */}
+                    {/* 6. Balance */}
+                    <div className={`rounded-lg p-2 border ${getStatusBg('balanceFlujo')} hover:scale-105 transition-transform cursor-help`}>
+                        <div className="flex flex-col">
+                            <RefreshCw className="w-4 h-4 text-yellow-400 mb-1" />
+                            <span className="text-xs text-gray-300">Balance</span>
+                            <div className={`text-sm font-bold ${getStatusColor('balanceFlujo')}`}>
+                                {formatKPIValue('balanceFlujo')}
+                            </div>
+                            <div className="mt-1">
+                                <div className="text-[10px] text-gray-400">
+                                    E:{currentKPIs.totalEntradas} / S:{currentKPIs.totalSalidas}
+                                </div>
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext('balanceFlujo')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* FILA 3: EFICIENCIA/TIEMPOS */}
+                    {/* 7. % Remanejos */}
+                    <div className={`rounded-lg p-2 border ${getStatusBg('indiceRemanejo')} hover:scale-105 transition-transform cursor-help`}>
+                        <div className="flex flex-col">
+                            <Shuffle className="w-4 h-4 text-orange-400 mb-1" />
+                            <span className="text-xs text-gray-300">% Remanejos</span>
+                            <div className={`text-sm font-bold ${getStatusColor('indiceRemanejo')}`}>
+                                {formatKPIValue('indiceRemanejo')}
+                            </div>
+                            <div className="mt-1">
+                                <div className="text-[10px] text-gray-400">
+                                    {currentKPIs.totalRemanejos} movimientos
+                                </div>
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext('indiceRemanejo')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 8. CDT */}
                     <div className={`rounded-lg p-2 border ${getStatusBg('tiempoPermanencia')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             <Clock className="w-4 h-4 text-amber-400 mb-1" />
@@ -293,12 +334,12 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                             </div>
                             <div className="mt-1">
                                 <div className="text-[10px] text-gray-400">
-                                    {currentKPIs.tiempoPermanencia?.totalContenedores} contenedores
+                                    {currentKPIs.tiempoPermanencia?.totalContenedores} cont
                                 </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
+                                <div className="text-[9px] text-gray-500">
                                     {getKPIContext('tiempoPermanencia')}
                                 </div>
-                                {currentKPIs.tiempoPermanencia?.criticos > 100 && (
+                                {currentKPIs.tiempoPermanencia?.criticos > 50 && (
                                     <div className="text-[9px] text-red-400 font-medium">
                                         ⚠️ {currentKPIs.tiempoPermanencia.criticos} críticos
                                     </div>
@@ -307,10 +348,10 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                         </div>
                     </div>
 
-                    {/* 8. Tiempo Camiones (TTT) */}
+                    {/* 9. TTT */}
                     <div className={`rounded-lg p-2 border ${getStatusBg('tiempoCamiones')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
-                            <Truck className="w-4 h-4 text-teal-400 mb-1" />
+                            <Timer className="w-4 h-4 text-teal-400 mb-1" />
                             <span className="text-xs text-gray-300">TTT</span>
                             <div className={`text-sm font-bold ${getStatusColor('tiempoCamiones')}`}>
                                 {formatKPIValue('tiempoCamiones')}
@@ -319,10 +360,10 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                                 <div className="text-[10px] text-gray-400">
                                     {currentKPIs.tiempoCamiones?.totalCamiones} camiones
                                 </div>
-                                <div className="text-[9px] text-gray-500 mt-0.5">
+                                <div className="text-[9px] text-gray-500">
                                     {getKPIContext('tiempoCamiones')}
                                 </div>
-                                {currentKPIs.tiempoCamiones?.promedio > 120 && (
+                                {currentKPIs.tiempoCamiones?.promedio > 90 && (
                                     <div className="text-[9px] text-red-400 font-medium">
                                         ⚠️ P90: {currentKPIs.tiempoCamiones.p90}min
                                     </div>
@@ -332,60 +373,16 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                     </div>
                 </div>
 
-                {/* Separador visual para tiempos de servicio */}
-                {hasTimeCriticalAlert() && (
-                    <div className="mt-2 p-2 bg-red-900/20 rounded border border-red-700/30">
-                        <div className="text-[11px] text-red-300 font-medium">
-                            ⏱️ Tiempos de servicio críticos detectados
-                        </div>
-                    </div>
-                )}
 
-                {/* Alertas críticas resumidas */}
-                {hasCriticalAlert() && (
-                    <div className="mt-2 pt-2 border-t border-slate-700/50">
-                        {currentKPIs?.kpiRelations?.congestionProductividadStatus === 'critical' && (
-                            <div className="text-[10px] text-red-400 mb-1">
-                                ⚠️ Cuello de botella: bajo flujo, baja productividad
-                            </div>
-                        )}
-                        {currentKPIs?.kpiRelations?.utilizacionRemanejosStatus === 'critical' && (
-                            <div className="text-[10px] text-red-400 mb-1">
-                                ⚠️ Terminal saturado con muchos remanejos
-                            </div>
-                        )}
-                        {currentKPIs?.kpiRelations?.balanceUtilizacionStatus === 'critical' && (
-                            <div className="text-[10px] text-red-400 mb-1">
-                                ⚠️ Riesgo de saturación: más entradas que salidas
-                            </div>
-                        )}
-                        {currentKPIs?.kpiRelations?.tiempoServicioUtilizacionStatus === 'critical' && (
-                            <div className="text-[10px] text-red-400 mb-1">
-                                ⚠️ Alta permanencia + alta utilización
-                            </div>
-                        )}
-                        {currentKPIs?.kpiRelations?.tiempoServicioFlujoStatus === 'critical' && (
-                            <div className="text-[10px] text-red-400 mb-1">
-                                ⚠️ Demora en gates afectando flujo
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Footer con información adicional */}
+                {/* Footer con información contextual */}
                 <div className="mt-3 pt-2 border-t border-slate-700/50">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">
-                            Vista completa del terminal
+                            Vista: {currentKPIs.vistaContexto || viewState.level}
                         </span>
                         <span className="text-xs text-gray-500">
                             {new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                    </div>
-                    {/* Indicador de capacidad total */}
-                    <div className="text-[10px] text-gray-600">
-                        Capacidad: {currentKPIs.capacidadTotal} TEUs |
-                        Promedio: {currentKPIs.promedioTeus?.toFixed(0)} TEUs
                     </div>
                 </div>
             </div>

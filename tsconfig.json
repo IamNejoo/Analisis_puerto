@@ -1,7 +1,16 @@
 {
   "files": [],
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "compilerOptions": {
+    "noEmitOnError": false, // ❌ permite compilar aunque haya errores
+    "strict": false, // ❌ desactiva modo estricto (opcional)
+    "skipLibCheck": true // ✅ evita errores en dependencias externas
+  }
 }

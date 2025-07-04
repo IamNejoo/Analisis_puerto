@@ -284,15 +284,7 @@ export const useRealPatioData = (): UseRealPatioDataReturn => {
             const ocupacionTeus = lastMovement.promedioTeus || 0;
             const ocupacionPorcentaje = Math.round((ocupacionTeus / capacidad) * 100);
 
-            // Calcular estadísticas adicionales
-            const totalEntradas = movements.reduce((sum, m) =>
-                sum + m.gateEntradaTeus + m.muelleEntradaTeus + m.patioEntradaTeus, 0
-            );
-            const totalSalidas = movements.reduce((sum, m) =>
-                sum + m.gateSalidaTeus + m.muelleSalidaTeus + m.patioSalidaTeus, 0
-            );
-            const totalRemanejos = movements.reduce((sum, m) => sum + m.remanejosTeus, 0);
-
+            // CAMBIO PRINCIPAL: Calcular estadísticas desglosadas
             const bloque: BloqueData = {
                 id: bloqueId,
                 patioId: patioId,
@@ -305,14 +297,37 @@ export const useRealPatioData = (): UseRealPatioDataReturn => {
                 operationalStatus: ocupacionPorcentaje > 90 ? 'restricted' : 'active',
                 equipmentType: bloqueId.startsWith('C') ? 'rtg' : 'reach_stacker',
                 bahias: [], // Por ahora vacío, se puede llenar después
-                // Datos adicionales para mostrar
+
+                // NUEVO: Datos desglosados para mostrar
                 stats: {
-                    entradas: totalEntradas,
-                    salidas: totalSalidas,
-                    remanejos: totalRemanejos,
+                    // Datos existentes
                     teusActuales: ocupacionTeus,
                     bahiasTotales: BLOCK_TOTAL_BAYS[bloqueId] || 30,
-                    bahiasReefer: BLOCK_REEFER_BAYS[bloqueId] || 0
+                    bahiasReefer: BLOCK_REEFER_BAYS[bloqueId] || 0,
+
+                    // NUEVOS campos desglosados
+                    gate: {
+                        entradas: movements.reduce((sum, m) => sum + m.gateEntradaTeus, 0),
+                        salidas: movements.reduce((sum, m) => sum + m.gateSalidaTeus, 0)
+                    },
+                    muelle: {
+                        entradas: movements.reduce((sum, m) => sum + m.muelleEntradaTeus, 0),
+                        salidas: movements.reduce((sum, m) => sum + m.muelleSalidaTeus, 0)
+                    },
+                    despejes: movements.reduce((sum, m) => sum + m.remanejosTeus, 0), // Remanejos dentro del bloque
+                    reubicacionesEntreBloques: movements.reduce((sum, m) =>
+                        sum + m.patioEntradaTeus + m.patioSalidaTeus, 0), // Dentro del mismo patio
+                    reubicacionesEntrePatios: movements.reduce((sum, m) =>
+                        sum + m.terminalEntradaTeus + m.terminalSalidaTeus, 0), // Entre diferentes patios
+
+                    // Mantener los totales para compatibilidad
+                    entradas: movements.reduce((sum, m) =>
+                        sum + m.gateEntradaTeus + m.muelleEntradaTeus + m.patioEntradaTeus + m.terminalEntradaTeus, 0
+                    ),
+                    salidas: movements.reduce((sum, m) =>
+                        sum + m.gateSalidaTeus + m.muelleSalidaTeus + m.patioSalidaTeus + m.terminalSalidaTeus, 0
+                    ),
+                    remanejos: movements.reduce((sum, m) => sum + m.remanejosTeus, 0)
                 }
             };
 

@@ -71,7 +71,10 @@ export interface CorePortKPIs {
     balanceFlujo: number;
     totalEntradas: number;
     totalSalidas: number;
-
+    // AGREGAR los totales
+    totalMovimientosGate?: number;
+    totalMovimientosPatio?: number;
+    totalMovimientosMuelle?: number;
     // 4. PRODUCTIVIDAD OPERACIONAL
     productividadOperacional: number;
 
@@ -97,7 +100,15 @@ export interface CorePortKPIs {
     remanejosPorBloque?: Record<string, number>;
     horasConActividad?: number;
     totalMovimientos?: number;
+    movimientosGateHora?: number;
+    movimientosPatioHora?: number;
+    movimientosMuelleHora?: number;
 
+    // Labels dinámicas del backend
+    labelMovimientos1?: string;
+    labelMovimientos2?: string;
+    labelMovimientos3?: string;
+    vistaContexto?: 'terminal' | 'patio' | 'bloque';
     // ANÁLISIS DE RELACIONES ENTRE KPIs (actualizado)
     kpiRelations?: {
         congestionProductividadStatus: 'good' | 'normal' | 'warning' | 'critical';
@@ -112,13 +123,16 @@ export interface CorePortKPIs {
 // KPIs numéricos que pueden tener deltas (actualizado)
 export type NumericKPIs =
     | 'utilizacionPorVolumen'
-    | 'flujoPromedioGates'  // Renombrado
+    | 'flujoPromedioGates'
     | 'balanceFlujo'
     | 'productividadOperacional'
     | 'indiceRemanejo'
-    | 'variabilidadOperacional'  // Nuevo
-    | 'tiempoPermanencia'  // Nuevo
-    | 'tiempoCamiones';  // Nuevo
+    | 'variabilidadOperacional'
+    | 'tiempoPermanencia'
+    | 'tiempoCamiones'
+    | 'movimientosGateHora'
+    | 'movimientosPatioHora'
+    | 'movimientosMuelleHora';
 
 // Estados de los KPIs
 export type KPIStatus = 'good' | 'warning' | 'critical' | 'normal';

@@ -101,26 +101,40 @@ export interface BahiaData {
 
 // src/types/index.ts o donde tengas definido BloqueData
 
-// src/types/index.ts (agregar a BloqueData si no existe)
+// En src/types/index.ts, actualizar la interfaz BloqueData
+
 export interface BloqueData {
   id: string;
   patioId: string;
   name: string;
   ocupacion: number;
   capacidadTotal: number;
-  bahias: BahiaData[];
-  tipo: 'contenedores' | 'OHiggins' | 'Tebas' | 'IMO' | 'Espingon';
+  tipo: 'contenedores' | 'imo' | 'reefer';
   bounds: { x: number; y: number; width: number; height: number };
   lastUpdate?: Date;
   operationalStatus?: 'active' | 'maintenance' | 'restricted';
-  equipmentType?: 'rtg' | 'rmg' | 'reach_stacker';
+  equipmentType?: 'rtg' | 'reach_stacker' | 'toplifter';
+  bahias: BahiaData[];
+
+  // ACTUALIZAR: Agregar estructura más detallada para stats
   stats?: {
-    entradas: number;
-    salidas: number;
-    remanejos: number;
     teusActuales: number;
     bahiasTotales: number;
     bahiasReefer: number;
+    gate: {
+      entradas: number;
+      salidas: number;
+    };
+    muelle: {
+      entradas: number;
+      salidas: number;
+    };
+    despejes: number;
+    reubicacionesEntreBloques: number;
+    reubicacionesEntrePatios: number;
+    entradas: number;
+    salidas: number;
+    remanejos: number;
   };
 }
 

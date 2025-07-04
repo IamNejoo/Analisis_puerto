@@ -251,7 +251,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div className="text-sm text-green-300 mt-1">
                               {viewState.selectedPatio} • Semana {timeState.magdalenaConfig?.semana} •
                               Participación {timeState.magdalenaConfig?.participacion}% •
-                              {timeState.magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Centralizada'}
+                              {timeState.magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Sin Dispersión'}
                             </div>
                           </div>
                         </div>

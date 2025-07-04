@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Servicio para desarrollo
+  frontend-dev:
+    build:
+      context: .
+      target: development
+    container_name: react-app-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # Montar código fuente para hot reload
+      - .:/app
+      # Evitar sobrescribir node_modules del contenedor
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+    stdin_open: true
+    tty: true
+    command: npm run dev -- --host 0.0.0.0
+
+  # Servicio para producción
+  frontend-prod:
+    build:
+      context: .
+      target: production
+    container_name: react-app-prod
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # Servicio para construir la imagen sin ejecutar
+  frontend-build:
+    build:
+      context: .
+      target: build
+    container_name: react-app-build
+    command: echo "Build completed"

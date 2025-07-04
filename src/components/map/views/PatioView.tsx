@@ -1,4 +1,4 @@
-// src/components/map/views/PatioView.tsx (corregido)
+// src/components/map/views/PatioView.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTimeContext } from '../../../contexts/TimeContext';
 import { useMagdalenaData } from '../../../hooks/useMagdalenaData';
@@ -36,6 +36,17 @@ interface BloqueDataExtended extends BloqueData {
     teusActuales: number;
     bahiasTotales: number;
     bahiasReefer: number;
+    gate: {
+      entradas: number;
+      salidas: number;
+    };
+    muelle: {
+      entradas: number;
+      salidas: number;
+    };
+    despejes: number;
+    reubicacionesEntreBloques: number;
+    reubicacionesEntrePatios: number;
   };
 }
 
@@ -775,31 +786,62 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
               </span>
             </div>
 
-            {/* Mostrar estadísticas adicionales para datos históricos */}
+            {/* Mostrar estadísticas detalladas para datos históricos */}
             {timeState?.dataSource === 'historical' && bloqueExtended.stats && (
               <>
-                <div className="flex justify-between">
-                  <span>Bahías:</span>
-                  <span className="font-medium text-slate-300">
-                    {bloqueExtended.stats.bahiasTotales}
-                    {bloqueExtended.stats.bahiasReefer > 0 &&
-                      ` (${bloqueExtended.stats.bahiasReefer} reefer)`}
-                  </span>
+                {/* Gate */}
+                <div className="pt-1 border-t border-slate-600">
+                  <div className="font-medium text-slate-300 mb-1">Gate:</div>
+                  <div className="flex justify-between pl-2">
+                    <span>Entradas:</span>
+                    <span className="font-medium text-green-400">↓ {bloqueExtended.stats.gate.entradas}</span>
+                  </div>
+                  <div className="flex justify-between pl-2">
+                    <span>Salidas:</span>
+                    <span className="font-medium text-blue-400">↑ {bloqueExtended.stats.gate.salidas}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Flujo:</span>
-                  <span className="font-medium text-slate-300">
-                    ↓{bloqueExtended.stats.entradas} ↑{bloqueExtended.stats.salidas}
-                  </span>
+
+                {/* Muelle */}
+                <div className="pt-1 border-t border-slate-600">
+                  <div className="font-medium text-slate-300 mb-1">Muelle:</div>
+                  <div className="flex justify-between pl-2">
+                    <span>Entradas:</span>
+                    <span className="font-medium text-green-400">↓ {bloqueExtended.stats.muelle.entradas}</span>
+                  </div>
+                  <div className="flex justify-between pl-2">
+                    <span>Salidas:</span>
+                    <span className="font-medium text-blue-400">↑ {bloqueExtended.stats.muelle.salidas}</span>
+                  </div>
                 </div>
-                {bloqueExtended.stats.remanejos > 0 && (
+
+                {/* Movimientos internos */}
+                <div className="pt-1 border-t border-slate-600">
                   <div className="flex justify-between">
-                    <span>Remanejos:</span>
-                    <span className="font-medium text-orange-400">
-                      {bloqueExtended.stats.remanejos}
+                    <span>Despejes:</span>
+                    <span className="font-medium text-orange-400">{bloqueExtended.stats.despejes}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Entre bloques:</span>
+                    <span className="font-medium text-purple-400">{bloqueExtended.stats.reubicacionesEntreBloques}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Entre patios:</span>
+                    <span className="font-medium text-pink-400">{bloqueExtended.stats.reubicacionesEntrePatios}</span>
+                  </div>
+                </div>
+
+                {/* Bahías */}
+                <div className="pt-1 border-t border-slate-600">
+                  <div className="flex justify-between">
+                    <span>Bahías:</span>
+                    <span className="font-medium text-slate-300">
+                      {bloqueExtended.stats.bahiasTotales}
+                      {bloqueExtended.stats.bahiasReefer > 0 &&
+                        ` (${bloqueExtended.stats.bahiasReefer} reefer)`}
                     </span>
                   </div>
-                )}
+                </div>
               </>
             )}
 

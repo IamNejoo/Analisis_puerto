@@ -32,9 +32,9 @@ export const ModelSelector: React.FC = () => {
                     onChange={(e) => updateConfig({ participacion: Number(e.target.value) as 68 | 69 | 70 })}
                     className="w-full text-sm bg-slate-800 border border-slate-700 text-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 >
-                    <option value={68}>68% - Balanceado</option>
-                    <option value={69}>69% - Estándar</option>
-                    <option value={70}>70% - Máximo</option>
+                    <option value={68}>68% </option>
+                    <option value={69}>69% </option>
+                    <option value={70}>70% </option>
                 </select>
             </div>
 
@@ -52,15 +52,6 @@ export const ModelSelector: React.FC = () => {
                             }`}
                     >
                         Dispersión
-                    </button>
-                    <button
-                        onClick={() => updateConfig({ conDispersion: false })}
-                        className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${!config.conDispersion
-                            ? 'bg-cyan-600 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                    >
-                        Centralizada
                     </button>
                 </div>
             </div>

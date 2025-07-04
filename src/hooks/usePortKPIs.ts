@@ -34,7 +34,7 @@ import {
     PATIO_BLOCKS as PATIOS
 } from '../types/portKpis';
 
-// Mapeo de semanas a fechas (AGREGAR AQUÍ)
+// Mapeo de semanas a fechas
 const weekToDateMap: { [key: number]: string } = {
     1: '2022-01-03', 2: '2022-01-10', 3: '2022-01-17', 4: '2022-01-24', 5: '2022-01-31',
     6: '2022-02-07', 7: '2022-02-14', 8: '2022-02-21', 9: '2022-02-28', 10: '2022-03-07',
@@ -93,10 +93,10 @@ const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
         critical: 85,
         isHigherBetter: false
     },
-    flujoPromedioGates: { // Renombrado de congestionVehicular
+    flujoPromedioGates: {
         warning: 50,
         critical: 100,
-        isHigherBetter: true // Cambió a true porque más flujo es mejor
+        isHigherBetter: true
     },
     balanceFlujo: {
         warning: 1.2,
@@ -115,20 +115,35 @@ const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
         critical: 5,
         isHigherBetter: false
     },
-    variabilidadOperacional: { // Nuevo, reemplaza saturacionOperacional
+    variabilidadOperacional: {
         warning: 20,
         critical: 30,
-        isHigherBetter: false // Menor variabilidad es mejor
+        isHigherBetter: false
     },
-    tiempoPermanencia: { // Nuevo CDT
+    tiempoPermanencia: {
         warning: 4, // días
         critical: 7, // días
         isHigherBetter: false
     },
-    tiempoCamiones: { // Nuevo TTT
+    tiempoCamiones: {
         warning: 90, // minutos
         critical: 120, // minutos
         isHigherBetter: false
+    },
+    movimientosGateHora: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+    movimientosPatioHora: {
+        warning: 40,
+        critical: 60,
+        isHigherBetter: false // Menos movimientos internos es mejor
+    },
+    movimientosMuelleHora: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
     }
 };
 
@@ -171,6 +186,14 @@ const getDefaultCoreKPIs = (): CorePortKPIs => ({
         p95: 0,
         totalCamiones: 0
     },
+    // NUEVOS CAMPOS con valores default
+    movimientosGateHora: 0,
+    movimientosPatioHora: 0,
+    movimientosMuelleHora: 0,
+    labelMovimientos1: "Movimientos Gate",
+    labelMovimientos2: "Movimientos Patio",
+    labelMovimientos3: "Movimientos Muelle",
+    vistaContexto: 'terminal',
     movimientosPorBloque: {},
     remanejosPorBloque: {},
     horasConActividad: 0,
@@ -198,7 +221,6 @@ export const usePortKPIs = ({
 
         switch (unit) {
             case 'week':
-                // USAR EL MAPEO DE SEMANAS EN LUGAR DEL CÁLCULO ESTÁNDAR
                 const weekNumber = timeState.magdalenaConfig?.semana || getWeekNumberFromDate(startDate);
                 const weekRange = getWeekDateRange(weekNumber);
 
@@ -225,7 +247,6 @@ export const usePortKPIs = ({
                 break;
 
             case 'shift':
-                // Para turnos, mantener la lógica existente
                 const hour = startDate.getHours();
                 if (hour >= 6 && hour < 14) {
                     startDate.setHours(6, 0, 0, 0);
@@ -262,9 +283,10 @@ export const usePortKPIs = ({
                 bloqueFilter,
                 operationType
             };
-            // En loadDataFromAPI
+
             console.log('Llamando API con unit:', unit);
             console.log('Filters completos:', filters);
+
             const [kpisData, historicalMovements] = await Promise.all([
                 portApi.calculateKPIs(filters),
                 portApi.getHistoricalMovements(filters)
@@ -312,7 +334,15 @@ export const usePortKPIs = ({
         } else {
             return 'normal';
         }
-
+        if (kpi === 'movimientosGateHora') {
+            value = currentKPIs.movimientosGateHora || 0;
+        } else if (kpi === 'movimientosPatioHora') {
+            value = currentKPIs.movimientosPatioHora || 0;
+        } else if (kpi === 'movimientosMuelleHora') {
+            value = currentKPIs.movimientosMuelleHora || 0;
+        } else if (kpi === 'tiempoPermanencia' && currentKPIs.tiempoPermanencia) {
+            value = currentKPIs.tiempoPermanencia.promedioDias;
+        }
         const threshold = KPI_THRESHOLDS[kpi];
         if (!threshold) return 'normal';
 
@@ -339,7 +369,6 @@ export const usePortKPIs = ({
 
         let value: number | undefined;
 
-        // Manejar KPIs compuestos
         switch (kpi) {
             case 'tiempoPermanencia':
                 value = currentKPIs.tiempoPermanencia?.promedioDias;

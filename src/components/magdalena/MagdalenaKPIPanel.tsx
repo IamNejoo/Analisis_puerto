@@ -125,7 +125,7 @@ export const MagdalenaKPIPanel: React.FC = () => {
                     <p className="text-sm text-slate-400">
                         Semana {timeState.magdalenaConfig?.semana || 3} •
                         Participación {timeState.magdalenaConfig?.participacion || 69}% •
-                        {timeState.magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Centralizada'}
+                        {timeState.magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Sin Dispersión'}
                     </p>
                 </div>
                 {isLoading && (

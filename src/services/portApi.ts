@@ -6,7 +6,7 @@ import type {
     TruckTurnaroundTime
 } from '../types/portKpis';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 export interface KPIFilters {
     startDate: Date;
@@ -17,7 +17,7 @@ export interface KPIFilters {
     operationType?: 'import' | 'export';
 }
 
-// Interfaz corregida basada en la respuesta real del backend
+// Interfaz actualizada con los campos de totales
 interface ComprehensiveKPIResponse {
     capacidad: {
         utilizacionPorVolumen: number;
@@ -40,6 +40,19 @@ interface ComprehensiveKPIResponse {
         balanceFlujo: number;
         indiceRemanejos: number;
         productividadOperacional: number;
+        // Campos existentes de promedios
+        movimientosGateHora: number;
+        movimientosPatioHora: number;
+        movimientosMuelleHora: number;
+        // NUEVOS CAMPOS DE TOTALES
+        totalMovimientosGate: number;
+        totalMovimientosPatio: number;
+        totalMovimientosMuelle: number;
+        // Labels y contexto
+        labelMovimientos1: string;
+        labelMovimientos2: string;
+        labelMovimientos3: string;
+        vistaContexto: 'terminal' | 'patio' | 'bloque';
     };
     tiemposServicio: {
         ttt: {
@@ -174,6 +187,16 @@ class PortApiService {
 
             const data: ComprehensiveKPIResponse = await response.json();
 
+            // Calcular totales si no vienen del backend
+            const totalMovimientosGate = data.flujos.totalMovimientosGate ||
+                (data.flujos.gateEntrada + data.flujos.gateSalida);
+
+            const totalMovimientosPatio = data.flujos.totalMovimientosPatio ||
+                Math.round(data.flujos.movimientosPatioHora * data.flujos.horasConGate);
+
+            const totalMovimientosMuelle = data.flujos.totalMovimientosMuelle ||
+                (data.flujos.muelleEntrada + data.flujos.muelleSalida);
+
             // Mapear la respuesta al formato CorePortKPIs
             return {
                 // 1. Utilización por Volumen
@@ -200,7 +223,6 @@ class PortApiService {
                 totalRemanejos: Math.round(data.flujos.totalMovimientos * (data.flujos.indiceRemanejos / 100)),
 
                 // 6. Variabilidad Operacional
-                // CORRECCIÓN: Usar coeficienteVariacion de capacidad, no de inventario
                 variabilidadOperacional: data.capacidad.coeficienteVariacion,
                 rangoOperativo: data.capacidad.rangoOperativo,
                 minimoTeus: data.capacidad.minimoTeus,
@@ -230,6 +252,22 @@ class PortApiService {
                     p95: data.tiemposServicio.ttt.p95,
                     totalCamiones: data.tiemposServicio.ttt.totalCamiones
                 },
+
+                // CAMPOS DE MOVIMIENTOS - Promedios por hora
+                movimientosGateHora: data.flujos.movimientosGateHora,
+                movimientosPatioHora: data.flujos.movimientosPatioHora,
+                movimientosMuelleHora: data.flujos.movimientosMuelleHora,
+
+                // NUEVOS CAMPOS - Totales de movimientos
+                totalMovimientosGate: totalMovimientosGate,
+                totalMovimientosPatio: totalMovimientosPatio,
+                totalMovimientosMuelle: totalMovimientosMuelle,
+
+                // Labels dinámicas y contexto
+                labelMovimientos1: data.flujos.labelMovimientos1,
+                labelMovimientos2: data.flujos.labelMovimientos2,
+                labelMovimientos3: data.flujos.labelMovimientos3,
+                vistaContexto: data.flujos.vistaContexto,
 
                 // Datos auxiliares
                 totalMovimientos: data.flujos.totalMovimientos,

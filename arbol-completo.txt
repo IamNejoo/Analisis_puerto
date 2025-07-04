@@ -1,0 +1,138 @@
+.
+├── .dockerignore
+├── .env
+├── .env.development
+├── .git
+├── .gitattributes
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── arbol-completo.txt
+├── arbol-proyecto.txt
+├── docker-compose.yml
+├── eslint.config.js
+├── index.html
+├── nginx.conf
+├── node_modules
+├── src
+│   ├── App.css
+│   ├── App.tsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── components
+│   │   ├── PuertoSVG.tsx
+│   │   ├── Toolbar.tsx
+│   │   ├── Untitled 2.html
+│   │   ├── Untitled 3.html
+│   │   ├── Untitled 4.html
+│   │   ├── Untitled.html
+│   │   ├── camila
+│   │   │   ├── CamilaComparisonPanel.tsx
+│   │   │   ├── CamilaFilters.tsx
+│   │   │   ├── CamilaIntegratedPanel.tsx
+│   │   │   ├── CamilaKPIPanel.tsx
+│   │   │   ├── CamilaModelSelector.tsx
+│   │   │   ├── CuotasRecomendadasPanel.tsx
+│   │   │   ├── GrueDetailPanel.tsx
+│   │   │   ├── HeatmapGruasPanel.tsx
+│   │   │   └── HourRangeSelector.tsx
+│   │   ├── caminos.tsx
+│   │   ├── dashboard
+│   │   │   ├── CongestionAnalyticsPanel.tsx
+│   │   │   ├── CorePortKPIPanel.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── KPICard.tsx
+│   │   │   ├── MapPanel.tsx
+│   │   │   └── congestion
+│   │   │       ├── BottleneckAnalysis.tsx
+│   │   │       ├── ControlChartsAnalysis.tsx
+│   │   │       └── MovementTypesAnalysis.tsx
+│   │   ├── layout
+│   │   │   ├── _Header.tsx
+│   │   │   ├── _MainLayout.tsx
+│   │   │   └── _Sidebar.tsx
+│   │   ├── magdalena
+│   │   │   ├── ComparisonPanel.tsx
+│   │   │   ├── MagdalenaKPIPanel.tsx
+│   │   │   ├── ModelSelector.tsx
+│   │   │   ├── RealComparisonPanel.tsx
+│   │   │   ├── SegregationHeatmap.tsx
+│   │   │   └── WorkloadChart.tsx
+│   │   ├── map
+│   │   │   ├── MapKPIOverlay.tsx
+│   │   │   ├── MovementAnalysisPanel.tsx
+│   │   │   ├── MultiLevelMap.tsx
+│   │   │   ├── NavigationBreadcrumb.tsx
+│   │   │   ├── PortMap.tsx
+│   │   │   ├── _PortMapLegend.tsx
+│   │   │   ├── entities
+│   │   │   │   ├── ContainerYardEntity.tsx
+│   │   │   │   ├── CraneEntity.tsx
+│   │   │   │   ├── CustomsEntity.tsx
+│   │   │   │   ├── EspingonEntity.tsx
+│   │   │   │   ├── GateEntity.tsx
+│   │   │   │   ├── IMOEntity.tsx
+│   │   │   │   ├── OHigginsEntity.tsx
+│   │   │   │   ├── PassengerTerminalEntity.tsx
+│   │   │   │   └── TebasEntity.tsx
+│   │   │   ├── overlays
+│   │   │   │   └── MovementRings.tsx
+│   │   │   └── views
+│   │   │       ├── BloqueView.tsx
+│   │   │       ├── PatioView.tsx
+│   │   │       └── TerminalView.tsx
+│   │   └── shared
+│   │       ├── DataSourceSelector.tsx
+│   │       ├── FilterToggle.tsx
+│   │       ├── KPIRelationsPanel.tsx
+│   │       ├── OccupancyInfoBadge.tsx
+│   │       ├── StatusBadge.tsx
+│   │       ├── Tabs.tsx
+│   │       └── TimeControl.tsx
+│   ├── constants
+│   │   └── blockCapacities.ts
+│   ├── contexts
+│   │   ├── PortContext.tsx
+│   │   ├── TimeContext.tsx
+│   │   └── ViewNavigationContext.tsx
+│   ├── data
+│   │   ├── alertsData.ts
+│   │   ├── blockOccupancyData.ts
+│   │   ├── occupancyData.ts
+│   │   ├── patioData.ts
+│   │   ├── productivityData.ts
+│   │   ├── shipsData.ts
+│   │   ├── truckTimeData.ts
+│   │   └── yardOccupancyData.ts
+│   ├── estructura_actual.txt
+│   ├── hooks
+│   │   ├── useCamilaData.ts
+│   │   ├── useFilters.ts
+│   │   ├── useMagdalenaData.ts
+│   │   ├── usePortData.ts
+│   │   ├── usePortKPIs.ts
+│   │   ├── useRealPatioData.ts
+│   │   ├── useSAIData.ts
+│   │   └── useTemporalAggregation.ts
+│   ├── index.css
+│   ├── legacy-config.json
+│   ├── main.tsx
+│   ├── services
+│   │   ├── camilaApi.ts
+│   │   ├── magdalenaApi.ts
+│   │   ├── portApi.ts
+│   │   └── saiApi.ts
+│   ├── types
+│   │   ├── camila.ts
+│   │   ├── index.ts
+│   │   └── portKpis.ts
+│   ├── utils
+│   │   └── weekDateMapping.ts
+│   └── vite-env.d.ts
+├── tailwind.config.js
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+1719 directories, 10096 files

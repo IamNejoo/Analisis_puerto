@@ -1,7 +1,7 @@
 // src/components/dashboard/congestion/MovementTypesAnalysis.tsx
 import React, { useState, useMemo } from 'react';
 import {
-    TrendingUp, Clock, Package, Filter, Play
+    TrendingUp, Clock, Package, Filter, Play, Info
 } from 'lucide-react';
 import {
     ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
@@ -45,12 +45,14 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
     const [filterTipoMovimiento, setFilterTipoMovimiento] = useState<'todos' | 'productivos' | 'no-productivos'>('todos');
 
     const [showEvolucionTurnos, setShowEvolucionTurnos] = useState(false);
-    const [numeroTurnos, setNumeroTurnos] = useState(21);
     const [chartType, setChartType] = useState<'area' | 'bar'>('area');
 
-    // Procesar datos según el unit temporal global
-    // Reemplazar todo el switch statement en processedData (líneas ~50-220) con:
+    // Ajustar etiquetas para mostrar hora
+    const adjustTimeForDisplay = (hour: number): string => {
+        return `${hour}:00`;
+    };
 
+    // Procesar datos según el unit temporal global
     const processedData = useMemo(() => {
         let data: any[] = [];
 
@@ -107,7 +109,7 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                 break;
 
             case 'day':
-                // Para vista diaria, mostrar las 24 horas (como está actualmente)
+                // Para vista diaria, mostrar las 24 horas
                 if (historicalData && historicalData.length > 0) {
                     // Filtrar solo el día actual
                     const currentDayStart = new Date(timeState.currentDate);
@@ -148,11 +150,44 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                         }
                     });
 
+                    // Ajustar etiquetas para mostrar punto medio de la hora
                     data = Array.from(hourlyData.entries())
                         .map(([hour, values]) => ({
-                            label: `${hour}:00`,
+                            label: adjustTimeForDisplay(hour),
+                            hour: hour, // Mantener hora original para cálculos
                             ...values
                         }));
+
+                    // Agregar puntos de corte para evitar interpolación incorrecta
+                    // Agregar punto antes del inicio del turno 1 (6am) con valores en 0
+                    if (data.length > 0 && data[5].hour === 5) {
+                        // Si hay datos a las 5am y no hay actividad, asegurar que sea 0
+                        const fiveAmData = data.find(d => d.hour === 5);
+                        if (fiveAmData) {
+                            Object.keys(fiveAmData).forEach(key => {
+                                if (key !== 'label' && key !== 'hour') {
+                                    fiveAmData[key] = 0;
+                                }
+                            });
+                        }
+                    }
+
+                    // Asegurar que no haya actividad entre turnos (22-6)
+                    for (let h = 22; h <= 23; h++) {
+                        const hourData = data.find(d => d.hour === h);
+                        if (hourData) {
+                            const hasActivity = Object.keys(hourData).some(key =>
+                                key !== 'label' && key !== 'hour' && hourData[key] > 0
+                            );
+                            if (!hasActivity) {
+                                Object.keys(hourData).forEach(key => {
+                                    if (key !== 'label' && key !== 'hour') {
+                                        hourData[key] = 0;
+                                    }
+                                });
+                            }
+                        }
+                    }
                 }
                 break;
 
@@ -198,7 +233,8 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                     data = Array.from(hourlyData.entries())
                         .sort((a, b) => a[0] - b[0])
                         .map(([hour, values]) => ({
-                            label: `${hour}:00`,
+                            label: adjustTimeForDisplay(hour),
+                            hour: hour,
                             ...values
                         }));
                 }
@@ -249,11 +285,11 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
     }, [timeState.unit, timeState.currentDate, historicalData]);
 
     // Filtrar datos según checkboxes
-    // Filtrar datos según checkboxes y tipo de movimiento
     const filteredData = useMemo(() => {
         return processedData.map(item => {
             const filtered: any = {
-                label: item.label
+                label: item.label,
+                hour: item.hour // Preservar hora original si existe
             };
 
             // Aplicar filtro por tipo de movimiento
@@ -308,19 +344,57 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
             return filtered;
         });
     }, [processedData, filterProductivos, filterNoProductivos, filterTipoMovimiento]);
-    console.log("datos de historicalData[0]", historicalData[0]);
-    // Datos para evolución de turnos
-    const evolucionTurnosData = useMemo(() => {
-        if (!temporalData.turno || temporalData.turno.length === 0) return [];
 
-        return temporalData.turno.slice(0, numeroTurnos).map((t: any, index: number) => ({
-            turno: `T${index + 1}`,
-            movimientosProductivos: t.movimientosProductivos || 0,
-            movimientosNoProductivos: t.movimientosNoProductivos || 0,
-            congestionScore: t.congestionScore || 0,
-            flujoNeto: t.flujoNeto || 0
-        }));
-    }, [temporalData.turno, numeroTurnos]);
+    // Nueva lógica para evolución por turnos con 3 curvas
+    const evolucionPorTurnosData = useMemo(() => {
+        if (timeState.unit !== 'week' || !historicalData || historicalData.length === 0) return [];
+
+        // Agrupar por día y turno
+        const dataByDayAndShift = new Map();
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+        // Inicializar estructura
+        for (let day = 0; day < 7; day++) {
+            dataByDayAndShift.set(day, {
+                dia: dayNames[day],
+                turno1: 0, // 6:00 - 14:00
+                turno2: 0, // 14:00 - 22:00
+                turno3: 0  // 22:00 - 6:00
+            });
+        }
+
+        // Procesar datos históricos
+        historicalData.forEach(record => {
+            const date = new Date(record.hora);
+            const dayOfWeek = date.getDay();
+            const hour = date.getHours();
+
+            // Determinar turno (ajustado a horarios reales)
+            let turno;
+            if (hour >= 6 && hour < 14) {
+                turno = 'turno1';
+            } else if (hour >= 14 && hour < 22) {
+                turno = 'turno2';
+            } else {
+                turno = 'turno3';
+            }
+
+            const dayData = dataByDayAndShift.get(dayOfWeek);
+            if (dayData) {
+                const totalMovimientos =
+                    (record.gateEntradaContenedores || 0) +
+                    (record.gateSalidaContenedores || 0) +
+                    (record.muelleEntradaContenedores || 0) +
+                    (record.muelleSalidaContenedores || 0) +
+                    (record.remanejosContenedores || 0);
+
+                dayData[turno] += totalMovimientos;
+            }
+        });
+
+        // Convertir a array ordenado
+        return Array.from(dataByDayAndShift.values());
+    }, [historicalData, timeState.unit]);
 
     const getTimeUnitLabel = () => {
         switch (timeState.unit) {
@@ -458,7 +532,11 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                 margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                                <XAxis dataKey="label" stroke="#94a3b8" />
+                                <XAxis
+                                    dataKey="label"
+                                    stroke="#94a3b8"
+                                    interval="preserveStartEnd"
+                                />
                                 <YAxis stroke="#94a3b8" />
                                 <Tooltip
                                     contentStyle={{
@@ -469,36 +547,43 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                 />
                                 <Legend />
 
-                                {/* Movimientos Productivos */}
+                                {/* Movimientos Productivos - CAMBIO: type="linear" */}
                                 {filterProductivos.entradaGate && (
-                                    <Area type="monotone" dataKey="entradaGate" stackId="1"
-                                        stroke="#10b981" fill="#10b981" fillOpacity={0.8} name="Entrada Gate" />
+                                    <Area type="linear" dataKey="entradaGate" stackId="1"
+                                        stroke="#10b981" fill="#10b981" fillOpacity={0.8} name="Entrada Gate"
+                                        connectNulls={false} />
                                 )}
                                 {filterProductivos.salidaGate && (
-                                    <Area type="monotone" dataKey="salidaGate" stackId="1"
-                                        stroke="#34d399" fill="#34d399" fillOpacity={0.8} name="Salida Gate" />
+                                    <Area type="linear" dataKey="salidaGate" stackId="1"
+                                        stroke="#34d399" fill="#34d399" fillOpacity={0.8} name="Salida Gate"
+                                        connectNulls={false} />
                                 )}
                                 {filterProductivos.descargaBuque && (
-                                    <Area type="monotone" dataKey="descargaBuque" stackId="1"
-                                        stroke="#6ee7b7" fill="#6ee7b7" fillOpacity={0.8} name="Descarga Buque" />
+                                    <Area type="linear" dataKey="descargaBuque" stackId="1"
+                                        stroke="#6ee7b7" fill="#6ee7b7" fillOpacity={0.8} name="Descarga Buque"
+                                        connectNulls={false} />
                                 )}
                                 {filterProductivos.cargaBuque && (
-                                    <Area type="monotone" dataKey="cargaBuque" stackId="1"
-                                        stroke="#a7f3d0" fill="#a7f3d0" fillOpacity={0.8} name="Carga Buque" />
+                                    <Area type="linear" dataKey="cargaBuque" stackId="1"
+                                        stroke="#a7f3d0" fill="#a7f3d0" fillOpacity={0.8} name="Carga Buque"
+                                        connectNulls={false} />
                                 )}
 
-                                {/* Movimientos No Productivos */}
+                                {/* Movimientos No Productivos - CAMBIO: type="linear" */}
                                 {filterNoProductivos.remanejosBloque && (
-                                    <Area type="monotone" dataKey="reacomodosBloque" stackId="1"
-                                        stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.8} name="Reacomodos en bloque" />
+                                    <Area type="linear" dataKey="reacomodosBloque" stackId="1"
+                                        stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.8} name="Reacomodos en bloque"
+                                        connectNulls={false} />
                                 )}
                                 {filterNoProductivos.entreBloques && (
-                                    <Area type="monotone" dataKey="entreBloques" stackId="1"
-                                        stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.8} name="Entre bloques" />
+                                    <Area type="linear" dataKey="entreBloques" stackId="1"
+                                        stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.8} name="Entre bloques"
+                                        connectNulls={false} />
                                 )}
                                 {filterNoProductivos.entrePatios && (
-                                    <Area type="monotone" dataKey="entrePatios" stackId="1"
-                                        stroke="#ef4444" fill="#ef4444" fillOpacity={0.8} name="Entre patios" />
+                                    <Area type="linear" dataKey="entrePatios" stackId="1"
+                                        stroke="#ef4444" fill="#ef4444" fillOpacity={0.8} name="Entre patios"
+                                        connectNulls={false} />
                                 )}
                             </AreaChart>
                         ) : (
@@ -507,7 +592,7 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                 margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                                <XAxis dataKey="label" stroke="#94a3b8" />
+                                <XAxis dataKey="label" stroke="#94a3b8" interval="preserveStartEnd" />
                                 <YAxis stroke="#94a3b8" />
                                 <Tooltip
                                     contentStyle={{
@@ -546,293 +631,126 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                         )}
                     </ResponsiveContainer>
                 </div>
+                <div className="mt-2 text-xs text-gray-500 text-center">
+                    <Info className="inline w-3 h-3 mr-1" />
+                    Cada barra representa el total de movimientos durante esa hora
+                </div>
             </div>
 
-            {/* Botón para mostrar evolución de turnos */}
-            <div className="flex justify-center">
-                <button
-                    onClick={() => setShowEvolucionTurnos(!showEvolucionTurnos)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
-                >
-                    <Play size={16} />
-                    <span>{showEvolucionTurnos ? 'Ocultar' : 'Mostrar'} Evolución de Turnos</span>
-                </button>
-            </div>
+            {/* Botón para mostrar evolución de turnos - SOLO EN VISTA SEMANAL */}
+            {timeState.unit === 'week' && (
+                <div className="flex justify-center">
+                    <button
+                        onClick={() => setShowEvolucionTurnos(!showEvolucionTurnos)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+                    >
+                        <Play size={16} />
+                        <span>{showEvolucionTurnos ? 'Ocultar' : 'Mostrar'} Evolución por Turnos</span>
+                    </button>
+                </div>
+            )}
 
-            {/* Evolución de Turnos */}
-            {showEvolucionTurnos && evolucionTurnosData.length > 0 && (
+            {/* Nueva visualización de evolución por turnos con 3 curvas */}
+            {showEvolucionTurnos && timeState.unit === 'week' && evolucionPorTurnosData.length > 0 && (
                 <div className="space-y-4">
                     <div className="bg-slate-700 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-semibold text-slate-200">
-                                Evolución de Movimientos por Turno
+                                Comparación de Movimientos por Turno - Semana Completa
                             </h4>
-                            <div className="flex items-center space-x-2">
-                                <label className="text-sm text-slate-400">Número de turnos:</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="100"
-                                    value={numeroTurnos}
-                                    onChange={(e) => setNumeroTurnos(Number(e.target.value))}
-                                    className="w-16 px-2 py-1 bg-slate-600 text-white rounded text-sm"
-                                />
+                            <div className="text-xs text-gray-400">
+                                Turnos: T1 (6-14h) | T2 (14-22h) | T3 (22-6h)
                             </div>
                         </div>
                         <div className="h-64">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart
-                                    data={evolucionTurnosData}
+                                    data={evolucionPorTurnosData}
                                     margin={{ top: 10, right: 30, left: 0, bottom: 40 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                                     <XAxis
-                                        dataKey="turno"
+                                        dataKey="dia"
                                         stroke="#94a3b8"
-                                        label={{ value: 'Turno', position: 'insideBottom', offset: -5 }}
+                                        label={{ value: 'Día de la Semana', position: 'insideBottom', offset: -5 }}
                                     />
-                                    <YAxis stroke="#94a3b8" />
-                                    <YAxis yAxisId="right" orientation="right" stroke="#ef4444" />
+                                    <YAxis
+                                        stroke="#94a3b8"
+                                        label={{ value: 'Total Movimientos', angle: -90, position: 'insideLeft' }}
+                                    />
                                     <Tooltip
                                         contentStyle={{
                                             backgroundColor: '#1e293b',
                                             border: '1px solid #475569'
                                         }}
-                                        formatter={(value: any) => `${value} cont`}
+                                        formatter={(value: any) => `${value} movimientos`}
                                     />
                                     <Legend />
+                                    {/* CAMBIO: type="linear" para evitar suavizado excesivo */}
                                     <Line
-                                        type="monotone"
-                                        dataKey="movimientosProductivos"
+                                        type="linear"
+                                        dataKey="turno1"
                                         stroke="#10b981"
                                         strokeWidth={2}
-                                        name="Movimientos Productivos"
+                                        name="Turno 1 (6:00-14:00)"
+                                        dot={{ fill: '#10b981' }}
+                                        connectNulls={false}
                                     />
                                     <Line
-                                        type="monotone"
-                                        dataKey="movimientosNoProductivos"
+                                        type="linear"
+                                        dataKey="turno2"
+                                        stroke="#3b82f6"
+                                        strokeWidth={2}
+                                        name="Turno 2 (14:00-22:00)"
+                                        dot={{ fill: '#3b82f6' }}
+                                        connectNulls={false}
+                                    />
+                                    <Line
+                                        type="linear"
+                                        dataKey="turno3"
                                         stroke="#f59e0b"
                                         strokeWidth={2}
-                                        name="Movimientos No Productivos"
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="congestionScore"
-                                        stroke="#ef4444"
-                                        strokeWidth={2}
-                                        strokeDasharray="5 5"
-                                        name="Score Congestión"
-                                        yAxisId="right"
+                                        name="Turno 3 (22:00-6:00)"
+                                        dot={{ fill: '#f59e0b' }}
+                                        connectNulls={false}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
-                    {/* Métricas resumen */}
-                    <div className="grid grid-cols-4 gap-4">
+                    {/* Análisis de patrones por turno */}
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="bg-slate-700 rounded-lg p-3">
-                            <div className="text-xs text-slate-400">Promedio Productividad</div>
-                            <div className="text-xl font-bold text-green-400">
-                                {(() => {
-                                    const totalProd = evolucionTurnosData.reduce((sum: number, t: { movimientosProductivos: number }) => sum + t.movimientosProductivos, 0);
-                                    const totalNoProd = evolucionTurnosData.reduce((sum: number, t: { movimientosNoProductivos: number }) => sum + t.movimientosNoProductivos, 0);
-                                    const total = totalProd + totalNoProd;
-                                    return total > 0 ? `${((totalProd / total) * 100).toFixed(1)}%` : '0%';
-                                })()}
+                            <div className="text-xs text-green-400 font-medium">Turno 1 (Mañana)</div>
+                            <div className="text-xl font-bold text-slate-100 mt-1">
+                                {evolucionPorTurnosData.reduce((sum, d) => sum + d.turno1, 0).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                                Total movimientos semana
                             </div>
                         </div>
                         <div className="bg-slate-700 rounded-lg p-3">
-                            <div className="text-xs text-slate-400">Turno Más Congestionado</div>
-                            <div className="text-xl font-bold text-red-400">
-                                {evolucionTurnosData.reduce(
-                                    (max: { congestionScore: number; turno: string }, t: { congestionScore: number; turno: string }) =>
-                                        t.congestionScore > max.congestionScore ? t : max,
-                                    evolucionTurnosData[0]
-                                ).turno}
+                            <div className="text-xs text-blue-400 font-medium">Turno 2 (Tarde)</div>
+                            <div className="text-xl font-bold text-slate-100 mt-1">
+                                {evolucionPorTurnosData.reduce((sum, d) => sum + d.turno2, 0).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                                Total movimientos semana
                             </div>
                         </div>
                         <div className="bg-slate-700 rounded-lg p-3">
-                            <div className="text-xs text-slate-400">Total Movimientos</div>
-                            <div className="text-xl font-bold text-blue-400">
-                                {evolucionTurnosData.reduce(
-                                    (sum: number, t: { movimientosProductivos: number; movimientosNoProductivos: number }) =>
-                                        sum + t.movimientosProductivos + t.movimientosNoProductivos,
-                                    0
-                                ).toLocaleString()}
+                            <div className="text-xs text-orange-400 font-medium">Turno 3 (Noche)</div>
+                            <div className="text-xl font-bold text-slate-100 mt-1">
+                                {evolucionPorTurnosData.reduce((sum, d) => sum + d.turno3, 0).toLocaleString()}
                             </div>
-                        </div>
-                        <div className="bg-slate-700 rounded-lg p-3">
-                            <div className="text-xs text-slate-400">Flujo Neto Promedio</div>
-                            <div className="text-xl font-bold text-cyan-400">
-                                {(evolucionTurnosData.reduce((sum: number, t: { flujoNeto: number }) => sum + t.flujoNeto, 0) /
-                                    evolucionTurnosData.length).toFixed(0)}
+                            <div className="text-xs text-gray-400 mt-1">
+                                Total movimientos semana
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-
-            {/* Desglose detallado de movimientos */}
-            <div className="bg-slate-700 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-slate-200 mb-3">
-                    Desglose Detallado de Movimientos
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                    {/* Productivos */}
-                    <div className="bg-slate-800 rounded p-3">
-                        <div className="text-xs text-green-400 font-medium mb-2">Movimientos Productivos</div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Entrada Gate:</span>
-                                <span className="text-sm font-medium text-green-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.gateEntradaContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Salida Gate:</span>
-                                <span className="text-sm font-medium text-green-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.gateSalidaContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Descarga Buque:</span>
-                                <span className="text-sm font-medium text-green-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.muelleEntradaContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Carga Buque:</span>
-                                <span className="text-sm font-medium text-green-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.muelleSalidaContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="border-t border-slate-700 mt-2 pt-2">
-                                <div className="flex justify-between font-medium">
-                                    <span className="text-sm text-green-300">Total Productivos:</span>
-                                    <span className="text-sm text-green-300">
-                                        {historicalData.reduce((sum, d) =>
-                                            sum + (d.gateEntradaContenedores || 0) + (d.gateSalidaContenedores || 0) +
-                                            (d.muelleEntradaContenedores || 0) + (d.muelleSalidaContenedores || 0), 0
-                                        ).toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* No Productivos */}
-                    <div className="bg-slate-800 rounded p-3">
-                        <div className="text-xs text-orange-400 font-medium mb-2">Movimientos No Productivos (Reacomodos)</div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Dentro del bloque:</span>
-                                <span className="text-sm font-medium text-orange-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.remanejosContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Entre bloques:</span>
-                                <span className="text-sm font-medium text-orange-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.patioEntradaContenedores || 0) + (d.patioSalidaContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-slate-300">Entre patios:</span>
-                                <span className="text-sm font-medium text-orange-400">
-                                    {historicalData.reduce((sum, d) => sum + (d.terminalEntradaContenedores || 0) + (d.terminalSalidaContenedores || 0), 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="border-t border-slate-700 mt-2 pt-2">
-                                <div className="flex justify-between font-medium">
-                                    <span className="text-sm text-orange-300">Total No Productivos:</span>
-                                    <span className="text-sm text-orange-300">
-                                        {historicalData.reduce((sum, d) =>
-                                            sum + (d.remanejosContenedores || 0) + (d.patioEntradaContenedores || 0) +
-                                            (d.patioSalidaContenedores || 0) + (d.terminalEntradaContenedores || 0) +
-                                            (d.terminalSalidaContenedores || 0), 0
-                                        ).toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Indicador de umbral 70% */}
-            {currentKPIs?.utilizacionPorVolumen && currentKPIs.utilizacionPorVolumen > 70 && (
-                <div className="bg-yellow-950/20 rounded-lg p-4 border border-yellow-700">
-                    <p className="text-sm text-yellow-300">
-                        ⚠️ Con ocupación al {currentKPIs.utilizacionPorVolumen.toFixed(1)}%,
-                        los reacomodos aumentan significativamente (umbral San Antonio: 70%)
-                    </p>
-                </div>
-            )}
-
-            {/* Métricas de eficiencia general */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-slate-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-400">Ratio Productivo</span>
-                        <TrendingUp className="text-green-400" size={20} />
-                    </div>
-                    <div className="text-2xl font-bold text-slate-100">
-                        {(() => {
-                            const totalProd = historicalData.reduce((sum, d) =>
-                                sum + (d.gateEntradaContenedores || 0) + (d.gateSalidaContenedores || 0) +
-                                (d.muelleEntradaContenedores || 0) + (d.muelleSalidaContenedores || 0), 0
-                            );
-                            const totalNoProd = historicalData.reduce((sum, d) =>
-                                sum + (d.remanejosContenedores || 0) + (d.patioEntradaContenedores || 0) +
-                                (d.patioSalidaContenedores || 0) + (d.terminalEntradaContenedores || 0) +
-                                (d.terminalSalidaContenedores || 0), 0
-                            );
-                            const total = totalProd + totalNoProd;
-                            return total > 0 ? `${((totalProd / total) * 100).toFixed(1)}%` : '0%';
-                        })()}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                        Movimientos que agregan valor
-                    </p>
-                </div>
-
-                <div className="bg-slate-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-400">Hora Pico</span>
-                        <Clock className="text-yellow-400" size={20} />
-                    </div>
-                    <div className="text-2xl font-bold text-slate-100">
-                        {(() => {
-                            // Buscar la hora con más movimientos en movementTypeAnalysis
-                            const horaPico = movementTypeAnalysis.reduce((max, h) =>
-                                h.total > (max.total || 0) ? h : max,
-                                movementTypeAnalysis[0]
-                            );
-                            return horaPico?.hora || 'N/A';
-                        })()}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                        Mayor actividad del período
-                    </p>
-                </div>
-
-                <div className="bg-slate-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-400">Reacomodos/Hora</span>
-                        <Package className="text-red-400" size={20} />
-                    </div>
-                    <div className="text-2xl font-bold text-slate-100">
-                        {historicalData.length > 0 ?
-                            (historicalData.reduce((sum, d) => sum + (d.remanejosContenedores || 0), 0) /
-                                historicalData.length).toFixed(1) : '0'
-                        }
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                        Promedio de movimientos dentro del bloque
-                    </p>
-                </div>
-            </div>
         </div>
     );
 };

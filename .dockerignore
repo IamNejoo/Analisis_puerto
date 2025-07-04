@@ -1,0 +1,39 @@
+# Dependencias
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de construcción
+dist
+build
+.vite
+
+# Archivos de desarrollo
+.git
+.gitignore
+.gitattributes
+README.md
+.env
+.env.*
+!.env.example
+
+# IDE y sistema
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Tests
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# Temporal
+tmp
+temp
