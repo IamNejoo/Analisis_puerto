@@ -116,7 +116,7 @@ class PortApiService {
         const params = new URLSearchParams({
             start_date: this.formatDate(filters.startDate),
             end_date: this.formatDate(filters.endDate),
-            force_detail: 'true',  // Siempre forzar detalle
+            // Siempre forzar detalle
             ...(filters.patioFilter && { patio: filters.patioFilter }),
             ...(filters.bloqueFilter && { bloque: filters.bloqueFilter })
         });
@@ -177,7 +177,9 @@ class PortApiService {
             ...(filters.bloqueFilter && { bloque_filter: filters.bloqueFilter }),
             ...(filters.operationType && { operation_type: filters.operationType })
         });
-
+        const url = `${this.baseUrl}/historical/kpis/comprehensive?${params}`;
+        console.log('DEBUG API URL:', url);
+        console.log('DEBUG PARAMS:', params.toString());
         try {
             const response = await fetch(`${this.baseUrl}/historical/kpis/comprehensive?${params}`);
 
@@ -186,7 +188,12 @@ class PortApiService {
             }
 
             const data: ComprehensiveKPIResponse = await response.json();
-
+            console.log('DEBUG API RESPONSE:', {
+                capacidad: data.capacidad,
+                totalMovimientos: data.flujos.totalMovimientos,
+                registros: data.metadata.totalRegistros,
+                horasUnicas: data.metadata.horasUnicas
+            });
             // Calcular totales si no vienen del backend
             const totalMovimientosGate = data.flujos.totalMovimientosGate ||
                 (data.flujos.gateEntrada + data.flujos.gateSalida);
@@ -337,7 +344,19 @@ class PortApiService {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+
+        const formatted = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
+        console.log('DEBUG formatDate:', {
+            dateInput: date.toString(),
+            formatted: formatted,
+            hora: date.getHours()
+        });
+
+        return formatted;
     }
 }
 

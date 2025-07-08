@@ -1,3 +1,5 @@
+// components/shared/DataSourceSelector.tsx - Versión corregida
+
 import React from 'react';
 import { useTimeContext } from '../../contexts/TimeContext';
 import { Database, BarChart3, Activity } from 'lucide-react';
@@ -123,11 +125,17 @@ export const DataSourceSelector: React.FC = () => {
                 </div>
             )}
 
-            {/* Configuración del modelo Camila */}
-            {timeState?.dataSource === 'modelCamila' && timeState.camilaConfig && setCamilaConfig && (
+            {/* Configuración del modelo Camila - SIMPLIFICADO */}
+            {timeState?.dataSource === 'modelCamila' && (
                 <div className="mt-4 pt-3 border-t border-slate-700">
                     <CamilaModelSelector
-                        config={timeState.camilaConfig}
+                        config={timeState.camilaConfig || {
+                            week: 2,
+                            day: 'Monday',
+                            shift: 1,
+                            modelType: 'maxmin',
+                            withSegregations: true
+                        }}
                         onChange={setCamilaConfig}
                     />
                 </div>

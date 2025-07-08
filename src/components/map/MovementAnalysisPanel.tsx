@@ -22,7 +22,13 @@ export const MovementAnalysisPanel: React.FC = () => {
     // Obtener datos según el patio seleccionado
     const patioFilter = selectedPatio === 'all' ? undefined : selectedPatio;
     const { currentKPIs, historicalData, isLoading } = usePortKPIs({ patioFilter });
-
+    console.log('DEBUG MovementAnalysisPanel:', {
+        isLoading,
+        historicalDataLength: historicalData.length,
+        currentKPIs: currentKPIs,
+        timeUnit: timeState.unit,
+        currentDate: timeState.currentDate
+    });
     // Hook para agregaciones temporales
     const temporalData = useTemporalAggregation(historicalData);
 
@@ -52,14 +58,23 @@ export const MovementAnalysisPanel: React.FC = () => {
     // Procesar datos según el unit temporal global
     const processedData = useMemo(() => {
         let data: any[] = [];
-
+        console.log('DEBUG processedData:', {
+            dataLength: data.length,
+            timeUnit: timeState.unit,
+            historicalDataLength: historicalData?.length,
+            firstItems: data.slice(0, 3)
+        });
         switch (timeState.unit) {
             case 'week':
                 // Para vista semanal, mostrar los 7 días de la semana
                 if (historicalData && historicalData.length > 0) {
+                    console.log('DEBUG WEEK - historicalData sample:', historicalData.slice(0, 3));
+
                     const weekStart = new Date(timeState.currentDate);
                     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
                     weekStart.setHours(0, 0, 0, 0);
+
+                    console.log('DEBUG WEEK - weekStart:', weekStart);
 
                     const dailyAggregates = new Map();
                     const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -76,9 +91,19 @@ export const MovementAnalysisPanel: React.FC = () => {
                         });
                     }
 
+                    let recordsProcessed = 0;
                     historicalData.forEach(record => {
                         const date = new Date(record.hora);
                         const dayOfWeek = date.getDay();
+
+                        if (recordsProcessed < 5) {
+                            console.log('DEBUG WEEK - processing record:', {
+                                hora: record.hora,
+                                date: date,
+                                dayOfWeek: dayOfWeek
+                            });
+                        }
+                        recordsProcessed++;
 
                         const agg = dailyAggregates.get(dayOfWeek);
                         if (agg) {
@@ -98,6 +123,8 @@ export const MovementAnalysisPanel: React.FC = () => {
                             label: dayNames[day],
                             ...values
                         }));
+
+                    console.log('DEBUG WEEK - final data:', data);
                 }
                 break;
 
@@ -180,28 +207,162 @@ export const MovementAnalysisPanel: React.FC = () => {
                     }
                 }
                 break;
-
-            case 'shift':
-                const currentHour = timeState.currentDate.getHours();
-                const shiftStart = Math.floor(currentHour / 8) * 8;
-
+            case 'hour':
+                // AGREGAR ESTE CASO
                 if (historicalData && historicalData.length > 0) {
-                    const shiftData = historicalData.filter(record => {
-                        const hour = new Date(record.hora).getHours();
-                        return hour >= shiftStart && hour < shiftStart + 8;
+                    // Para vista por hora, mostrar solo los datos de la hora actual
+                    const currentHour = new Date(timeState.currentDate).getHours();
+
+                    // Agrupar todos los datos de la hora seleccionada
+                    const hourData = {
+                        entradaGate: 0,
+                        salidaGate: 0,
+                        cargaBuque: 0,
+                        descargaBuque: 0,
+                        reacomodosBloque: 0,
+                        entreBloques: 0,
+                        entrePatios: 0
+                    };
+
+                    historicalData.forEach(record => {
+                        const recordHour = new Date(record.hora).getHours();
+                        // Solo procesar registros de la hora actual
+                        if (recordHour === currentHour) {
+                            hourData.entradaGate += (record.gateEntradaContenedores || 0);
+                            hourData.salidaGate += (record.gateSalidaContenedores || 0);
+                            hourData.cargaBuque += (record.muelleSalidaContenedores || 0);
+                            hourData.descargaBuque += (record.muelleEntradaContenedores || 0);
+                            hourData.reacomodosBloque += (record.remanejosContenedores || 0);
+                            hourData.entreBloques += ((record.patioEntradaContenedores || 0) + (record.patioSalidaContenedores || 0));
+                            hourData.entrePatios += ((record.terminalEntradaContenedores || 0) + (record.terminalSalidaContenedores || 0));
+                        }
                     });
 
+                    // Crear un único punto de datos para la hora
+                    data = [{
+                        label: adjustTimeForDisplay(currentHour),
+                        hour: currentHour,
+                        ...hourData
+                    }];
+                }
+                break;
+            case 'shift':
+                const currentHour = timeState.currentDate.getHours();
+                let shiftStart, shiftEnd;
+
+                // Determinar el turno actual y sus límites
+                if (currentHour >= 8 && currentHour < 16) {
+                    shiftStart = 8;
+                    shiftEnd = 16;
+                } else if (currentHour >= 16 && currentHour < 24) {
+                    shiftStart = 16;
+                    shiftEnd = 24;
+                } else {
+                    // Turno 3: 00:00 a 08:00
+                    shiftStart = 0;
+                    shiftEnd = 8;
+                }
+
+                if (historicalData && historicalData.length > 0) {
+                    const currentDate = new Date(timeState.currentDate);
+                    const currentDayStart = new Date(currentDate);
+                    currentDayStart.setHours(0, 0, 0, 0);
+                    const currentDayEnd = new Date(currentDate);
+                    currentDayEnd.setHours(23, 59, 59, 999);
+
+                    console.log('DEBUG SHIFT:', {
+                        turno: shiftStart === 0 ? 3 : (shiftStart === 8 ? 1 : 2),
+                        shiftStart,
+                        shiftEnd,
+                        currentHour,
+                        currentDate: currentDate.toString()
+                    });
+
+                    // Debug: Ver las primeras 5 fechas en historicalData
+                    console.log('DEBUG SHIFT - sample historical data:',
+                        historicalData.slice(0, 5).map(r => ({
+                            hora: r.hora,
+                            parsedDate: new Date(r.hora).toString(),
+                            hour: new Date(r.hora).getHours(),
+                            movements: r.gateEntradaContenedores + r.gateSalidaContenedores
+                        }))
+                    );
+
+                    // Ver el rango de fechas en los datos
+                    const dates = historicalData.map(r => new Date(r.hora));
+                    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+                    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+
+                    console.log('DEBUG SHIFT - data date range:', {
+                        minDate: minDate.toString(),
+                        maxDate: maxDate.toString(),
+                        currentDayStart: currentDayStart.toString(),
+                        currentDayEnd: currentDayEnd.toString()
+                    });
+
+                    // Contar registros por hora
+                    const hourCounts = new Map();
+                    historicalData.forEach(record => {
+                        const hour = new Date(record.hora).getHours();
+                        hourCounts.set(hour, (hourCounts.get(hour) || 0) + 1);
+                    });
+
+                    console.log('DEBUG SHIFT - records by hour:',
+                        Array.from(hourCounts.entries()).sort((a, b) => a[0] - b[0])
+                    );
+
+                    const shiftData = historicalData.filter(record => {
+                        const recordDate = new Date(record.hora);
+                        const hour = recordDate.getHours();
+
+                        // Verificar que esté en el rango del turno
+                        if (shiftStart === 0) {
+                            // Turno 3: horas 0-7
+                            return hour >= 0 && hour < 8;
+                        } else {
+                            // Otros turnos
+                            return hour >= shiftStart && hour < shiftEnd;
+                        }
+                    });
+
+                    console.log('DEBUG SHIFT - filtered records:', {
+                        totalRecords: historicalData.length,
+                        shiftRecords: shiftData.length,
+                        sampleShiftRecords: shiftData.slice(0, 3).map(r => ({
+                            hora: r.hora,
+                            hour: new Date(r.hora).getHours(),
+                            movements: r.gateEntradaContenedores + r.gateSalidaContenedores
+                        }))
+                    });
                     const hourlyData = new Map();
-                    for (let h = shiftStart; h < shiftStart + 8; h++) {
-                        hourlyData.set(h, {
-                            entradaGate: 0,
-                            salidaGate: 0,
-                            cargaBuque: 0,
-                            descargaBuque: 0,
-                            reacomodosBloque: 0,
-                            entreBloques: 0,
-                            entrePatios: 0
-                        });
+
+                    // Inicializar todas las horas del turno
+                    if (shiftStart === 0) {
+                        // Turno 3: 0-7
+                        for (let h = 0; h < 8; h++) {
+                            hourlyData.set(h, {
+                                entradaGate: 0,
+                                salidaGate: 0,
+                                cargaBuque: 0,
+                                descargaBuque: 0,
+                                reacomodosBloque: 0,
+                                entreBloques: 0,
+                                entrePatios: 0
+                            });
+                        }
+                    } else {
+                        // Otros turnos
+                        for (let h = shiftStart; h < shiftEnd; h++) {
+                            hourlyData.set(h, {
+                                entradaGate: 0,
+                                salidaGate: 0,
+                                cargaBuque: 0,
+                                descargaBuque: 0,
+                                reacomodosBloque: 0,
+                                entreBloques: 0,
+                                entrePatios: 0
+                            });
+                        }
                     }
 
                     shiftData.forEach(record => {
@@ -225,6 +386,11 @@ export const MovementAnalysisPanel: React.FC = () => {
                             hour: hour,
                             ...values
                         }));
+
+                    console.log('DEBUG SHIFT - final data:', {
+                        dataLength: data.length,
+                        totalMovements: data.reduce((sum, d) => sum + (d.entradaGate || 0) + (d.salidaGate || 0), 0)
+                    });
                 }
                 break;
         }
@@ -234,7 +400,14 @@ export const MovementAnalysisPanel: React.FC = () => {
 
     // Filtrar datos según checkboxes
     const filteredData = useMemo(() => {
-        return processedData.map(item => {
+        // Verificar que processedData sea un array válido
+        if (!Array.isArray(processedData)) {
+            console.error('processedData is not an array:', processedData);
+            return [];
+        }
+
+        // Mapear los datos procesados
+        const filtered = processedData.map(item => {
             const filtered: any = {
                 label: item.label,
                 hour: item.hour // Preservar hora original
@@ -267,8 +440,15 @@ export const MovementAnalysisPanel: React.FC = () => {
 
             return filtered;
         });
-    }, [processedData, filterProductivos, filterNoProductivos, filterTipoMovimiento]);
 
+        // Log de debug DESPUÉS del map, no dentro
+        console.log('DEBUG filteredData:', {
+            length: filtered.length,
+            firstItems: filtered.slice(0, 3)
+        });
+
+        return filtered;
+    }, [processedData, filterProductivos, filterNoProductivos, filterTipoMovimiento]);
     // Nueva lógica para evolución por turnos con 3 curvas
     const evolucionPorTurnosData = useMemo(() => {
         if (timeState.unit !== 'week' || !historicalData || historicalData.length === 0) return [];
@@ -295,12 +475,12 @@ export const MovementAnalysisPanel: React.FC = () => {
 
             // Determinar turno (ajustado a horarios reales)
             let turno;
-            if (hour >= 6 && hour < 14) {
-                turno = 'turno1';
-            } else if (hour >= 14 && hour < 22) {
-                turno = 'turno2';
+            if (hour >= 8 && hour < 16) {
+                turno = 'turno1';  // 08:00 - 16:00
+            } else if (hour >= 16 && hour < 24) {
+                turno = 'turno2';  // 16:00 - 00:00
             } else {
-                turno = 'turno3';
+                turno = 'turno3';  // 00:00 - 08:00
             }
 
             const dayData = dataByDayAndShift.get(dayOfWeek);
@@ -353,7 +533,14 @@ export const MovementAnalysisPanel: React.FC = () => {
         switch (timeState.unit) {
             case 'week': return 'Vista Semanal - Totales por Día';
             case 'day': return 'Vista Diaria - Totales por Hora';
-            case 'shift': return `Turno ${Math.floor(timeState.currentDate.getHours() / 8) + 1} - Totales por Hora`;
+            case 'shift': {
+                const hour = timeState.currentDate.getHours();
+                let turnoNum;
+                if (hour >= 8 && hour < 16) turnoNum = 1;
+                else if (hour >= 16 && hour < 24) turnoNum = 2;
+                else turnoNum = 3;
+                return `Turno ${turnoNum} - Totales por Hora`;
+            }
             case 'hour': return `Hora ${timeState.currentDate.getHours()}:00 - Total`;
             default: return 'Período';
         }
@@ -680,7 +867,7 @@ export const MovementAnalysisPanel: React.FC = () => {
                                     Comparación de Movimientos por Turno - Semana Completa
                                 </h4>
                                 <div className="text-xs text-gray-400">
-                                    Turnos: T1 (6-14h) | T2 (14-22h) | T3 (22-6h)
+                                    Turnos: T1 (08:00-16:00) | T2 (16:00-00:00) | T3 (00:00-08:00)
                                 </div>
                             </div>
                             <div className="h-64">
@@ -713,7 +900,7 @@ export const MovementAnalysisPanel: React.FC = () => {
                                             dataKey="turno1"
                                             stroke="#10b981"
                                             strokeWidth={2}
-                                            name="Turno 1 (6:00-14:00)"
+                                            name="Turno 1 (08:00-16:00)"
                                             dot={{ fill: '#10b981' }}
                                             connectNulls={false}
                                         />
@@ -722,7 +909,7 @@ export const MovementAnalysisPanel: React.FC = () => {
                                             dataKey="turno2"
                                             stroke="#3b82f6"
                                             strokeWidth={2}
-                                            name="Turno 2 (14:00-22:00)"
+                                            name="Turno 2 (16:00-00:00)"
                                             dot={{ fill: '#3b82f6' }}
                                             connectNulls={false}
                                         />
@@ -731,7 +918,7 @@ export const MovementAnalysisPanel: React.FC = () => {
                                             dataKey="turno3"
                                             stroke="#f59e0b"
                                             strokeWidth={2}
-                                            name="Turno 3 (22:00-6:00)"
+                                            name="Turno 3 (00:00-08:00)"
                                             dot={{ fill: '#f59e0b' }}
                                             connectNulls={false}
                                         />

@@ -1,9 +1,9 @@
-// src/App.tsx - AGREGAR EL PROVIDER
+// src/App.tsx
 import React from 'react';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { PortProvider } from './contexts/PortContext';
 import { ExtendedTimeProvider } from './contexts/TimeContext';
-import { ViewNavigationProvider } from './contexts/ViewNavigationContext'; // 🆕
+import { ViewNavigationProvider } from './contexts/ViewNavigationContext';
 
 const PORT_DATA_PATH = '/data/Prueba.csv';
 
@@ -19,7 +19,7 @@ const App: React.FC = () => {
   return (
     <PortProvider>
       <ExtendedTimeProvider>
-        <ViewNavigationProvider> {/* 🆕 AGREGAR AQUÍ */}
+        <ViewNavigationProvider>
           <div>
             <Dashboard
               portDataPath={PORT_DATA_PATH}

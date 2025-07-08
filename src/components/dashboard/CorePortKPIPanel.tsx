@@ -203,29 +203,34 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
     const getKPIsGrid = () => (
         <>
             {/* FILA 1: MOVIMIENTOS */}
+            {/* 1. Movimientos Gate - CORREGIDO */}
             <KPICard
                 title={movLabel1}
-                value={formatMovementKPI(currentKPIs.totalMovimientosGate)}
+                value={formatMovementKPI(currentKPIs.totalMovimientosGate)} // CAMBIAR: usar total
                 icon={getMovementIcon(1)}
                 status={getStatusForKPI('flujoPromedioGates')}
                 description={`${currentKPIs.movimientosGateHora?.toFixed(0)} mov/h promedio`}
                 tooltip={getKPIContext('movimientosGate')}
             />
 
+            {/* 2. Movimientos Patio - CORREGIDO */}
             <KPICard
                 title={movLabel2}
-                value={formatMovementKPI(currentKPIs.movimientosPatioHora, false)}
+                value={formatMovementKPI(currentKPIs.totalMovimientosPatio)} // CAMBIAR: usar total
                 icon={getMovementIcon(2)}
-                status='normal'
-                description={getKPIContext(movLabel2.toLowerCase().replace(' ', ''))}
+                status="normal" // No hay status específico para totales
+                description={`${currentKPIs.movimientosPatioHora?.toFixed(0)} mov/h promedio`}
+                tooltip={getKPIContext('movimientosPatio')}
             />
 
+            {/* 3. Movimientos Muelle - CORREGIDO */}
             <KPICard
                 title={movLabel3}
-                value={formatMovementKPI(currentKPIs.movimientosMuelleHora, false)}
+                value={formatMovementKPI(currentKPIs.totalMovimientosMuelle)} // CAMBIAR: usar total
                 icon={getMovementIcon(3)}
-                status='normal'
-                description={getKPIContext(movLabel3.toLowerCase().replace(' ', ''))}
+                status="normal" // No hay status específico para totales
+                description={`${currentKPIs.movimientosMuelleHora?.toFixed(0)} mov/h promedio`}
+                tooltip={getKPIContext('movimientosMuelle')}
             />
 
             {/* FILA 2: CAPACIDAD/INVENTARIO */}

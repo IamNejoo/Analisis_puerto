@@ -237,11 +237,13 @@ export const CongestionAnalyticsPanel: React.FC<CongestionAnalyticsPanelProps> =
     }, [historicalData, currentKPIs]);
 
     // Análisis por tipo de movimiento
+    // Análisis por tipo de movimiento
     const movementTypeAnalysis = useMemo((): MovementTypeAnalysis[] => {
         if (!historicalData || historicalData.length === 0) return [];
 
         let filteredData = historicalData;
 
+        // Filtrar por nivel (bloque/patio)
         if (currentLevel === 'bloque' && currentBloque) {
             filteredData = historicalData.filter(d => d.bloque === currentBloque);
         } else if (currentLevel === 'patio' && currentPatio) {
@@ -250,40 +252,104 @@ export const CongestionAnalyticsPanel: React.FC<CongestionAnalyticsPanelProps> =
             filteredData = historicalData.filter(d => d.bloque.startsWith(patioPrefix));
         }
 
-        const hourlyData = new Map<number, MovementTypeAnalysis>();
+        // Si estamos en modo turno, filtrar por las horas del turno actual
+        if (timeState.unit === 'shift') {
+            const currentHour = timeState.currentDate.getHours();
+            let shiftStart, shiftEnd;
 
-        for (let hour = 0; hour < 24; hour++) {
-            hourlyData.set(hour, {
-                hora: `${hour}:00`,
-                productivos: 0,
-                noProductivos: 0,
-                reacomodosBloque: 0,
-                entreBloques: 0,
-                entrePatios: 0,
-                total: 0
+            // Determinar el turno actual
+            if (currentHour >= 8 && currentHour < 16) {
+                shiftStart = 8;
+                shiftEnd = 16;
+            } else if (currentHour >= 16 && currentHour < 24) {
+                shiftStart = 16;
+                shiftEnd = 24;
+            } else {
+                shiftStart = 0;
+                shiftEnd = 8;
+            }
+
+            // Filtrar datos por las horas del turno
+            filteredData = filteredData.filter(data => {
+                const hour = new Date(data.hora).getHours();
+                if (shiftStart === 0) {
+                    // Turno 3: incluir horas 0-7
+                    return hour >= 0 && hour < 8;
+                } else {
+                    return hour >= shiftStart && hour < shiftEnd;
+                }
+            });
+
+            console.log('DEBUG CongestionAnalytics - Shift filtering:', {
+                turno: shiftStart === 0 ? 3 : (shiftStart === 8 ? 1 : 2),
+                shiftStart,
+                shiftEnd,
+                originalCount: historicalData.length,
+                filteredCount: filteredData.length
             });
         }
 
-        filteredData.forEach(data => {
-            const dateStr = data.hora;
-            let hour = 0;
+        const hourlyData = new Map<number, MovementTypeAnalysis>();
 
-            if (dateStr.includes('T')) {
-                const timePart = dateStr.split('T')[1];
-                hour = parseInt(timePart.split(':')[0]);
+        // Inicializar solo las horas relevantes según el contexto
+        if (timeState.unit === 'shift') {
+            const currentHour = timeState.currentDate.getHours();
+            let startHour, endHour;
+
+            if (currentHour >= 8 && currentHour < 16) {
+                startHour = 8;
+                endHour = 16;
+            } else if (currentHour >= 16 && currentHour < 24) {
+                startHour = 16;
+                endHour = 24;
             } else {
-                hour = new Date(dateStr).getHours();
+                startHour = 0;
+                endHour = 8;
             }
 
+            for (let hour = startHour; hour < endHour; hour++) {
+                hourlyData.set(hour, {
+                    hora: `${hour}:00`,
+                    productivos: 0,
+                    noProductivos: 0,
+                    reacomodosBloque: 0,
+                    entreBloques: 0,
+                    entrePatios: 0,
+                    total: 0
+                });
+            }
+        } else {
+            // Para otros modos, inicializar las 24 horas
+            for (let hour = 0; hour < 24; hour++) {
+                hourlyData.set(hour, {
+                    hora: `${hour}:00`,
+                    productivos: 0,
+                    noProductivos: 0,
+                    reacomodosBloque: 0,
+                    entreBloques: 0,
+                    entrePatios: 0,
+                    total: 0
+                });
+            }
+        }
+
+        // Procesar los datos filtrados
+        filteredData.forEach(data => {
+            const hour = new Date(data.hora).getHours();
             const hourData = hourlyData.get(hour);
+
             if (!hourData) return;
 
-            const productivos = data.gateEntradaContenedores + data.gateSalidaContenedores +
-                data.muelleEntradaContenedores + data.muelleSalidaContenedores;
+            const productivos = (data.gateEntradaContenedores || 0) +
+                (data.gateSalidaContenedores || 0) +
+                (data.muelleEntradaContenedores || 0) +
+                (data.muelleSalidaContenedores || 0);
 
-            const reacomodosBloque = data.remanejosContenedores;
-            const entreBloques = data.patioEntradaContenedores + data.patioSalidaContenedores;
-            const entrePatios = data.terminalEntradaContenedores + data.terminalSalidaContenedores;
+            const reacomodosBloque = data.remanejosContenedores || 0;
+            const entreBloques = (data.patioEntradaContenedores || 0) +
+                (data.patioSalidaContenedores || 0);
+            const entrePatios = (data.terminalEntradaContenedores || 0) +
+                (data.terminalSalidaContenedores || 0);
             const noProductivos = reacomodosBloque + entreBloques + entrePatios;
 
             hourData.productivos += productivos;
@@ -295,9 +361,9 @@ export const CongestionAnalyticsPanel: React.FC<CongestionAnalyticsPanelProps> =
         });
 
         return Array.from(hourlyData.values())
-            .filter(h => h.total > 0)
+            .filter(h => h.total > 0 || timeState.unit === 'shift') // En modo turno, mostrar todas las horas aunque estén vacías
             .sort((a, b) => parseInt(a.hora) - parseInt(b.hora));
-    }, [historicalData, currentLevel, currentBloque, currentPatio]);
+    }, [historicalData, currentLevel, currentBloque, currentPatio, timeState.unit, timeState.currentDate]);
 
 
     if (isLoading) {

@@ -583,6 +583,7 @@ export interface CamilaRealComparison {
     congestionReduction: number;
     resourceUtilization: number;
   };
+  totalMovementsDiff: number; // AGREGAR ESTA LÍNEA
 }
 
 export interface TimeContextType {

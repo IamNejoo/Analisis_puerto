@@ -1,13 +1,14 @@
-// src/components/map/views/PatioView.tsx
+// src/components/map/views/PatioView.tsx - ACTUALIZADO PARA NUEVO BACKEND
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTimeContext } from '../../../contexts/TimeContext';
 import { useMagdalenaData } from '../../../hooks/useMagdalenaData';
 import { useRealPatioData } from '../../../hooks/useRealPatioData';
-import type { BloqueData, PatioData } from '../../../types';
+import { useCamilaData } from '../../../hooks/useCamilaData';
+import type { BloqueData, PatioData, CamilaConfig } from '../../../types';
 import {
   Activity, Package, CheckCircle, TrendingUp, AlertTriangle, Settings,
   ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward, Clock,
-  RefreshCw, Database, Zap
+  RefreshCw, Database, Zap, Truck, ArrowUp, ArrowDown, BarChart3
 } from 'lucide-react';
 
 interface PatioViewProps {
@@ -22,7 +23,22 @@ interface BloqueComponentProps {
   onClick: () => void;
   getColorForOcupacion: (value: number) => string;
   isMagdalenaActive?: boolean;
+  isCamilaActive?: boolean;
   ocupacionTurno?: number;
+  camilaData?: {
+    gruas: number[];
+    flujos: {
+      recepcion: number;
+      entrega: number;
+      carga: number;
+      descarga: number;
+      total: number;
+    };
+    capacidad: number;
+    utilizacion: number;
+    congestion: number;
+  };
+  currentHour?: number;
 }
 
 // Extender el tipo BloqueData localmente
@@ -50,14 +66,143 @@ interface BloqueDataExtended extends BloqueData {
   };
 }
 
-// Componente Timeline (sin cambios)
-interface TimelineControlsProps {
-  currentTurno: number;
-  totalTurnos: number;
-  onTurnoChange: (turno: number) => void;
+// Componente Timeline para Camila (por horas)
+interface CamilaTimelineControlsProps {
+  currentHour: number;
+  totalHours: number;
+  onHourChange: (hour: number) => void;
   isPlaying: boolean;
   onPlayPause: () => void;
+  turno: number;
 }
+
+const CamilaTimelineControls: React.FC<CamilaTimelineControlsProps> = ({
+  currentHour,
+  totalHours,
+  onHourChange,
+  isPlaying,
+  onPlayPause,
+  turno
+}) => {
+  const getHourInfo = (hour: number) => {
+    // Ajustar según el turno
+    let baseHour = 0;
+    switch (turno) {
+      case 1: baseHour = 8; break;  // 08:00-16:00
+      case 2: baseHour = 16; break; // 16:00-24:00
+      case 3: baseHour = 0; break;  // 00:00-08:00
+    }
+    const realHour = baseHour + hour;
+    return `${realHour < 10 ? '0' : ''}${realHour}:00`;
+  };
+
+  return (
+    <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4 mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-slate-100 flex items-center">
+          <Clock className="mr-2 text-teal-400" size={20} />
+          Timeline por Horas - Turno {turno}
+        </h3>
+        <div className="text-sm text-slate-400">
+          {totalHours} horas de operación
+        </div>
+      </div>
+
+      <div className="bg-teal-950/20 rounded-lg p-3 mb-4 text-center border border-teal-800">
+        <div className="text-sm text-teal-400">Hora Actual</div>
+        <div className="text-2xl font-bold text-teal-300">
+          {getHourInfo(currentHour)}
+        </div>
+        <div className="text-sm text-teal-300 mt-1">
+          Período {currentHour + 1} de {totalHours}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center space-x-4 mb-4">
+        <button
+          onClick={() => onHourChange(0)}
+          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
+          title="Ir al inicio"
+        >
+          <SkipBack size={20} />
+        </button>
+
+        <button
+          onClick={() => onHourChange(Math.max(0, currentHour - 1))}
+          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300 disabled:opacity-50"
+          disabled={currentHour === 0}
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <button
+          onClick={onPlayPause}
+          className="p-3 rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-colors"
+        >
+          {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+        </button>
+
+        <button
+          onClick={() => onHourChange(Math.min(totalHours - 1, currentHour + 1))}
+          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300 disabled:opacity-50"
+          disabled={currentHour === totalHours - 1}
+        >
+          <ChevronRight size={20} />
+        </button>
+
+        <button
+          onClick={() => onHourChange(totalHours - 1)}
+          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
+          title="Ir al final"
+        >
+          <SkipForward size={20} />
+        </button>
+      </div>
+
+      <div className="relative">
+        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-teal-500 transition-all duration-300"
+            style={{ width: `${((currentHour + 1) / totalHours) * 100}%` }}
+          />
+        </div>
+
+        <div className="flex justify-between mt-2">
+          {Array.from({ length: totalHours }, (_, i) => (
+            <div
+              key={i}
+              className={`text-xs font-medium ${currentHour === i
+                ? 'text-teal-400'
+                : 'text-slate-500'
+                }`}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-8 gap-1">
+        {Array.from({ length: totalHours }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => onHourChange(i)}
+            className={`
+              p-2 text-xs rounded transition-all
+              ${i === currentHour
+                ? 'bg-teal-500 text-white shadow-md scale-105'
+                : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+              }
+            `}
+            title={getHourInfo(i)}
+          >
+            {getHourInfo(i).substring(0, 5)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // MiniDonut component (sin cambios)
 const MiniDonut: React.FC<{
@@ -127,141 +272,147 @@ const MiniDonut: React.FC<{
   );
 };
 
-// TimelineControls (sin cambios significativos)
-const TimelineControls: React.FC<TimelineControlsProps> = ({
+// TimelineControls para Magdalena (sin cambios)
+const TimelineControls: React.FC<{
+  currentTurno: number;
+  totalTurnos: number;
+  onTurnoChange: (turno: number) => void;
+  isPlaying: boolean;
+  onPlayPause: () => void;
+}> = ({
   currentTurno,
   totalTurnos,
   onTurnoChange,
   isPlaying,
   onPlayPause
 }) => {
-  const getTurnoInfo = (turno: number) => {
-    const dia = Math.floor((turno - 1) / 3) + 1;
-    const turnoDelDia = ((turno - 1) % 3) + 1;
-    const nombresTurnos = ['Mañana', 'Tarde', 'Noche'];
-    const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const getTurnoInfo = (turno: number) => {
+      const dia = Math.floor((turno - 1) / 3) + 1;
+      const turnoDelDia = ((turno - 1) % 3) + 1;
+      const nombresTurnos = ['Mañana', 'Tarde', 'Noche'];
+      const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-    return {
-      dia: diasSemana[dia - 1] || `Día ${dia}`,
-      turno: nombresTurnos[turnoDelDia - 1] || `Turno ${turnoDelDia}`,
-      descripcion: `${diasSemana[dia - 1] || `Día ${dia}`} - ${nombresTurnos[turnoDelDia - 1] || `Turno ${turnoDelDia}`}`
+      return {
+        dia: diasSemana[dia - 1] || `Día ${dia}`,
+        turno: nombresTurnos[turnoDelDia - 1] || `Turno ${turnoDelDia}`,
+        descripcion: `${diasSemana[dia - 1] || `Día ${dia}`} - ${nombresTurnos[turnoDelDia - 1] || `Turno ${turnoDelDia}`}`
+      };
     };
-  };
 
-  const turnoInfo = getTurnoInfo(currentTurno);
+    const turnoInfo = getTurnoInfo(currentTurno);
 
-  return (
-    <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4 mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-slate-100 flex items-center">
-          <Clock className="mr-2 text-cyan-400" size={20} />
-          Timeline de Turnos
-        </h3>
-        <div className="text-sm text-slate-400">
-          Semana completa: {totalTurnos} turnos
-        </div>
-      </div>
-
-      <div className="bg-cyan-950/20 rounded-lg p-3 mb-4 text-center border border-cyan-800">
-        <div className="text-sm text-cyan-400">Turno Actual</div>
-        <div className="text-2xl font-bold text-cyan-300">
-          {currentTurno} / {totalTurnos}
-        </div>
-        <div className="text-sm text-cyan-300 mt-1">
-          {turnoInfo.descripcion}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center space-x-4 mb-4">
-        <button
-          onClick={() => onTurnoChange(1)}
-          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
-          title="Ir al inicio"
-        >
-          <SkipBack size={20} />
-        </button>
-
-        <button
-          onClick={() => onTurnoChange(Math.max(1, currentTurno - 1))}
-          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300 disabled:opacity-50"
-          disabled={currentTurno === 1}
-        >
-          <ChevronLeft size={20} />
-        </button>
-
-        <button
-          onClick={onPlayPause}
-          className="p-3 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
-        >
-          {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-        </button>
-
-        <button
-          onClick={() => onTurnoChange(Math.min(totalTurnos, currentTurno + 1))}
-          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300 disabled:opacity-50"
-          disabled={currentTurno === totalTurnos}
-        >
-          <ChevronRight size={20} />
-        </button>
-
-        <button
-          onClick={() => onTurnoChange(totalTurnos)}
-          className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
-          title="Ir al final"
-        >
-          <SkipForward size={20} />
-        </button>
-      </div>
-
-      <div className="relative">
-        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-cyan-500 transition-all duration-300"
-            style={{ width: `${(currentTurno / totalTurnos) * 100}%` }}
-          />
+    return (
+      <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-100 flex items-center">
+            <Clock className="mr-2 text-cyan-400" size={20} />
+            Timeline de Turnos
+          </h3>
+          <div className="text-sm text-slate-400">
+            Semana completa: {totalTurnos} turnos
+          </div>
         </div>
 
-        <div className="flex justify-between mt-2">
-          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, index) => (
+        <div className="bg-cyan-950/20 rounded-lg p-3 mb-4 text-center border border-cyan-800">
+          <div className="text-sm text-cyan-400">Turno Actual</div>
+          <div className="text-2xl font-bold text-cyan-300">
+            {currentTurno} / {totalTurnos}
+          </div>
+          <div className="text-sm text-cyan-300 mt-1">
+            {turnoInfo.descripcion}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center space-x-4 mb-4">
+          <button
+            onClick={() => onTurnoChange(1)}
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
+            title="Ir al inicio"
+          >
+            <SkipBack size={20} />
+          </button>
+
+          <button
+            onClick={() => onTurnoChange(Math.max(1, currentTurno - 1))}
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300 disabled:opacity-50"
+            disabled={currentTurno === 1}
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <button
+            onClick={onPlayPause}
+            className="p-3 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
+          >
+            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+          </button>
+
+          <button
+            onClick={() => onTurnoChange(Math.min(totalTurnos, currentTurno + 1))}
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300 disabled:opacity-50"
+            disabled={currentTurno === totalTurnos}
+          >
+            <ChevronRight size={20} />
+          </button>
+
+          <button
+            onClick={() => onTurnoChange(totalTurnos)}
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
+            title="Ir al final"
+          >
+            <SkipForward size={20} />
+          </button>
+        </div>
+
+        <div className="relative">
+          <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
             <div
-              key={index}
-              className={`text-xs font-medium ${Math.floor((currentTurno - 1) / 3) === index
-                ? 'text-cyan-400'
-                : 'text-slate-500'
-                }`}
-            >
-              {dia}
-            </div>
-          ))}
+              className="h-full bg-cyan-500 transition-all duration-300"
+              style={{ width: `${(currentTurno / totalTurnos) * 100}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between mt-2">
+            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, index) => (
+              <div
+                key={index}
+                className={`text-xs font-medium ${Math.floor((currentTurno - 1) / 3) === index
+                  ? 'text-cyan-400'
+                  : 'text-slate-500'
+                  }`}
+              >
+                {dia}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="mt-4 grid grid-cols-7 gap-1">
-        {Array.from({ length: totalTurnos }, (_, i) => i + 1).map(turno => {
-          const info = getTurnoInfo(turno);
-          const isCurrentTurno = turno === currentTurno;
+        <div className="mt-4 grid grid-cols-7 gap-1">
+          {Array.from({ length: totalTurnos }, (_, i) => i + 1).map(turno => {
+            const info = getTurnoInfo(turno);
+            const isCurrentTurno = turno === currentTurno;
 
-          return (
-            <button
-              key={turno}
-              onClick={() => onTurnoChange(turno)}
-              className={`
+            return (
+              <button
+                key={turno}
+                onClick={() => onTurnoChange(turno)}
+                className={`
                 p-2 text-xs rounded transition-all
                 ${isCurrentTurno
-                  ? 'bg-cyan-500 text-white shadow-md scale-105'
-                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                }
+                    ? 'bg-cyan-500 text-white shadow-md scale-105'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                  }
               `}
-              title={info.descripcion}
-            >
-              {turno}
-            </button>
-          );
-        })}
+                title={info.descripcion}
+              >
+                {turno}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export const PatioView: React.FC<PatioViewProps> = ({
   patioId,
@@ -272,6 +423,7 @@ export const PatioView: React.FC<PatioViewProps> = ({
   // 1. Hooks de estado
   const [selectedBloque, setSelectedBloque] = useState<string | null>(null);
   const [currentTurno, setCurrentTurno] = useState(1);
+  const [currentHour, setCurrentHour] = useState(0); // Nueva: para Camila
   const [isPlaying, setIsPlaying] = useState(false);
 
   // 2. Context hooks
@@ -296,37 +448,111 @@ export const PatioView: React.FC<PatioViewProps> = ({
     timeState?.magdalenaConfig?.conDispersion ?? true
   );
 
+  // NUEVO: Hook para datos de Camila
+  const {
+    camilaResults,
+    isLoading: camilaLoading,
+    error: camilaError,
+    hasDataForConfig: hasCamilaData
+  } = useCamilaData(timeState?.camilaConfig || null);
+
   // 4. Valores calculados DESPUÉS de los hooks
   const isMagdalenaActive = timeState?.dataSource === 'modelMagdalena' && patioId === 'costanera';
+  const isCamilaActive = timeState?.dataSource === 'modelCamila' && patioId === 'costanera';
 
   // 5. Effect hooks
   useEffect(() => {
-    if (!isPlaying || !isMagdalenaActive || !magdalenaMetrics) return;
+    if (!isPlaying) return;
 
-    const interval = setInterval(() => {
-      setCurrentTurno(prev => {
-        if (prev >= (magdalenaMetrics.periodos || 21)) {
-          setIsPlaying(false);
-          return 1;
-        }
-        return prev + 1;
-      });
-    }, 1000);
+    if (isMagdalenaActive && magdalenaMetrics) {
+      const interval = setInterval(() => {
+        setCurrentTurno(prev => {
+          if (prev >= (magdalenaMetrics.periodos || 21)) {
+            setIsPlaying(false);
+            return 1;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
 
-    return () => clearInterval(interval);
-  }, [isPlaying, isMagdalenaActive, magdalenaMetrics]);
+    if (isCamilaActive && camilaResults) {
+      const interval = setInterval(() => {
+        setCurrentHour(prev => {
+          if (prev >= 7) { // 8 horas (0-7)
+            setIsPlaying(false);
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isPlaying, isMagdalenaActive, isCamilaActive, magdalenaMetrics, camilaResults]);
 
   // 6. useMemo para determinar qué datos usar
   const patio = useMemo(() => {
+    // Si es Camila y tiene datos, procesar esos datos
+    if (isCamilaActive && camilaResults) {
+      console.log('🏗️ Procesando datos de Camila para el patio');
+
+      // Crear bloques basados en los datos de Camila - USAR NOMBRES REALES
+      const bloquesCamila: BloqueDataExtended[] = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9'].map((bloqueId, idx) => {
+        // Calcular métricas para este bloque
+        const totalFlow = camilaResults.totalFlows[idx]?.[currentHour] || 0;
+        const capacity = camilaResults.capacity[idx]?.[currentHour] || 1;
+        const utilizacion = capacity > 0 ? (totalFlow / capacity) * 100 : 0;
+
+        // Contar grúas asignadas en esta hora
+        let gruasAsignadas = 0;
+        const gruasList: number[] = [];
+        for (let g = 0; g < 12; g++) {
+          if (camilaResults.grueAssignment[g]?.[idx * 8 + currentHour] === 1) {
+            gruasAsignadas++;
+            gruasList.push(g + 1);
+          }
+        }
+
+        return {
+          id: bloqueId,
+          patioId: patioId,
+          name: `Bloque ${bloqueId}`,
+          ocupacion: Math.round(utilizacion),
+          capacidadTotal: capacity,
+          bahias: [],
+          tipo: 'contenedores' as const,
+          bounds: { x: 0, y: 0, width: 100, height: 100 },
+          operationalStatus: 'active' as const,
+          equipmentType: 'rtg' as const,
+        };
+      });
+
+      const patioCamila: PatioData = {
+        id: 'costanera',
+        name: 'Patio Costanera - Modelo Camila',
+        type: 'contenedores',
+        bloques: bloquesCamila,
+        ocupacionTotal: Math.round(camilaResults.workloadBalance),
+        bounds: { x: 0, y: 0, width: 1000, height: 600 },
+        description: `Optimización Camila - ${camilaResults.day} - Turno ${camilaResults.shift} - ${camilaResults.modelType}`,
+        operatingHours: {
+          start: camilaResults.shift === 1 ? '08:00' : camilaResults.shift === 2 ? '16:00' : '00:00',
+          end: camilaResults.shift === 1 ? '16:00' : camilaResults.shift === 2 ? '24:00' : '08:00'
+        },
+        restrictions: []
+      };
+
+      return patioCamila;
+    }
+
     // Si es Magdalena y tiene datos, procesar esos datos
     if (isMagdalenaActive && magdalenaMetrics?.bloquesMagdalena && magdalenaMetrics.bloquesMagdalena.length > 0) {
       const bloquesMagdalena: BloqueDataExtended[] = magdalenaMetrics.bloquesMagdalena.map((blockData) => {
-        // Obtener ocupación para el turno actual
         const ocupacionTurno = blockData.ocupacionPorTurno && blockData.ocupacionPorTurno[currentTurno - 1] !== undefined
           ? blockData.ocupacionPorTurno[currentTurno - 1]
           : blockData.ocupacionPromedio;
 
-        // Asegurar que la ocupación sea al menos visible (mínimo 5%)
         const ocupacionVisible = Math.max(5, Math.round(ocupacionTurno));
 
         return {
@@ -341,14 +567,12 @@ export const PatioView: React.FC<PatioViewProps> = ({
           bounds: { x: 0, y: 0, width: 100, height: 100 },
           operationalStatus: blockData.estado,
           equipmentType: 'rtg' as const,
-          // Datos adicionales para el timeline
           ocupacionPorTurno: blockData.ocupacionPorTurno ?
             blockData.ocupacionPorTurno.map(o => Math.max(5, Math.round(o))) :
             undefined
         };
       });
 
-      // Calcular ocupación total del patio
       const totalOcupacion = bloquesMagdalena.reduce((sum, b) => sum + (b.ocupacion * b.capacidadTotal), 0);
       const totalCapacidad = bloquesMagdalena.reduce((sum, b) => sum + b.capacidadTotal, 0);
       const ocupacionPromedio = totalCapacidad > 0 ? Math.round(totalOcupacion / totalCapacidad) : 0;
@@ -374,9 +598,67 @@ export const PatioView: React.FC<PatioViewProps> = ({
     }
 
     return null;
-  }, [isMagdalenaActive, magdalenaMetrics, patioId, realPatioData, timeState?.dataSource, timeState?.magdalenaConfig?.semana, currentTurno]);
+  }, [isMagdalenaActive, isCamilaActive, magdalenaMetrics, camilaResults, patioId, realPatioData, timeState?.dataSource, timeState?.magdalenaConfig?.semana, currentTurno, currentHour]);
+
+  // Función para obtener datos de Camila para un bloque específico
+  const getCamilaDataForBlock = (bloqueIndex: number) => {
+    if (!camilaResults) return null;
+
+    const totalFlow = camilaResults.totalFlows[bloqueIndex]?.[currentHour] || 0;
+    const capacity = camilaResults.capacity[bloqueIndex]?.[currentHour] || 1;
+    const recepcion = camilaResults.receptionFlow[bloqueIndex]?.[currentHour] || 0;
+    const entrega = camilaResults.deliveryFlow[bloqueIndex]?.[currentHour] || 0;
+    const carga = camilaResults.loadingFlow[bloqueIndex]?.[currentHour] || 0;
+    const descarga = camilaResults.unloadingFlow[bloqueIndex]?.[currentHour] || 0;
+
+    // Contar grúas asignadas
+    const gruasList: number[] = [];
+    for (let g = 0; g < 12; g++) {
+      if (camilaResults.grueAssignment[g]?.[bloqueIndex * 8 + currentHour] === 1) {
+        gruasList.push(g + 1);
+      }
+    }
+
+    return {
+      gruas: gruasList,
+      flujos: {
+        recepcion,
+        entrega,
+        carga,
+        descarga,
+        total: totalFlow
+      },
+      capacidad: capacity,
+      utilizacion: capacity > 0 ? (totalFlow / capacity) * 100 : 0,
+      congestion: capacity > 0 ? totalFlow / capacity : 0
+    };
+  };
 
   // ========== RENDERIZADO CONDICIONAL (después de todos los hooks) ==========
+
+  // Si Camila está activo pero no hay datos
+  if (isCamilaActive && !hasCamilaData) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-slate-900">
+        <div className="text-center max-w-md p-6 bg-slate-800 rounded-lg shadow-md border border-slate-700">
+          <AlertTriangle size={48} className="mx-auto mb-4 text-amber-500" />
+          <h3 className="text-lg font-semibold text-slate-100 mb-2">Datos no disponibles</h3>
+          <p className="text-slate-400 mb-4">
+            No se encontraron datos para la configuración de Camila seleccionada:
+          </p>
+          <div className="bg-slate-700 rounded p-3 mb-4 text-sm">
+            <p className="text-slate-300"><strong>Semana:</strong> {timeState?.camilaConfig?.week}</p>
+            <p className="text-slate-300"><strong>Día:</strong> {timeState?.camilaConfig?.day}</p>
+            <p className="text-slate-300"><strong>Turno:</strong> {timeState?.camilaConfig?.shift}</p>
+            <p className="text-slate-300"><strong>Modelo:</strong> {timeState?.camilaConfig?.modelType}</p>
+          </div>
+          <p className="text-sm text-slate-500">
+            Por favor, verifica que existan datos cargados para esta configuración.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Si Magdalena está activo pero no hay datos
   if (isMagdalenaActive && dataNotAvailable) {
@@ -409,13 +691,16 @@ export const PatioView: React.FC<PatioViewProps> = ({
 
   // Loading state
   if ((timeState?.dataSource === 'historical' && isLoadingReal) ||
-    (isMagdalenaActive && magdalenaLoading)) {
+    (isMagdalenaActive && magdalenaLoading) ||
+    (isCamilaActive && camilaLoading)) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-slate-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
           <p className="mt-4 text-slate-400">
-            {isMagdalenaActive ? 'Cargando datos del modelo Magdalena...' : 'Cargando datos históricos...'}
+            {isCamilaActive ? 'Cargando datos del modelo Camila...' :
+              isMagdalenaActive ? 'Cargando datos del modelo Magdalena...' :
+                'Cargando datos históricos...'}
           </p>
         </div>
       </div>
@@ -423,13 +708,13 @@ export const PatioView: React.FC<PatioViewProps> = ({
   }
 
   // Error state
-  if (realDataError && timeState?.dataSource === 'historical') {
+  if ((realDataError && timeState?.dataSource === 'historical') || (camilaError && isCamilaActive)) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-slate-900">
         <div className="text-center max-w-md p-6 bg-slate-800 rounded-lg shadow-md border border-slate-700">
           <AlertTriangle size={48} className="mx-auto mb-4 text-red-500" />
           <h3 className="text-lg font-semibold text-slate-100 mb-2">Error al cargar datos</h3>
-          <p className="text-slate-400 mb-4">{realDataError}</p>
+          <p className="text-slate-400 mb-4">{realDataError || camilaError}</p>
           <button
             onClick={refreshData}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center mx-auto"
@@ -459,7 +744,18 @@ export const PatioView: React.FC<PatioViewProps> = ({
   return (
     <div className="w-full h-full bg-slate-900 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Timeline Controls - Solo visible cuando Magdalena está activo */}
+        {/* Timeline Controls - Para Camila (horas) o Magdalena (turnos) */}
+        {isCamilaActive && camilaResults && (
+          <CamilaTimelineControls
+            currentHour={currentHour}
+            totalHours={8}
+            onHourChange={setCurrentHour}
+            isPlaying={isPlaying}
+            onPlayPause={() => setIsPlaying(!isPlaying)}
+            turno={camilaResults.shift}
+          />
+        )}
+
         {isMagdalenaActive && magdalenaMetrics && (
           <TimelineControls
             currentTurno={currentTurno}
@@ -476,9 +772,14 @@ export const PatioView: React.FC<PatioViewProps> = ({
             <div>
               <h2 className="text-2xl font-bold text-slate-100 flex items-center">
                 {patio.name}
+                {isCamilaActive && (
+                  <span className="ml-3 px-3 py-1 bg-teal-950/30 text-teal-300 rounded-full text-sm font-medium border border-teal-800">
+                    ⚡ Camila - Período {currentHour + 1}
+                  </span>
+                )}
                 {isMagdalenaActive && (
                   <span className="ml-3 px-3 py-1 bg-cyan-950/30 text-cyan-300 rounded-full text-sm font-medium border border-cyan-800">
-                    🔮 Modelo Activo - Turno {currentTurno}
+                    🔮 Magdalena - Turno {currentTurno}
                   </span>
                 )}
                 {timeState?.dataSource === 'historical' && (
@@ -491,9 +792,15 @@ export const PatioView: React.FC<PatioViewProps> = ({
               <p className="text-slate-400">{patio.description}</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-blue-400">{patio.ocupacionTotal}%</div>
+              <div className="text-3xl font-bold text-blue-400">
+                {isCamilaActive && camilaResults ?
+                  `${camilaResults.workloadBalance.toFixed(1)}%` :
+                  `${patio.ocupacionTotal}%`}
+              </div>
               <div className="text-sm text-slate-500">
-                Ocupación {isMagdalenaActive ? `Turno ${currentTurno}` : timeState?.unit === 'hour' ? 'Hora' : 'Total'}
+                {isCamilaActive ? 'Balance de Carga' :
+                  isMagdalenaActive ? `Ocupación Turno ${currentTurno}` :
+                    'Ocupación Total'}
               </div>
             </div>
           </div>
@@ -511,81 +818,44 @@ export const PatioView: React.FC<PatioViewProps> = ({
             </div>
           )}
 
-          {/* Stats - Actualizadas con datos reales o de Magdalena */}
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            <div className="bg-slate-800 rounded-lg p-3 shadow-sm border border-slate-700 text-center">
-              <div className="flex items-center justify-center mb-1">
-                <Activity className="text-blue-400 mr-2" size={16} />
-                <div className="text-lg font-bold text-slate-100">
-                  {patio.bloques.filter(b => b.operationalStatus === 'active').length}
+          {/* KPIs adicionales de Camila */}
+          {isCamilaActive && camilaResults && (
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              <div className="bg-teal-950/20 rounded-lg p-3 border border-teal-800">
+                <div className="text-sm text-teal-400">Función Objetivo</div>
+                <div className="text-xl font-bold text-teal-300">
+                  {camilaResults.objectiveValue.toFixed(0)}
                 </div>
               </div>
-              <div className="text-xs text-slate-400">Bloques Activos</div>
-            </div>
-            <div className="bg-slate-800 rounded-lg p-3 shadow-sm border border-slate-700 text-center">
-              <div className="flex items-center justify-center mb-1">
-                <Package className="text-green-400 mr-2" size={16} />
-                <div className="text-lg font-bold text-slate-100">
+              <div className="bg-purple-950/20 rounded-lg p-3 border border-purple-800">
+                <div className="text-sm text-purple-400">Grúas Activas</div>
+                <div className="text-xl font-bold text-purple-300">
                   {(() => {
-                    if (isMagdalenaActive && magdalenaMetrics) {
-                      return magdalenaMetrics.totalMovimientosOptimizados.toLocaleString();
+                    const activeGruas = new Set();
+                    for (let g = 0; g < 12; g++) {
+                      for (let b = 0; b < 9; b++) {
+                        if (camilaResults.grueAssignment[g]?.[b * 8 + currentHour] === 1) {
+                          activeGruas.add(g);
+                          break;
+                        }
+                      }
                     }
-                    // Sumar todos los TEUs actuales de los bloques
-                    const totalTeus = patio.bloques.reduce((sum, b) => {
-                      const extended = b as BloqueDataExtended;
-                      return sum + (extended.stats?.teusActuales || 0);
-                    }, 0);
-                    return totalTeus.toLocaleString();
-                  })()}
+                    return activeGruas.size;
+                  })()}/12
                 </div>
               </div>
-              <div className="text-xs text-slate-400">
-                {isMagdalenaActive ? 'Movimientos' : 'TEUs Actuales'}
+              <div className="bg-blue-950/20 rounded-lg p-3 border border-blue-800">
+                <div className="text-sm text-blue-400">Índice Congestión</div>
+                <div className="text-xl font-bold text-blue-300">{camilaResults.congestionIndex.toFixed(2)}</div>
               </div>
-            </div>
-            <div className="bg-slate-800 rounded-lg p-3 shadow-sm border border-slate-700 text-center">
-              <div className="flex items-center justify-center mb-1">
-                <Zap className="text-yellow-400 mr-2" size={16} />
-                <div className="text-lg font-bold text-slate-100">
-                  {(() => {
-                    if (isMagdalenaActive && realMetrics) {
-                      return `${realMetrics.reubicaciones}`;
-                    }
-                    // Calcular total de remanejos
-                    const totalRemanejos = patio.bloques.reduce((sum, b) => {
-                      const extended = b as BloqueDataExtended;
-                      return sum + (extended.stats?.remanejos || 0);
-                    }, 0);
-                    return totalRemanejos.toLocaleString();
-                  })()}
+              <div className="bg-green-950/20 rounded-lg p-3 border border-green-800">
+                <div className="text-sm text-green-400">Movimientos/Hora</div>
+                <div className="text-xl font-bold text-green-300">
+                  {camilaResults.totalFlows.reduce((sum, block) => sum + (block[currentHour] || 0), 0)}
                 </div>
               </div>
-              <div className="text-xs text-slate-400">
-                {isMagdalenaActive ? 'Reubicaciones Eliminadas' : 'Remanejos'}
-              </div>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3 shadow-sm border border-slate-700 text-center">
-              <div className="flex items-center justify-center mb-1">
-                <TrendingUp className="text-cyan-400 mr-2" size={16} />
-                <div className="text-lg font-bold text-slate-100">
-                  {(() => {
-                    if (isMagdalenaActive && magdalenaMetrics) {
-                      return `+${magdalenaMetrics.eficienciaGanada.toFixed(1)}%`;
-                    }
-                    // Calcular flujo total (entradas + salidas)
-                    const totalFlujo = patio.bloques.reduce((sum, b) => {
-                      const extended = b as BloqueDataExtended;
-                      return sum + (extended.stats?.entradas || 0) + (extended.stats?.salidas || 0);
-                    }, 0);
-                    return totalFlujo.toLocaleString();
-                  })()}
-                </div>
-              </div>
-              <div className="text-xs text-slate-400">
-                {isMagdalenaActive ? 'Eficiencia Ganada' : 'Flujo Total TEUs'}
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* KPIs adicionales de Magdalena */}
           {isMagdalenaActive && magdalenaMetrics && (
@@ -610,6 +880,11 @@ export const PatioView: React.FC<PatioViewProps> = ({
         <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4">
           <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center">
             Bloques del Patio
+            {isCamilaActive && (
+              <span className="ml-2 text-sm font-normal text-teal-400">
+                (Optimización operacional Camila - Período {currentHour + 1})
+              </span>
+            )}
             {isMagdalenaActive && (
               <span className="ml-2 text-sm font-normal text-cyan-400">
                 (Datos optimizados por Magdalena - Turno {currentTurno})
@@ -631,9 +906,10 @@ export const PatioView: React.FC<PatioViewProps> = ({
           )}
 
           {/* Grid responsivo */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-4xl">
-            {patio.bloques.map((bloque) => {
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {patio.bloques.map((bloque: BloqueData, idx: number) => {
               const bloqueExtended = bloque as BloqueDataExtended;
+              const camilaData = isCamilaActive ? getCamilaDataForBlock(idx) : undefined;
 
               return (
                 <BloqueComponent
@@ -648,7 +924,10 @@ export const PatioView: React.FC<PatioViewProps> = ({
                   }}
                   getColorForOcupacion={getColorForOcupacion}
                   isMagdalenaActive={isMagdalenaActive}
+                  isCamilaActive={isCamilaActive}
                   ocupacionTurno={bloque.ocupacion}
+                  camilaData={camilaData || undefined}
+                  currentHour={currentHour}
                 />
               );
             })}
@@ -680,14 +959,17 @@ export const PatioView: React.FC<PatioViewProps> = ({
   );
 };
 
-// Componente de bloque actualizado
+// Componente de bloque actualizado para soportar Camila
 const BloqueComponent: React.FC<BloqueComponentProps> = ({
   bloque,
   isSelected,
   onClick,
   getColorForOcupacion,
   isMagdalenaActive,
-  ocupacionTurno
+  isCamilaActive,
+  ocupacionTurno,
+  camilaData,
+  currentHour
 }) => {
   const { timeState } = useTimeContext();
   const { magdalenaMetrics } = useMagdalenaData(
@@ -697,7 +979,9 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
   );
 
   const bloqueExtended = bloque as BloqueDataExtended;
-  const ocupacionActual = ocupacionTurno !== undefined ? ocupacionTurno : bloque.ocupacion;
+  const ocupacionActual = isCamilaActive && camilaData ?
+    Math.round(camilaData.utilizacion) :
+    (ocupacionTurno !== undefined ? ocupacionTurno : bloque.ocupacion);
 
   const color = bloque.operationalStatus === 'maintenance'
     ? '#6B7280'
@@ -750,116 +1034,221 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
         );
       })()}
 
+      {/* Indicador de grúas para Camila */}
+      {isCamilaActive && camilaData && camilaData.gruas.length > 0 && (
+        <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full w-10 h-10 flex items-center justify-center">
+          <Truck size={16} />
+          <span className="text-xs font-bold ml-0.5">{camilaData.gruas.length}</span>
+        </div>
+      )}
+
       {/* Contenido del bloque */}
       <div className="p-3">
         <div className="space-y-2">
-          {/* Ocupación actual */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-slate-300">
-                {isMagdalenaActive ? 'Ocupación Turno' : 'Ocupación'}
-              </span>
-              <span className="text-sm font-bold" style={{ color }}>{ocupacionActual}%</span>
-            </div>
-            <div className="w-full bg-slate-700 rounded-full h-2">
-              <div
-                className="h-2 rounded-full transition-all duration-300"
-                style={{ width: `${ocupacionActual}%`, backgroundColor: color }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Mostrar ocupación promedio si es diferente */}
-          {isMagdalenaActive && bloqueExtended.ocupacionPromedio !== undefined &&
-            bloqueExtended.ocupacionPromedio !== ocupacionActual && (
-              <div className="text-xs text-slate-400">
-                Promedio semana: {bloqueExtended.ocupacionPromedio}%
+          {/* Visualización para Camila */}
+          {isCamilaActive && camilaData ? (
+            <>
+              {/* Utilización */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-slate-300">Utilización</span>
+                  <span className="text-sm font-bold" style={{ color }}>{ocupacionActual}%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${ocupacionActual}%`, backgroundColor: color }}
+                  ></div>
+                </div>
               </div>
-            )}
 
-          {/* Información adicional */}
-          <div className="text-xs text-slate-400 space-y-1">
-            <div className="flex justify-between">
-              <span>Capacidad:</span>
-              <span className="font-medium text-slate-300">
-                {bloqueExtended.stats?.teusActuales || ocupiedSlots}/{bloque.capacidadTotal} TEUs
-              </span>
-            </div>
-
-            {/* Mostrar estadísticas detalladas para datos históricos */}
-            {timeState?.dataSource === 'historical' && bloqueExtended.stats && (
-              <>
-                {/* Gate */}
-                <div className="pt-1 border-t border-slate-600">
-                  <div className="font-medium text-slate-300 mb-1">Gate:</div>
-                  <div className="flex justify-between pl-2">
-                    <span>Entradas:</span>
-                    <span className="font-medium text-green-400">↓ {bloqueExtended.stats.gate.entradas}</span>
-                  </div>
-                  <div className="flex justify-between pl-2">
-                    <span>Salidas:</span>
-                    <span className="font-medium text-blue-400">↑ {bloqueExtended.stats.gate.salidas}</span>
-                  </div>
+              {/* Flujos */}
+              <div className="text-xs text-slate-400 space-y-1">
+                <div className="flex justify-between">
+                  <span>Capacidad:</span>
+                  <span className="font-medium text-slate-300">{camilaData.capacidad} mov/hora</span>
                 </div>
 
-                {/* Muelle */}
-                <div className="pt-1 border-t border-slate-600">
-                  <div className="font-medium text-slate-300 mb-1">Muelle:</div>
-                  <div className="flex justify-between pl-2">
-                    <span>Entradas:</span>
-                    <span className="font-medium text-green-400">↓ {bloqueExtended.stats.muelle.entradas}</span>
-                  </div>
-                  <div className="flex justify-between pl-2">
-                    <span>Salidas:</span>
-                    <span className="font-medium text-blue-400">↑ {bloqueExtended.stats.muelle.salidas}</span>
-                  </div>
-                </div>
-
-                {/* Movimientos internos */}
-                <div className="pt-1 border-t border-slate-600">
+                {/* Grúas asignadas */}
+                {camilaData.gruas.length > 0 && (
                   <div className="flex justify-between">
-                    <span>Despejes:</span>
-                    <span className="font-medium text-orange-400">{bloqueExtended.stats.despejes}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Entre bloques:</span>
-                    <span className="font-medium text-purple-400">{bloqueExtended.stats.reubicacionesEntreBloques}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Entre patios:</span>
-                    <span className="font-medium text-pink-400">{bloqueExtended.stats.reubicacionesEntrePatios}</span>
-                  </div>
-                </div>
-
-                {/* Bahías */}
-                <div className="pt-1 border-t border-slate-600">
-                  <div className="flex justify-between">
-                    <span>Bahías:</span>
-                    <span className="font-medium text-slate-300">
-                      {bloqueExtended.stats.bahiasTotales}
-                      {bloqueExtended.stats.bahiasReefer > 0 &&
-                        ` (${bloqueExtended.stats.bahiasReefer} reefer)`}
+                    <span>Grúas:</span>
+                    <span className="font-medium text-teal-400">
+                      g{camilaData.gruas.join(', g')}
                     </span>
                   </div>
-                </div>
-              </>
-            )}
+                )}
 
-            <div className="flex justify-between">
-              <span>Estado:</span>
-              <span className={`font-medium capitalize ${bloque.operationalStatus === 'active' ? 'text-green-400' :
-                bloque.operationalStatus === 'maintenance' ? 'text-orange-400' :
-                  'text-red-400'
-                }`}>
-                {bloque.operationalStatus === 'active' ? 'Activo' :
-                  bloque.operationalStatus === 'maintenance' ? 'Mantenimiento' :
-                    'Restringido'}
-              </span>
-            </div>
-          </div>
+                {/* Flujos detallados */}
+                {camilaData.flujos.total > 0 && (
+                  <div className="pt-1 border-t border-slate-600">
+                    <div className="font-medium text-slate-300 mb-1">Flujos (P{(currentHour ?? 0) + 1}):</div>
+                    <div className="grid grid-cols-2 gap-x-2">
+                      {camilaData.flujos.recepcion > 0 && (
+                        <div className="flex justify-between">
+                          <span className="flex items-center">
+                            <ArrowDown size={10} className="mr-1 text-green-400" />
+                            Rec:
+                          </span>
+                          <span className="font-medium text-green-400">{camilaData.flujos.recepcion}</span>
+                        </div>
+                      )}
+                      {camilaData.flujos.entrega > 0 && (
+                        <div className="flex justify-between">
+                          <span className="flex items-center">
+                            <ArrowUp size={10} className="mr-1 text-blue-400" />
+                            Ent:
+                          </span>
+                          <span className="font-medium text-blue-400">{camilaData.flujos.entrega}</span>
+                        </div>
+                      )}
+                      {camilaData.flujos.carga > 0 && (
+                        <div className="flex justify-between">
+                          <span>Car:</span>
+                          <span className="font-medium text-purple-400">{camilaData.flujos.carga}</span>
+                        </div>
+                      )}
+                      {camilaData.flujos.descarga > 0 && (
+                        <div className="flex justify-between">
+                          <span>Des:</span>
+                          <span className="font-medium text-orange-400">{camilaData.flujos.descarga}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between mt-1 pt-1 border-t border-slate-700">
+                      <span className="font-medium">Total:</span>
+                      <span className="font-bold text-slate-200">{camilaData.flujos.total}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Indicador de congestión */}
+                {camilaData.congestion > 1 && (
+                  <div className="mt-1 flex items-center text-orange-400">
+                    <AlertTriangle size={12} className="mr-1" />
+                    <span className="text-xs">Congestión: {camilaData.congestion.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Visualización estándar (histórico o Magdalena) */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-slate-300">
+                    {isMagdalenaActive ? 'Ocupación Turno' : 'Ocupación'}
+                  </span>
+                  <span className="text-sm font-bold" style={{ color }}>{ocupacionActual}%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${ocupacionActual}%`, backgroundColor: color }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Mostrar ocupación promedio si es diferente */}
+              {isMagdalenaActive && bloqueExtended.ocupacionPromedio !== undefined &&
+                bloqueExtended.ocupacionPromedio !== ocupacionActual && (
+                  <div className="text-xs text-slate-400">
+                    Promedio semana: {bloqueExtended.ocupacionPromedio}%
+                  </div>
+                )}
+
+              {/* Información adicional */}
+              <div className="text-xs text-slate-400 space-y-1">
+                <div className="flex justify-between">
+                  <span>Capacidad:</span>
+                  <span className="font-medium text-slate-300">
+                    {bloqueExtended.stats?.teusActuales || ocupiedSlots}/{bloque.capacidadTotal} TEUs
+                  </span>
+                </div>
+
+                {/* Mostrar estadísticas detalladas para datos históricos */}
+                {timeState?.dataSource === 'historical' && bloqueExtended.stats && (
+                  <>
+                    {/* Gate */}
+                    <div className="pt-1 border-t border-slate-600">
+                      <div className="font-medium text-slate-300 mb-1">Gate:</div>
+                      <div className="flex justify-between pl-2">
+                        <span>Entradas:</span>
+                        <span className="font-medium text-green-400">↓ {bloqueExtended.stats.gate.entradas}</span>
+                      </div>
+                      <div className="flex justify-between pl-2">
+                        <span>Salidas:</span>
+                        <span className="font-medium text-blue-400">↑ {bloqueExtended.stats.gate.salidas}</span>
+                      </div>
+                    </div>
+
+                    {/* Muelle */}
+                    <div className="pt-1 border-t border-slate-600">
+                      <div className="font-medium text-slate-300 mb-1">Muelle:</div>
+                      <div className="flex justify-between pl-2">
+                        <span>Entradas:</span>
+                        <span className="font-medium text-green-400">↓ {bloqueExtended.stats.muelle.entradas}</span>
+                      </div>
+                      <div className="flex justify-between pl-2">
+                        <span>Salidas:</span>
+                        <span className="font-medium text-blue-400">↑ {bloqueExtended.stats.muelle.salidas}</span>
+                      </div>
+                    </div>
+
+                    {/* Movimientos internos */}
+                    <div className="pt-1 border-t border-slate-600">
+                      <div className="flex justify-between">
+                        <span>Despejes:</span>
+                        <span className="font-medium text-orange-400">{bloqueExtended.stats.despejes}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Entre bloques:</span>
+                        <span className="font-medium text-purple-400">{bloqueExtended.stats.reubicacionesEntreBloques}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Entre patios:</span>
+                        <span className="font-medium text-pink-400">{bloqueExtended.stats.reubicacionesEntrePatios}</span>
+                      </div>
+                    </div>
+
+                    {/* Bahías */}
+                    <div className="pt-1 border-t border-slate-600">
+                      <div className="flex justify-between">
+                        <span>Bahías:</span>
+                        <span className="font-medium text-slate-300">
+                          {bloqueExtended.stats.bahiasTotales}
+                          {bloqueExtended.stats.bahiasReefer > 0 &&
+                            ` (${bloqueExtended.stats.bahiasReefer} reefer)`}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-between">
+                  <span>Estado:</span>
+                  <span className={`font-medium capitalize ${bloque.operationalStatus === 'active' ? 'text-green-400' :
+                    bloque.operationalStatus === 'maintenance' ? 'text-orange-400' :
+                      'text-red-400'
+                    }`}>
+                    {bloque.operationalStatus === 'active' ? 'Activo' :
+                      bloque.operationalStatus === 'maintenance' ? 'Mantenimiento' :
+                        'Restringido'}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Indicador de fuente de datos */}
+        {isCamilaActive && (
+          <div className="mt-2 text-center">
+            <div className="text-xs text-teal-400 bg-teal-950/30 rounded px-2 py-1 border border-teal-800">
+              Optimización Camila
+            </div>
+          </div>
+        )}
         {isMagdalenaActive && (
           <div className="mt-2 text-center">
             <div className="text-xs text-cyan-400 bg-cyan-950/30 rounded px-2 py-1 border border-cyan-800">
@@ -894,11 +1283,27 @@ const BloqueComponent: React.FC<BloqueComponentProps> = ({
         </div>
       )}
 
-      {/* Overlay de selección */}
-      {isSelected && (
-        <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center">
-          <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-            Seleccionado
+      {/* Mini gráfico de flujos por hora para Camila */}
+      {isCamilaActive && camilaData && (
+        <div className="px-3 pb-2">
+          <div className="h-8 flex items-center justify-center space-x-1">
+            <BarChart3 size={12} className="text-slate-500" />
+            <div className="flex items-end space-x-0.5 flex-1">
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((h) => {
+                const isCurrentHour = h === currentHour;
+                return (
+                  <div
+                    key={h}
+                    className={`flex-1 rounded-t transition-all duration-200 ${isCurrentHour ? 'bg-teal-500' : 'bg-slate-600'}`}
+                    style={{
+                      height: `${isCurrentHour ? 28 : 14}px`,
+                      opacity: isCurrentHour ? 1 : 0.6
+                    }}
+                    title={`P${h + 1}`}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

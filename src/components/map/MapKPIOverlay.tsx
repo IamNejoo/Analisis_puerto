@@ -197,7 +197,6 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                 {/* Grid 3x3 con los 9 KPIs reorganizados */}
                 <div className="grid grid-cols-3 gap-2">
 
-                    {/* FILA 1: MOVIMIENTOS */}
                     {/* 1. Movimientos Gate */}
                     <div className={`rounded-lg p-2 border ${getStatusBg('flujoPromedioGates')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
@@ -214,33 +213,33 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                         </div>
                     </div>
 
-                    {/* 2. Movimientos Patio/Internos/Remanejos */}
-                    <div className={`rounded-lg p-2 border bg-gray-700/50 border-gray-600/30 hover:scale-105 transition-transform cursor-help`}>
+                    {/* 2. Movimientos Patio */}
+                    <div className={`rounded-lg p-2 border ${getStatusBg('flujoPromedioPatio')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             {getMovementIcon(2)}
                             <span className="text-xs text-gray-300 truncate">{movLabel2}</span>
                             <div className="text-sm font-bold text-purple-400">
-                                {formatMovementKPI(currentKPIs.movimientosPatioHora)}
+                                {formatMovementKPI(currentKPIs.totalMovimientosPatio)}
                             </div>
                             <div className="mt-1">
-                                <div className="text-[9px] text-gray-500">
-                                    {getKPIContext(movLabel2.toLowerCase().replace(' ', ''))}
+                                <div className="text-[10px] text-gray-400">
+                                    {currentKPIs.movimientosPatioHora?.toFixed(0)} mov/h promedio
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 3. Movimientos Muelle/Inter-Patios/Otros Bloques */}
+                    {/* 3. Movimientos Muelle */}
                     <div className={`rounded-lg p-2 border bg-gray-700/50 border-gray-600/30 hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             {getMovementIcon(3)}
                             <span className="text-xs text-gray-300 truncate">{movLabel3}</span>
                             <div className="text-sm font-bold text-blue-400">
-                                {formatMovementKPI(currentKPIs.movimientosMuelleHora)}
+                                {formatMovementKPI(currentKPIs.totalMovimientosMuelle)}
                             </div>
                             <div className="mt-1">
-                                <div className="text-[9px] text-gray-500">
-                                    {getKPIContext(movLabel3.toLowerCase().replace(' ', ''))}
+                                <div className="text-[10px] text-gray-400">
+                                    {currentKPIs.movimientosMuelleHora?.toFixed(0)} mov/h promedio
                                 </div>
                             </div>
                         </div>

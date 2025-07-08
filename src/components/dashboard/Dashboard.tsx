@@ -368,6 +368,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                         <div className="p-4">
                           <CorePortKPIPanel
+                            key={`kpi-${viewState.level}-${viewState.selectedPatio || 'all'}-${viewState.selectedBloque || 'all'}`}
                             blockCapacities={blockCapacities}
                           />
                         </div>
@@ -554,6 +555,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </div>
                           <div className="p-4">
                             <CorePortKPIPanel
+                              key={`kpi-${viewState.level}-${viewState.selectedPatio || 'all'}-${viewState.selectedBloque || 'all'}`}
                               blockCapacities={blockCapacities}
                             />
                           </div>

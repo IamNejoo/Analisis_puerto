@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useTimeContext } from '../../contexts/TimeContext';
 import type { TimeUnit } from '../../types';
-
+import { getISOWeekNumber, getISOYear, getISOWeekDateRange } from '../../utils/isoWeekUtils';
 interface TimeControlProps {
     className?: string;
 }
@@ -46,15 +46,14 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
 
         switch (timeState.unit) {
             case 'week': {
-                const weekStart = new Date(date);
-                weekStart.setDate(date.getDate() - date.getDay());
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
+                const weekNumber = getISOWeekNumber(date);
+                const year = getISOYear(date);
+                const { startDate, endDate } = getISOWeekDateRange(weekNumber, year);
 
-                return `${weekStart.toLocaleDateString('es-CL', {
+                return `${startDate.toLocaleDateString('es-CL', {
                     day: 'numeric',
                     month: 'short'
-                })} - ${weekEnd.toLocaleDateString('es-CL', {
+                })} - ${endDate.toLocaleDateString('es-CL', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric'
@@ -68,6 +67,29 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                     month: 'long',
                     year: 'numeric'
                 });
+
+            case 'shift': {
+                const hour = date.getHours();
+                let turno = '';
+                let horario = '';
+
+                if (hour >= 8 && hour < 16) {
+                    turno = 'Turno 1';
+                    horario = '08:00 - 16:00';
+                } else if (hour >= 16 && hour < 24) {
+                    turno = 'Turno 2';
+                    horario = '16:00 - 00:00';
+                } else {
+                    turno = 'Turno 3';
+                    horario = '00:00 - 08:00';
+                }
+
+                return `${date.toLocaleDateString('es-CL', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short'
+                })} - ${turno} (${horario})`;
+            }
 
             case 'hour':
                 return date.toLocaleDateString('es-CL', {
@@ -112,6 +134,8 @@ export const TimeControl: React.FC<TimeControlProps> = ({ className = '' }) => {
                 return 'Mostrando resumen semanal de datos';
             case 'day':
                 return 'Mostrando datos agregados por día';
+            case 'shift':
+                return 'Mostrando datos del turno actual';
             case 'hour':
                 return 'Mostrando datos detallados por hora';
             default:

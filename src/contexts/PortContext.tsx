@@ -1,10 +1,10 @@
 import React, { createContext, useContext } from 'react';
 import { usePortData } from '../hooks/usePortData';
 import { useFilters } from '../hooks/useFilters';
-import type { 
-  OccupancyData, 
-  ProductivityData, 
-  TruckTimeData, 
+import type {
+  OccupancyData,
+  ProductivityData,
+  TruckTimeData,
   YardOccupancyData,
   BlockOccupancyData,
   AlertData,
@@ -21,20 +21,20 @@ interface PortContextType {
   ocupacionBloqueData: BlockOccupancyData[];
   alertasData: AlertData[];
   navesData: ShipData[];
-  
+
   // Valores actuales
   currentOcupacion: number;
   currentProductividad: { bmph: number; gmph: number };
   currentTiempoCamion: number;
-  
+
   // Utilidades
   getColorForOcupacion: (value: number) => string;
   getBlocksByType: (tipo: string) => BlockOccupancyData[];
   getAverageOccupancyByType: (tipo: string) => number;
-  
+
   // Filtros
   filters: Filters;
-  toggleFilter: (filter: string) => void;
+  toggleFilter: (filter: keyof Filters) => void;
 }
 
 const PortContext = createContext<PortContextType | undefined>(undefined);

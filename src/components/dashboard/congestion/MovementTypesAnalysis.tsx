@@ -659,7 +659,7 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                 Comparación de Movimientos por Turno - Semana Completa
                             </h4>
                             <div className="text-xs text-gray-400">
-                                Turnos: T1 (6-14h) | T2 (14-22h) | T3 (22-6h)
+                                Turnos: T1 (8-16h) | T2 (16-00h) | T3 (00-8h)
                             </div>
                         </div>
                         <div className="h-64">
@@ -692,7 +692,7 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                         dataKey="turno1"
                                         stroke="#10b981"
                                         strokeWidth={2}
-                                        name="Turno 1 (6:00-14:00)"
+                                        name="Turno 1 (8:00-16:00)"
                                         dot={{ fill: '#10b981' }}
                                         connectNulls={false}
                                     />
@@ -701,7 +701,7 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                         dataKey="turno2"
                                         stroke="#3b82f6"
                                         strokeWidth={2}
-                                        name="Turno 2 (14:00-22:00)"
+                                        name="Turno 2 (16:00-00:00)"
                                         dot={{ fill: '#3b82f6' }}
                                         connectNulls={false}
                                     />
@@ -710,7 +710,7 @@ export const MovementTypesAnalysis: React.FC<MovementTypesAnalysisProps> = ({
                                         dataKey="turno3"
                                         stroke="#f59e0b"
                                         strokeWidth={2}
-                                        name="Turno 3 (22:00-6:00)"
+                                        name="Turno 3 (00:00-8:00)"
                                         dot={{ fill: '#f59e0b' }}
                                         connectNulls={false}
                                     />

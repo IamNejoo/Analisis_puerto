@@ -1,8 +1,9 @@
-// components/camila/CamilaModelSelector.tsx - Versión mejorada
+// components/camila/CamilaModelSelector.tsx - Versión actualizada para el nuevo backend
 
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, AlertCircle, Calendar, Clock, Loader, Database, AlertTriangle } from 'lucide-react';
 import type { CamilaConfig } from '../../types';
+import { camilaAPI } from '../../services/camilaApi';
 
 interface CamilaModelSelectorProps {
     config: CamilaConfig;
@@ -17,7 +18,8 @@ interface AvailableConfiguration {
     withSegregations: boolean;
     totalMovements: number;
     workloadBalance: number;
-    hasRealData?: boolean;
+    objectiveValue: number;
+    runId: string;
 }
 
 export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config, onChange }) => {
@@ -25,38 +27,28 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [dataWarning, setDataWarning] = useState<string | null>(null);
 
     useEffect(() => {
         const loadAvailableConfigurations = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('/api/v1/camila/configurations');
+                const data = await camilaAPI.getAvailableConfigurations();
 
-                if (!response.ok) {
-                    throw new Error('Error al cargar configuraciones');
-                }
-
-                const data: AvailableConfiguration[] = await response.json();
-
-                // Logging detallado
                 console.log('📊 Configuraciones disponibles:', data);
                 console.log('📊 Total configuraciones:', data.length);
 
-                // Analizar qué datos están realmente disponibles
-                const weeks = [...new Set(data.map(c => c.week))];
-                const days = [...new Set(data.map(c => c.day))];
-                const shifts = [...new Set(data.map(c => c.shift))];
-
-                console.log('📊 Semanas únicas:', weeks);
-                console.log('📊 Días únicos:', days);
-                console.log('📊 Turnos únicos:', shifts);
-
-                // Detectar si hay limitaciones en los datos
-                if (data.length === 1 || (weeks.length === 1 && days.length === 1 && shifts.length === 1)) {
-                    setDataWarning('Solo hay datos disponibles para una configuración. Los cambios en día/turno mostrarán los mismos datos.');
-                } else if (shifts.length === 1) {
-                    setDataWarning(`Solo hay datos para el turno ${shifts[0]}. Otros turnos mostrarán información vacía.`);
+                // Si no hay config actual, establecer la primera disponible
+                if (!config || Object.keys(config).length === 0) {
+                    if (data.length > 0) {
+                        const firstConfig = data[0];
+                        onChange({
+                            week: firstConfig.week,
+                            day: firstConfig.day,
+                            shift: firstConfig.shift,
+                            modelType: firstConfig.modelType as 'minmax' | 'maxmin',
+                            withSegregations: firstConfig.withSegregations
+                        });
+                    }
                 }
 
                 setAvailableConfigs(data);
@@ -64,16 +56,6 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
             } catch (err) {
                 console.error('Error cargando configuraciones:', err);
                 setError('No se pudieron cargar las configuraciones disponibles');
-                // Datos de fallback para desarrollo
-                setAvailableConfigs([{
-                    week: 3,
-                    day: 'Monday',
-                    shift: 1,
-                    modelType: 'minmax',
-                    withSegregations: true,
-                    totalMovements: 674,
-                    workloadBalance: 85
-                }]);
             } finally {
                 setIsLoading(false);
             }
@@ -81,6 +63,21 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
 
         loadAvailableConfigurations();
     }, []);
+
+    // Verificar si config es válida
+    if (!config || !config.week || !config.day || !config.shift || !config.modelType) {
+        return (
+            <div className="space-y-3">
+                <div className="text-sm font-medium text-gray-800">
+                    Configuración Modelo Camila
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-800">
+                    <AlertTriangle size={14} className="inline mr-1" />
+                    Inicializando configuración...
+                </div>
+            </div>
+        );
+    }
 
     const isConfigAvailable = availableConfigs.some(
         avail =>
@@ -100,6 +97,7 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
             avail.withSegregations === config.withSegregations
     );
 
+    // Obtener opciones únicas
     const availableWeeks = [...new Set(availableConfigs.map(c => c.week))].sort((a, b) => a - b);
     const availableDays = [...new Set(
         availableConfigs
@@ -148,15 +146,6 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                 </div>
             )}
 
-            {dataWarning && (
-                <div className="bg-amber-50 border border-amber-200 rounded p-3 flex items-start text-xs text-amber-800">
-                    <AlertTriangle size={14} className="mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                        <strong>Datos limitados:</strong> {dataWarning}
-                    </div>
-                </div>
-            )}
-
             <div className="grid grid-cols-3 gap-2">
                 <div>
                     <label className="text-xs text-gray-600 mb-1 block">Semana</label>
@@ -168,15 +157,15 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                             onChange({
                                 ...config,
                                 week: newWeek,
-                                day: firstAvailable?.day || 'Monday',
-                                shift: firstAvailable?.shift || 1
+                                day: firstAvailable?.day || config.day,
+                                shift: firstAvailable?.shift || config.shift
                             });
                         }}
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
                         disabled={availableWeeks.length <= 1}
                     >
                         {availableWeeks.length === 0 ? (
-                            <option value={3}>Semana 3 (predeterminado)</option>
+                            <option value={config.week}>Semana {config.week}</option>
                         ) : (
                             availableWeeks.map(week => (
                                 <option key={`week-${week}`} value={week}>
@@ -191,27 +180,14 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                     <label className="text-xs text-gray-600 mb-1 block">Día</label>
                     <select
                         value={config.day}
-                        onChange={(e) => {
-                            const newDay = e.target.value;
-                            const firstAvailable = availableConfigs.find(
-                                c => c.week === config.week && c.day === newDay
-                            );
-                            onChange({
-                                ...config,
-                                day: newDay,
-                                shift: firstAvailable?.shift || 1
-                            });
-                        }}
+                        onChange={(e) => onChange({ ...config, day: e.target.value })}
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        disabled={availableDays.length <= 1}
                     >
-                        {availableDays.length === 0 ? (
-                            <option value="Monday">Lunes (sin datos)</option>
-                        ) : (
-                            availableDays.map(day => (
-                                <option key={day} value={day}>{day}</option>
-                            ))
-                        )}
+                        {availableDays.map(day => (
+                            <option key={day} value={day}>
+                                {day}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -221,17 +197,12 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                         value={config.shift}
                         onChange={(e) => onChange({ ...config, shift: parseInt(e.target.value) })}
                         className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        disabled={availableShifts.length <= 1}
                     >
-                        {availableShifts.length === 0 ? (
-                            <option value={1}>Turno 1 (sin datos)</option>
-                        ) : (
-                            availableShifts.map(shift => (
-                                <option key={shift} value={shift}>
-                                    Turno {shift} ({shift === 1 ? '08:00-16:00' : shift === 2 ? '16:00-24:00' : '00:00-08:00'})
-                                </option>
-                            ))
-                        )}
+                        {availableShifts.map(shift => (
+                            <option key={shift} value={shift}>
+                                Turno {shift}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -245,8 +216,7 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                     onChange={(e) => onChange({ ...config, modelType: e.target.value as 'minmax' | 'maxmin' })}
                     className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
-                    <option value="minmax">MinMax - Conservador</option>
-                    <option value="maxmin">MaxMin - Máxima Utilización</option>
+                    <option value="maxmin">MaxMin</option>
                 </select>
             </div>
 
@@ -264,15 +234,6 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                     >
                         Con Segregaciones
                     </button>
-                    <button
-                        onClick={() => onChange({ ...config, withSegregations: false })}
-                        className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${!config.withSegregations
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                    >
-                        Sin Segregaciones
-                    </button>
                 </div>
             </div>
 
@@ -287,7 +248,7 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                             <span className="font-medium">Datos disponibles</span>
                             {currentConfig && (
                                 <span className="ml-auto text-green-600">
-                                    {currentConfig.totalMovements.toLocaleString()} movimientos
+                                    {currentConfig.totalMovements.toLocaleString()} mov | FO: {currentConfig.objectiveValue}
                                 </span>
                             )}
                         </>
@@ -315,15 +276,16 @@ export const CamilaModelSelector: React.FC<CamilaModelSelectorProps> = ({ config
                 {isExpanded && (
                     <div className="p-2 pt-0 space-y-1">
                         <div>• 12 grúas RTG disponibles</div>
-                        <div>• 20 movimientos/hora por grúa</div>
-                        <div>• Bloques C1-C9 (Costanera)</div>
-                        <div>• {config.withSegregations ? '52 segregaciones' : 'Sin segregaciones'}</div>
+                        <div>• 30 movimientos/hora por grúa (μ=30)</div>
+                        <div>• Bloques b1-b9</div>
+                        <div>• 8 períodos de tiempo por turno</div>
+                        <div>• {config.withSegregations ? 'Con segregaciones por tipo de contenedor' : 'Sin segregaciones'}</div>
                         <div className="pt-1 mt-1 border-t border-gray-200">
                             <strong>Configuraciones disponibles:</strong> {availableConfigs.length}
                         </div>
-                        {availableConfigs.length === 1 && (
-                            <div className="text-amber-600 font-medium">
-                                ⚠️ Solo hay datos para una configuración
+                        {currentConfig && (
+                            <div className="text-purple-600 font-medium">
+                                Run ID: {currentConfig.runId.substring(0, 8)}...
                             </div>
                         )}
                     </div>

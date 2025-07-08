@@ -4,7 +4,7 @@ import { saiApi } from '../services/saiApi';
 import { useTimeContext } from '../contexts/TimeContext';
 
 export interface SAIDataResult {
-    saiMetrics: any | null; // Usar el tipo SAIMetrics del servicio
+    saiMetrics: any | null;
     isLoading: boolean;
     error: string | null;
     lastUpdated: Date | null;
@@ -12,14 +12,14 @@ export interface SAIDataResult {
 
 export const useSAIData = (
     fecha: Date | string | null,
-    turno?: number
+    turno?: number,
+    bloque?: string  // Agregar parámetro opcional de bloque
 ): SAIDataResult => {
     const [saiMetrics, setSaiMetrics] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-    // Obtener el contexto de tiempo para tener acceso a la hora global
     const { timeState } = useTimeContext();
 
     useEffect(() => {
@@ -36,23 +36,17 @@ export const useSAIData = (
                 let fechaCompleta: Date | string;
 
                 if (fecha instanceof Date) {
-                    // Si ya es Date, usarla directamente
                     fechaCompleta = fecha;
                 } else if (typeof fecha === 'string') {
-                    // Si es string, verificar si ya tiene hora
                     if (fecha.includes('T')) {
-                        // Ya tiene formato datetime completo
                         fechaCompleta = fecha;
                     } else {
-                        // Solo fecha, necesitamos agregar la hora del contexto global
                         if (timeState.currentDate) {
-                            // Combinar la fecha proporcionada con la hora del timeState
                             const [year, month, day] = fecha.split('-').map(Number);
                             const fechaConHora = new Date(timeState.currentDate);
                             fechaConHora.setFullYear(year, month - 1, day);
                             fechaCompleta = fechaConHora;
                         } else {
-                            // Si no hay timeState, usar medianoche
                             fechaCompleta = new Date(`${fecha}T00:00:00`);
                         }
                     }
@@ -60,10 +54,17 @@ export const useSAIData = (
                     throw new Error('Formato de fecha inválido');
                 }
 
-                console.log(`🔄 Cargando datos SAI para ${fechaCompleta instanceof Date ? fechaCompleta.toISOString() : fechaCompleta}, turno ${turno || 'todos'}`);
+                console.log(`🔄 Cargando datos SAI para ${fechaCompleta instanceof Date ? fechaCompleta.toISOString() : fechaCompleta}, turno ${turno || 'todos'}, bloque ${bloque || 'general'}`);
 
-                // Llamar al API con la fecha completa
-                const data = await saiApi.getMetrics(fechaCompleta, turno);
+                let data;
+
+                // Si hay bloque especificado, usar el endpoint de posiciones del bloque
+                if (bloque && turno) {
+                    data = await saiApi.getBlockPositions(bloque, turno, fechaCompleta);
+                } else {
+                    // Si no, usar el endpoint de métricas generales
+                    data = await saiApi.getMetrics(fechaCompleta, turno);
+                }
 
                 setSaiMetrics(data);
                 setLastUpdated(new Date());
@@ -82,7 +83,7 @@ export const useSAIData = (
         };
 
         loadData();
-    }, [fecha, turno, timeState.currentDate]); // Agregar timeState.currentDate como dependencia
+    }, [fecha, turno, bloque, timeState.currentDate]);
 
     return {
         saiMetrics,

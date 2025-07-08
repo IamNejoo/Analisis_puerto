@@ -1,5 +1,6 @@
-// src/components/map/views/BloqueView.tsx
-import React, { useState, useMemo } from 'react';
+// src/components/map/views/BloqueView.tsx - MODIFICACIÓN DE LA LÓGICA DE TURNOS
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTimeContext } from '../../../contexts/TimeContext';
 import { useMagdalenaData } from '../../../hooks/useMagdalenaData';
 import { useSAIData } from '../../../hooks/useSAIData';
@@ -32,11 +33,96 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
 }) => {
   const [selectedCell, setSelectedCell] = useState<{ row: number, col: number } | null>(null);
   const [groupFilter, setGroupFilter] = useState<string>('all');
-  const [currentTurno, setCurrentTurno] = useState(1);
   const [showOccupancyInfo, setShowOccupancyInfo] = useState(false);
 
   const { timeState } = useTimeContext();
   const { dataSource } = timeState;
+
+  // Calcular el turno inicial y máximo según la unidad temporal
+  const { initialTurno, maxTurnos, turnoLabel } = useMemo(() => {
+    if (dataSource === 'historical') {
+      switch (timeState.unit) {
+        case 'week':
+          // Para semana: 21 turnos (7 días × 3 turnos)
+          return {
+            initialTurno: 1,
+            maxTurnos: 21,
+            turnoLabel: (turno: number) => {
+              const dia = Math.floor((turno - 1) / 3) + 1;
+              const turnoDelDia = ((turno - 1) % 3) + 1;
+              const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+              const turnos = ['Turno 1 (8-16h)', 'Turno 2 (16-24h)', 'Turno 3 (0-8h)'];
+              return `${diasSemana[dia - 1]} - ${turnos[turnoDelDia - 1]}`;
+            }
+          };
+
+        case 'day':
+          // Para día: 3 turnos
+          const currentHour = timeState.currentDate.getHours();
+          let turnoActual = 1;
+          if (currentHour >= 8 && currentHour < 16) turnoActual = 1;
+          else if (currentHour >= 16 && currentHour < 24) turnoActual = 2;
+          else turnoActual = 3;
+
+          return {
+            initialTurno: turnoActual,
+            maxTurnos: 3,
+            turnoLabel: (turno: number) => {
+              const turnos = ['Turno 1 (8-16h)', 'Turno 2 (16-24h)', 'Turno 3 (0-8h)'];
+              return turnos[turno - 1];
+            }
+          };
+
+        case 'hour':
+          // Para hora: mostrar solo la hora actual como un único "turno"
+          return {
+            initialTurno: 1,
+            maxTurnos: 1,
+            turnoLabel: () => {
+              const hour = timeState.currentDate.getHours();
+              return `Hora ${hour}:00-${hour + 1}:00`;
+            }
+          };
+
+        case 'shift':
+          // Para turno: mostrar solo el turno actual
+          return {
+            initialTurno: 1,
+            maxTurnos: 1,
+            turnoLabel: () => {
+              const hour = timeState.currentDate.getHours();
+              if (hour >= 8 && hour < 16) return 'Turno 1 (8-16h)';
+              else if (hour >= 16 && hour < 24) return 'Turno 2 (16-24h)';
+              else return 'Turno 3 (0-8h)';
+            }
+          };
+
+        default:
+          return { initialTurno: 1, maxTurnos: 1, turnoLabel: () => 'Período actual' };
+      }
+    } else if (dataSource === 'modelMagdalena') {
+      // Para Magdalena siempre son 21 turnos
+      return {
+        initialTurno: 1,
+        maxTurnos: 21,
+        turnoLabel: (turno: number) => {
+          const dia = Math.floor((turno - 1) / 3) + 1;
+          const turnoDelDia = ((turno - 1) % 3) + 1;
+          return `Día ${dia} - Turno ${turnoDelDia}`;
+        }
+      };
+    }
+
+    return { initialTurno: 1, maxTurnos: 1, turnoLabel: () => 'Período' };
+  }, [dataSource, timeState.unit, timeState.currentDate]);
+
+  // Estado del turno actual
+  const [currentTurno, setCurrentTurno] = useState(initialTurno);
+
+  // Actualizar el turno cuando cambie la unidad temporal o la fecha
+  useEffect(() => {
+    setCurrentTurno(initialTurno);
+  }, [initialTurno, timeState.unit, timeState.currentDate]);
 
   // Hook para datos de Magdalena
   const { magdalenaMetrics, isLoading: isLoadingMagdalena, error: errorMagdalena } = useMagdalenaData(
@@ -45,10 +131,11 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     timeState.magdalenaConfig?.conDispersion !== false
   );
 
-  // Hook para datos SAI (históricos)
+  // Hook para datos SAI (históricos) - Actualizado con bloqueId
   const { saiMetrics, isLoading: isLoadingSAI, error: errorSAI } = useSAIData(
     dataSource === 'historical' ? timeState.currentDate : null,
-    currentTurno
+    currentTurno,
+    bloqueId
   );
 
   // Determinar qué datos y estado de carga usar según la fuente
@@ -74,6 +161,8 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
 
   // Procesar datos de bahías para el turno actual
   const { occupancyMatrix, segregacionesStats, bahiasOcupadas, ocupacionReal, segregacionesTotales } = useMemo(() => {
+    console.log('🔄 Iniciando procesamiento de datos');
+
     const matrix: (CellData | null)[][] = Array(7).fill(null).map(() => Array(30).fill(null));
     const stats = new Map<string, {
       color: string,
@@ -92,7 +181,15 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       dataSource === 'historical' ? saiMetrics :
         null;
 
+    console.log('📊 Métricas seleccionadas:', {
+      dataSource,
+      hasMetrics: !!metrics,
+      currentTurno,
+      timeUnit: timeState.unit
+    });
+
     if (!metrics) {
+      console.log('⚠️ No hay métricas disponibles');
       return {
         occupancyMatrix: matrix,
         segregacionesStats: stats,
@@ -109,17 +206,31 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     const teusPorSegregacion = metrics.teusPorSegregacion || {};
     const segregacionesInfo = metrics.segregacionesInfo || {};
 
-    // Normalizar el ID del bloque - asegurar formato C1, C2, etc.
+    // Normalizar el ID del bloque
     let normalizedBloqueId = bloqueId;
     if (!bloqueId.startsWith('C') && !bloqueId.startsWith('H') && !bloqueId.startsWith('T')) {
       normalizedBloqueId = `C${bloqueId}`;
     }
 
-    const key = `${normalizedBloqueId}-${currentTurno}`;
+    // Para datos históricos con vista por hora/turno, usar turno 1
+    const turnoKey = (dataSource === 'historical' && (timeState.unit === 'hour' || timeState.unit === 'shift'))
+      ? 1
+      : currentTurno;
+
+    const key = `${normalizedBloqueId}-${turnoKey}`;
+
+    console.log('🔑 Procesando con clave:', {
+      bloqueId,
+      normalizedBloqueId,
+      currentTurno,
+      turnoKey,
+      key,
+      timeUnit: timeState.unit
+    });
 
     const bahiaInfo = bahiasPorBloque[key] || {};
     const volumenInfo = volumenPorBloque[key] || {};
-    const capacidadBloque = capacidadesPorBloque[normalizedBloqueId] || 35; // VS[B]
+    const capacidadBloque = capacidadesPorBloque[normalizedBloqueId] || 35;
 
     // Procesar cada segregación
     const segregacionesList: Array<{
@@ -131,43 +242,50 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     }> = [];
 
     Object.keys(bahiaInfo).forEach(segregacion => {
-      if (segregacion.startsWith('S')) {
-        const numBahias = bahiaInfo[segregacion] || 0;
-        const volumen = volumenInfo[segregacion] || 0;
-        const teuFactor = teusPorSegregacion[segregacion] || 1;
-        const tipo = teuFactor === 1 ? '20' : '40';
+      const numBahias = bahiaInfo[segregacion] || 0;
+      const volumen = volumenInfo[segregacion] || 0;
+      const teuFactor = teusPorSegregacion[segregacion] || 2;
+      const tipo = teuFactor === 1 ? '20' : '40';
 
-        if (numBahias > 0) {
-          segregacionesList.push({
-            seg: segregacion,
-            bahias: numBahias,
-            volumen,
-            teu: teuFactor,
-            tipo
-          });
-          const color = getSegregationColor(segregacion);
+      if (numBahias > 0) {
+        segregacionesList.push({
+          seg: segregacion,
+          bahias: numBahias,
+          volumen,
+          teu: teuFactor,
+          tipo
+        });
 
-          // Calcular ocupación real
-          const capacidadPorBahia = capacidadBloque; // Contenedores por bahía
-          const capacidadTotalTEUs = numBahias * capacidadPorBahia * teuFactor;
-          const porcentajeOcupacion = capacidadTotalTEUs > 0 ? (volumen / capacidadTotalTEUs) * 100 : 0;
-
-          stats.set(segregacion, {
-            color,
-            count: 0, // Se actualizará al llenar la matriz
-            bahias: numBahias,
-            volumen: volumen,
-            porcentajeOcupacion: porcentajeOcupacion,
-            tipo: tipo
-          });
-
-          totalVolumenTEUs += volumen;
-          totalCapacidadTEUs += capacidadTotalTEUs;
+        let color;
+        if (segregacion === 'IMPRT') {
+          color = '#3B82F6';
+        } else if (segregacion === 'EXPRT') {
+          color = '#10B981';
+        } else if (segregacion === 'STRGE') {
+          color = '#F59E0B';
+        } else {
+          color = getSegregationColor(segregacion);
         }
+
+        const capacidadPorBahia = capacidadBloque;
+        const capacidadTotalTEUs = numBahias * capacidadPorBahia * teuFactor;
+        const porcentajeOcupacion = capacidadTotalTEUs > 0 ? (volumen / capacidadTotalTEUs) * 100 : 0;
+
+        stats.set(segregacion, {
+          color,
+          count: 0,
+          bahias: numBahias,
+          volumen: volumen,
+          porcentajeOcupacion: porcentajeOcupacion,
+          tipo: tipo
+        });
+
+        totalVolumenTEUs += volumen;
+        totalCapacidadTEUs += capacidadTotalTEUs;
       }
     });
 
-    // Ordenar por número de bahías (mayor a menor) para mejor distribución visual
+    // Ordenar por número de bahías
     segregacionesList.sort((a, b) => b.bahias - a.bahias);
 
     // Llenar la matriz columna por columna
@@ -178,21 +296,22 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       const porcentajeOcupacion = capacidadTotalTeus > 0 ? (volumen / capacidadTotalTeus) * 100 : 100;
 
       for (let b = 0; b < bahias && currentColumn < 30; b++) {
-        // Determinar cuántas celdas llenar en esta columna basado en el porcentaje
         const celdasAOcupar = Math.ceil((porcentajeOcupacion / 100) * 7);
 
-        // Llenar desde abajo hacia arriba (más realista para contenedores)
         for (let row = 6; row >= 0; row--) {
           const celdasOcupadas = 6 - row + 1;
           if (celdasOcupadas <= celdasAOcupar) {
             matrix[row][currentColumn] = {
               segregacion: seg,
-              color: getSegregationColor(seg),
+              color: seg === 'IMPRT' ? '#3B82F6' :
+                seg === 'EXPRT' ? '#10B981' :
+                  seg === 'STRGE' ? '#F59E0B' :
+                    getSegregationColor(seg),
               percentage: 100,
               volumenTEUs: volumen,
               capacidadTEUs: capacidadTotalTeus
             };
-            // Actualizar contador de celdas
+
             const stat = stats.get(seg);
             if (stat) {
               stat.count++;
@@ -205,10 +324,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       }
     });
 
-    // Calcular ocupación real del bloque
     const ocupacionRealPorcentaje = totalCapacidadTEUs > 0 ? (totalVolumenTEUs / totalCapacidadTEUs) * 100 : 0;
-
-    // Obtener total de segregaciones del modelo
     const totalSegregaciones = Object.keys(segregacionesInfo).length || stats.size;
 
     return {
@@ -218,11 +334,10 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       ocupacionReal: ocupacionRealPorcentaje,
       segregacionesTotales: totalSegregaciones
     };
-  }, [magdalenaMetrics, saiMetrics, bloqueId, currentTurno, dataSource]);
+  }, [magdalenaMetrics, saiMetrics, bloqueId, currentTurno, dataSource, timeState.unit]);
 
   const rowLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
   const totalColumns = 30;
-  const maxTurnos = dataSource === 'historical' ? 3 : 21; // 3 turnos para histórico, 21 para Magdalena
 
   // Función para navegar entre turnos
   const navigateToTurno = (turno: number) => {
@@ -258,7 +373,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                 {dataSource === 'modelMagdalena'
                   ? `Semana ${timeState.magdalenaConfig?.semana || 3} - Turno ${currentTurno} de ${maxTurnos}`
                   : dataSource === 'historical'
-                    ? `Datos Históricos - ${timeState.currentDate.toLocaleDateString('es-CL')} - Turno ${currentTurno}`
+                    ? `Datos Históricos - ${timeState.currentDate.toLocaleDateString('es-CL')} - ${turnoLabel(currentTurno)}`
                     : 'Vista detallada'} • Vista micro de bahías
               </p>
             </div>
@@ -293,8 +408,8 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
             </div>
           )}
 
-          {/* Controles de navegación temporal */}
-          {(dataSource === 'modelMagdalena' || dataSource === 'historical') && (
+          {/* Controles de navegación temporal - Solo mostrar si hay más de 1 turno */}
+          {maxTurnos > 1 && (dataSource === 'modelMagdalena' || dataSource === 'historical') && (
             <div className="bg-slate-700 rounded-lg p-3">
               <div className="flex items-center space-x-4">
                 {/* Navegación */}
@@ -316,9 +431,13 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                     <ChevronLeft size={16} />
                   </button>
 
-                  <div className="px-4 py-2 bg-slate-800 rounded border border-slate-600 min-w-[120px] text-center">
-                    <span className="text-sm text-slate-400">Turno</span>
-                    <div className="font-mono font-bold text-lg text-slate-100">{currentTurno}</div>
+                  <div className="px-4 py-2 bg-slate-800 rounded border border-slate-600 min-w-[200px] text-center">
+                    <span className="text-xs text-slate-400">
+                      {timeState.unit === 'week' ? 'Período' : 'Turno'}
+                    </span>
+                    <div className="font-mono font-bold text-sm text-slate-100">
+                      {turnoLabel(currentTurno)}
+                    </div>
                   </div>
 
                   <button
@@ -396,9 +515,21 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
               </div>
             </div>
           )}
+
+          {/* Mostrar info cuando es vista por hora o turno único */}
+          {maxTurnos === 1 && dataSource === 'historical' && (
+            <div className="bg-slate-700 rounded-lg p-3 mt-3">
+              <div className="flex items-center justify-center">
+                <Clock size={16} className="text-slate-400 mr-2" />
+                <span className="text-sm text-slate-300">
+                  Visualizando: <strong>{turnoLabel(1)}</strong>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Área de visualización */}
+        {/* Área de visualización - El resto del código se mantiene igual */}
         <div className="flex-1 overflow-auto bg-slate-800 p-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
@@ -548,7 +679,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
         </div>
       </div>
 
-      {/* Panel lateral */}
+      {/* Panel lateral - Se mantiene igual */}
       <div className="w-80 bg-slate-800 shadow-lg border-l border-slate-700 flex flex-col overflow-hidden">
         <div className="flex-shrink-0 p-4 border-b border-slate-700">
           <h3 className="text-lg font-semibold text-slate-100 flex items-center">
@@ -562,7 +693,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
           <div className="mb-4">
             <h4 className="font-medium text-slate-200 mb-2 text-sm flex items-center">
               <Activity size={14} className="mr-2" />
-              Estadísticas del Turno {currentTurno}
+              Estadísticas del {maxTurnos > 1 ? `Turno ${currentTurno}` : 'Período'}
             </h4>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between p-2 bg-slate-700 rounded">
@@ -748,9 +879,11 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-green-400">Hora turno:</span>
+                  <span className="text-green-400">Unidad temporal:</span>
                   <span className="font-medium text-slate-300">
-                    {currentTurno === 1 ? '08:00' : currentTurno === 2 ? '15:30' : '23:00'}
+                    {timeState.unit === 'week' ? 'Semana' :
+                      timeState.unit === 'day' ? 'Día' :
+                        timeState.unit === 'hour' ? 'Hora' : 'Turno'}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -773,6 +906,9 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                   <li>• Altura del color = % de ocupación real de la bahía</li>
                   <li>• 1 bahía = 35 contenedores máximo</li>
                   <li>• Los números = ID de la segregación</li>
+                  {timeState.unit === 'week' && (
+                    <li className="text-yellow-300">• Vista semanal: 21 turnos (7 días × 3 turnos/día)</li>
+                  )}
                 </ul>
               </div>
             </div>

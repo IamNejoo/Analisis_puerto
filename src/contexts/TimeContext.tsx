@@ -1,5 +1,12 @@
 // src/contexts/TimeContext.tsx
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import {
+  getISOWeekNumber,
+  getISOYear,
+  getISOWeekDateRange,
+  getCurrentISOWeek,
+  formatISOWeek
+} from '../utils/isoWeekUtils';
 import type {
   TimeUnit,
   DataSource,
@@ -21,7 +28,7 @@ interface ExtendedTimeContextType {
   setCurrentDate: (date: string) => void;
   goToPreviousPeriod: () => void;
   goToNextPeriod: () => void;
-  goToWeek: (week: number) => void;
+  goToWeek: (week: number, year?: number) => void;
   playPause: () => void;
   resetToNow: () => void;
   getDisplayFormat: () => string;
@@ -32,96 +39,40 @@ const ExtendedTimeContext = createContext<ExtendedTimeContextType | null>(null);
 
 interface ExtendedTimeProviderProps {
   children: React.ReactNode;
+  initialYear?: number; // Nuevo prop opcional para especificar el año inicial
+  initialWeek?: number; // Nuevo prop opcional para especificar la semana inicial
 }
 
-export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ children }) => {
-  // Mapeo de semanas a fechas específicas del 2022
-  const weekToDateMap: { [key: number]: string } = {
-    1: '2022-01-03', 2: '2022-01-10', 3: '2022-01-17', 4: '2022-01-24', 5: '2022-01-31',
-    6: '2022-02-07', 7: '2022-02-14', 8: '2022-02-21', 9: '2022-02-28', 10: '2022-03-07',
-    11: '2022-03-14', 12: '2022-03-21', 13: '2022-03-28', 14: '2022-04-04', 15: '2022-04-11',
-    16: '2022-04-18', 17: '2022-04-25', 18: '2022-05-02', 19: '2022-05-09', 20: '2022-05-16',
-    21: '2022-05-23', 22: '2022-05-30', 23: '2022-06-06', 24: '2022-06-13', 25: '2022-06-20',
-    26: '2022-06-27', 27: '2022-07-04', 28: '2022-07-11', 29: '2022-07-18', 30: '2022-07-25',
-    31: '2022-08-01', 32: '2022-08-08', 33: '2022-08-15', 34: '2022-08-22', 35: '2022-08-29',
-    36: '2022-09-05', 37: '2022-09-12', 38: '2022-09-19', 39: '2022-09-26', 40: '2022-10-03',
-    41: '2022-10-10', 42: '2022-10-17', 43: '2022-10-24', 44: '2022-10-31', 45: '2022-11-07',
-    46: '2022-11-14', 47: '2022-11-21', 48: '2022-11-28', 49: '2022-12-05', 50: '2022-12-12',
-    51: '2022-12-19', 52: '2022-12-26'
-  };
-
-  // Función helper para obtener el rango de fechas de una semana
-  const getWeekDateRange = (weekNumber: number) => {
-    const startDateStr = weekToDateMap[weekNumber];
-    if (!startDateStr) {
-      console.log('🎯 DEBUG getWeekDateRange - No se encontró mapeo para semana:', weekNumber);
-      return null;
-    }
-
-    // CAMBIO IMPORTANTE: Crear fechas en hora local
-    const [year, month, day] = startDateStr.split('-').map(Number);
-    const startDate = new Date(year, month - 1, day, 0, 0, 0);
-    const endDate = new Date(year, month - 1, day + 6, 23, 59, 59);
-
-    console.log('🎯 DEBUG getWeekDateRange:', {
-      weekNumber,
-      startDateStr,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      startDateLocal: startDate.toString(),
-      endDateLocal: endDate.toString()
-    });
-
-    return { startDate, endDate, startDateStr };
-  };
+export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
+  children,
+  initialYear = 2022, // Por defecto inicia en 2022
+  initialWeek = 1     // Por defecto inicia en la semana 1
+}) => {
+  // Estado inicial con el año y semana especificados
+  const initialDateRange = getISOWeekDateRange(initialWeek, initialYear);
 
   const [timeState, setTimeState] = useState<ExtendedTimeState>({
     unit: 'week',
-    currentDate: new Date('2022-01-03T08:00:00'),
+    currentDate: initialDateRange.startDate,
     dataSource: 'historical',
     magdalenaConfig: {
       participacion: 68,
       conDispersion: true,
-      semana: 1
+      semana: initialWeek
     },
     camilaConfig: {
-      modelType: 'minmax',
+      modelType: 'maxmin',
       withSegregations: true,
-      week: 3,
-      day: 'Friday',
+      week: 2,  // CAMBIAR de 1 a 2
+      day: 'Lunes',  // CAMBIAR de 'Monday' a 'Lunes'
       shift: 1
     },
     hourRange: { start: 8, end: 16 }
   });
 
   const [isLoadingData, setIsLoadingData] = useState(false);
-
-  const getWeekNumberFromDate = (date: Date): number => {
-    const dateStr = date.toISOString().split('T')[0];
-    console.log('🔍 DEBUG getWeekNumberFromDate - dateStr:', dateStr);
-
-    for (const [week, weekDate] of Object.entries(weekToDateMap)) {
-      if (weekDate === dateStr) {
-        console.log('🔍 DEBUG getWeekNumberFromDate - Coincidencia exacta:', week);
-        return parseInt(week);
-      }
-    }
-
-    // Si no es exactamente la fecha del mapeo, buscar en qué rango cae
-    for (const [week, weekDate] of Object.entries(weekToDateMap)) {
-      const weekStart = new Date(weekDate + 'T00:00:00');
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-
-      if (date >= weekStart && date <= weekEnd) {
-        console.log('🔍 DEBUG getWeekNumberFromDate - Encontrado en rango:', week);
-        return parseInt(week);
-      }
-    }
-
-    console.log('🔍 DEBUG getWeekNumberFromDate - No encontrado, devolviendo 1');
-    return 1;
-  };
+  // Añadir estado para el año actual ISO
+  const [currentISOYear, setCurrentISOYear] = useState(initialYear);
 
   const setTimeUnit = useCallback((unit: TimeUnit) => {
     setTimeState(prev => ({ ...prev, unit }));
@@ -133,15 +84,21 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
   const setCurrentDate = useCallback((date: string) => {
     const newDate = new Date(date);
     if (!isNaN(newDate.getTime())) {
-      const weekNumber = getWeekNumberFromDate(newDate);
+      const weekNumber = getISOWeekNumber(newDate);
+      const isoYear = getISOYear(newDate);
+
+      setCurrentISOYear(isoYear);
       setTimeState(prev => ({
         ...prev,
         currentDate: newDate,
         magdalenaConfig: prev.magdalenaConfig ?
           { ...prev.magdalenaConfig, semana: weekNumber } :
-          { participacion: 68, conDispersion: true, semana: weekNumber }
+          { participacion: 68, conDispersion: true, semana: weekNumber },
+        camilaConfig: prev.camilaConfig ?
+          { ...prev.camilaConfig, week: weekNumber } :
+          { modelType: 'minmax', withSegregations: true, week: weekNumber, day: 'Monday', shift: 1 }
       }));
-      console.log('📅 Fecha actualizada a:', newDate.toLocaleString('es-CL'), 'Semana:', weekNumber);
+      console.log('📅 Fecha actualizada a:', newDate.toLocaleString('es-CL'), 'Semana ISO:', formatISOWeek(newDate));
     }
   }, []);
 
@@ -156,7 +113,7 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
         magdalenaConfig: prev.magdalenaConfig || {
           participacion: 68,
           conDispersion: true,
-          semana: 3
+          semana: getISOWeekNumber(prev.currentDate)
         }
       }));
     } else if (dataSource === 'modelCamila') {
@@ -166,8 +123,8 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
         camilaConfig: prev.camilaConfig || {
           modelType: 'minmax',
           withSegregations: true,
-          week: 3,
-          day: 'Friday',
+          week: getISOWeekNumber(prev.currentDate),
+          day: 'Monday',
           shift: 1
         }
       }));
@@ -201,21 +158,34 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
 
       switch (prev.unit) {
         case 'week':
-          const currentWeek = prev.magdalenaConfig?.semana || 1;
-          const previousWeek = Math.max(1, currentWeek - 1);
-          const dateStr = weekToDateMap[previousWeek];
-          if (dateStr) {
-            const targetDate = new Date(`${dateStr}T08:00:00`);
-            console.log('⏪ Navegando a semana anterior:', previousWeek, dateStr);
-            return {
-              ...prev,
-              currentDate: targetDate,
-              magdalenaConfig: prev.magdalenaConfig ?
-                { ...prev.magdalenaConfig, semana: previousWeek } :
-                { participacion: 68, conDispersion: true, semana: previousWeek }
-            };
+          const currentWeek = getISOWeekNumber(prev.currentDate);
+          const currentYear = getISOYear(prev.currentDate);
+          let previousWeek = currentWeek - 1;
+          let previousYear = currentYear;
+
+          // Si es semana 1, ir a la última semana del año anterior
+          if (previousWeek < 1) {
+            previousYear = currentYear - 1;
+            // Verificar cuántas semanas tiene el año anterior
+            const weeksInPreviousYear = getISOWeeksInYear(previousYear);
+            previousWeek = weeksInPreviousYear;
           }
-          break;
+
+          const dateRange = getISOWeekDateRange(previousWeek, previousYear);
+          setCurrentISOYear(previousYear);
+
+          console.log('⏪ Navegando a semana ISO anterior:', formatISOWeek(dateRange.startDate));
+          return {
+            ...prev,
+            currentDate: dateRange.startDate,
+            magdalenaConfig: prev.magdalenaConfig ?
+              { ...prev.magdalenaConfig, semana: previousWeek } :
+              { participacion: 68, conDispersion: true, semana: previousWeek },
+            camilaConfig: prev.camilaConfig ?
+              { ...prev.camilaConfig, week: previousWeek } :
+              { modelType: 'minmax', withSegregations: true, week: previousWeek, day: 'Monday', shift: 1 }
+          };
+
         case 'day':
           newDate.setDate(newDate.getDate() - 1);
           break;
@@ -223,7 +193,16 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
           newDate.setHours(newDate.getHours() - 8);
           break;
         case 'hour':
-          newDate.setHours(newDate.getHours() - 1);
+          newDate.setHours(newDate.getHours() + 1);
+          // Si llegamos a hora sin operación, saltar al siguiente período operativo
+          if (newDate.getHours() >= 22) {
+            // Saltar a las 8 AM del día siguiente
+            newDate.setDate(newDate.getDate() + 1);
+            newDate.setHours(8, 0, 0, 0);
+          } else if (newDate.getHours() < 8) {
+            // Si estamos antes de las 8 AM, saltar a las 8 AM
+            newDate.setHours(8, 0, 0, 0);
+          }
           break;
       }
 
@@ -238,21 +217,33 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
 
       switch (prev.unit) {
         case 'week':
-          const currentWeek = prev.magdalenaConfig?.semana || 1;
-          const nextWeek = Math.min(52, currentWeek + 1);
-          const dateStr = weekToDateMap[nextWeek];
-          if (dateStr) {
-            const targetDate = new Date(`${dateStr}T08:00:00`);
-            console.log('⏩ Navegando a semana siguiente:', nextWeek, dateStr);
-            return {
-              ...prev,
-              currentDate: targetDate,
-              magdalenaConfig: prev.magdalenaConfig ?
-                { ...prev.magdalenaConfig, semana: nextWeek } :
-                { participacion: 68, conDispersion: true, semana: nextWeek }
-            };
+          const currentWeek = getISOWeekNumber(prev.currentDate);
+          const currentYear = getISOYear(prev.currentDate);
+          let nextWeek = currentWeek + 1;
+          let nextYear = currentYear;
+
+          // Verificar si el año actual tiene esa semana
+          const weeksInCurrentYear = getISOWeeksInYear(currentYear);
+          if (nextWeek > weeksInCurrentYear) {
+            nextWeek = 1;
+            nextYear = currentYear + 1;
           }
-          break;
+
+          const dateRange = getISOWeekDateRange(nextWeek, nextYear);
+          setCurrentISOYear(nextYear);
+
+          console.log('⏩ Navegando a semana ISO siguiente:', formatISOWeek(dateRange.startDate));
+          return {
+            ...prev,
+            currentDate: dateRange.startDate,
+            magdalenaConfig: prev.magdalenaConfig ?
+              { ...prev.magdalenaConfig, semana: nextWeek } :
+              { participacion: 68, conDispersion: true, semana: nextWeek },
+            camilaConfig: prev.camilaConfig ?
+              { ...prev.camilaConfig, week: nextWeek } :
+              { modelType: 'minmax', withSegregations: true, week: nextWeek, day: 'Monday', shift: 1 }
+          };
+
         case 'day':
           newDate.setDate(newDate.getDate() + 1);
           break;
@@ -261,6 +252,15 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
           break;
         case 'hour':
           newDate.setHours(newDate.getHours() + 1);
+          // Si llegamos a hora sin operación, saltar al siguiente período operativo
+          if (newDate.getHours() >= 22) {
+            // Saltar a las 8 AM del día siguiente
+            newDate.setDate(newDate.getDate() + 1);
+            newDate.setHours(8, 0, 0, 0);
+          } else if (newDate.getHours() < 8) {
+            // Si estamos antes de las 8 AM, saltar a las 8 AM
+            newDate.setHours(8, 0, 0, 0);
+          }
           break;
       }
 
@@ -269,62 +269,73 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
     });
   }, []);
 
-  const goToWeek = useCallback((week: number) => {
-    if (week < 1 || week > 52) return;
+  const goToWeek = useCallback((week: number, year?: number) => {
+    const targetYear = year || currentISOYear;
+    const weeksInYear = getISOWeeksInYear(targetYear);
 
-    const dateStr = weekToDateMap[week];
-    if (!dateStr) return;
+    if (week < 1 || week > weeksInYear) {
+      console.warn(`Semana ${week} fuera de rango para el año ${targetYear} (1-${weeksInYear})`);
+      return;
+    }
 
-    const newDate = new Date(`${dateStr}T08:00:00`);
+    const dateRange = getISOWeekDateRange(week, targetYear);
+    setCurrentISOYear(targetYear);
 
     setTimeState(prev => ({
       ...prev,
-      currentDate: newDate,
+      currentDate: dateRange.startDate,
       magdalenaConfig: prev.magdalenaConfig ?
         { ...prev.magdalenaConfig, semana: week } :
-        { participacion: 68, conDispersion: true, semana: week }
+        { participacion: 68, conDispersion: true, semana: week },
+      camilaConfig: prev.camilaConfig ?
+        { ...prev.camilaConfig, week: week } :
+        { modelType: 'minmax', withSegregations: true, week: week, day: 'Monday', shift: 1 }
     }));
 
-    console.log(`📅 Navegando a semana ${week}: ${dateStr}`);
-  }, []);
+    console.log(`📅 Navegando a semana ISO ${week} del año ${targetYear}: ${formatISOWeek(dateRange.startDate)}`);
+  }, [currentISOYear]);
 
   const playPause = useCallback(() => {
     console.log('Play/Pause functionality - TODO: Implementar animación temporal');
   }, []);
 
   const resetToNow = useCallback(() => {
-    const now = new Date();
+    // Modificado para resetear al año inicial en lugar del momento actual
+    const resetDateRange = getISOWeekDateRange(initialWeek, initialYear);
+    setCurrentISOYear(initialYear);
+
     setTimeState(prev => ({
       ...prev,
-      currentDate: now
+      currentDate: resetDateRange.startDate,
+      magdalenaConfig: prev.magdalenaConfig ?
+        { ...prev.magdalenaConfig, semana: initialWeek } :
+        { participacion: 68, conDispersion: true, semana: initialWeek },
+      camilaConfig: prev.camilaConfig ?
+        { ...prev.camilaConfig, week: initialWeek } :
+        { modelType: 'minmax', withSegregations: true, week: initialWeek, day: 'Monday', shift: 1 }
     }));
-    console.log('🔄 Reseteando al momento actual:', now.toLocaleString('es-CL'));
-  }, []);
+    console.log('🔄 Reseteando al inicio:', resetDateRange.startDate.toLocaleString('es-CL'), 'Semana ISO:', formatISOWeek(resetDateRange.startDate));
+  }, [initialWeek, initialYear]);
 
   const getDisplayFormat = useCallback(() => {
     const { unit, currentDate, dataSource, magdalenaConfig, camilaConfig, hourRange } = timeState;
 
-    console.log('🔍 DEBUG getDisplayFormat:', {
-      unit,
-      currentDate: currentDate.toISOString(),
-      semana: magdalenaConfig?.semana,
-      dataSource
-    });
-
     if (dataSource === 'modelMagdalena') {
-      const semana = magdalenaConfig?.semana || 3;
+      const semana = magdalenaConfig?.semana || getISOWeekNumber(currentDate);
+      const year = getISOYear(currentDate);
       const participacion = magdalenaConfig?.participacion || 69;
       const dispersion = magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Centralizada';
-      return `Modelo Magdalena - Semana ${semana}/52 - ${participacion}% - ${dispersion}`;
+      return `Modelo Magdalena - Semana ISO ${semana}/${year} - ${participacion}% - ${dispersion}`;
     }
 
     if (dataSource === 'modelCamila') {
-      const semana = camilaConfig?.week || 3;
-      const dia = camilaConfig?.day || 'Friday';
+      const semana = camilaConfig?.week || getISOWeekNumber(currentDate);
+      const year = getISOYear(currentDate);
+      const dia = camilaConfig?.day || 'Monday';
       const turno = camilaConfig?.shift || 1;
       const modelo = camilaConfig?.modelType === 'minmax' ? 'MinMax' : 'MaxMin';
       const horasStr = `${hourRange.start}:00-${hourRange.end}:00`;
-      return `Modelo Camila - Semana ${semana} - ${dia} - Turno ${turno} - ${modelo} - ${horasStr}`;
+      return `Modelo Camila - Semana ISO ${semana}/${year} - ${dia} - Turno ${turno} - ${modelo} - ${horasStr}`;
     }
 
     // Para datos históricos
@@ -336,37 +347,18 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({ chil
 
     switch (unit) {
       case 'week':
-        console.log('🔍 DEBUG case week - antes de calcular');
-        const weekNumber = magdalenaConfig?.semana || getWeekNumberFromDate(currentDate);
-        console.log('🔍 DEBUG weekNumber:', weekNumber);
+        const weekNumber = getISOWeekNumber(currentDate);
+        const year = getISOYear(currentDate);
+        const weekRange = getISOWeekDateRange(weekNumber, year);
 
-        const weekRange = getWeekDateRange(weekNumber);
-        console.log('🔍 DEBUG weekRange:', weekRange);
-
-        if (weekRange) {
-          const result = `Histórico Semanal - ${weekRange.startDate.toLocaleDateString('es-CL', {
-            day: 'numeric',
-            month: 'short'
-          })} al ${weekRange.endDate.toLocaleDateString('es-CL', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          })}`;
-          console.log('🔍 DEBUG result con mapeo:', result);
-          return result;
-        }
-
-        // Fallback
-        const startOfWeek = new Date(currentDate);
-        const dayOfWeek = startOfWeek.getDay();
-        console.log('🔍 DEBUG dayOfWeek:', dayOfWeek);
-        startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-
-        const result = `Histórico Semanal - ${startOfWeek.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} al ${endOfWeek.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-        console.log('🔍 DEBUG result fallback:', result);
-        return result;
+        return `Histórico Semanal - Semana ISO ${weekNumber}/${year} - ${weekRange.startDate.toLocaleDateString('es-CL', {
+          day: 'numeric',
+          month: 'short'
+        })} al ${weekRange.endDate.toLocaleDateString('es-CL', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        })}`;
 
       case 'day':
         return `Histórico Diario - ${currentDate.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
@@ -453,3 +445,21 @@ export const useTimeContext = () => {
 };
 
 export const TimeProvider = ExtendedTimeProvider;
+
+// Función auxiliar para verificar cuántas semanas tiene un año ISO
+// Función auxiliar para verificar cuántas semanas tiene un año ISO
+function getISOWeeksInYear(year: number): number {
+  // Calcular el número de semanas ISO en un año
+  // Un año tiene 53 semanas si el 1 de enero es jueves o si es un año bisiesto y el 1 de enero es miércoles
+  const jan1 = new Date(year, 0, 1);
+  const jan1DayOfWeek = jan1.getDay();
+
+  // Si el 1 de enero es jueves (4) o es miércoles (3) en año bisiesto
+  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+
+  if (jan1DayOfWeek === 4 || (jan1DayOfWeek === 3 && isLeapYear)) {
+    return 53;
+  }
+
+  return 52;
+}
