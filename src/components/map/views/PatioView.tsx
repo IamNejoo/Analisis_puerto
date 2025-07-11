@@ -10,7 +10,7 @@ import {
   ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward, Clock,
   RefreshCw, Database, Zap, Truck, ArrowUp, ArrowDown, BarChart3
 } from 'lucide-react';
-
+import { getISOWeekNumber, getISOYear } from '../../../utils/isoWeekUtils';
 interface PatioViewProps {
   patioId: string;
   onBloqueClick: (patioId: string, bloqueId: string) => void;
@@ -437,17 +437,6 @@ export const PatioView: React.FC<PatioViewProps> = ({
     refreshData
   } = useRealPatioData();
 
-  const {
-    magdalenaMetrics,
-    realMetrics,
-    isLoading: magdalenaLoading,
-    dataNotAvailable
-  } = useMagdalenaData(
-    timeState?.magdalenaConfig?.semana || 3,
-    timeState?.magdalenaConfig?.participacion || 69,
-    timeState?.magdalenaConfig?.conDispersion ?? true
-  );
-
   // NUEVO: Hook para datos de Camila
   const {
     camilaResults,
@@ -493,112 +482,64 @@ export const PatioView: React.FC<PatioViewProps> = ({
 
   // 6. useMemo para determinar qué datos usar
   const patio = useMemo(() => {
-    // Si es Camila y tiene datos, procesar esos datos
-    if (isCamilaActive && camilaResults) {
-      console.log('🏗️ Procesando datos de Camila para el patio');
+    // ... código existente para Camila ...
 
-      // Crear bloques basados en los datos de Camila - USAR NOMBRES REALES
-      const bloquesCamila: BloqueDataExtended[] = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9'].map((bloqueId, idx) => {
-        // Calcular métricas para este bloque
-        const totalFlow = camilaResults.totalFlows[idx]?.[currentHour] || 0;
-        const capacity = camilaResults.capacity[idx]?.[currentHour] || 1;
-        const utilizacion = capacity > 0 ? (totalFlow / capacity) * 100 : 0;
+    // Si es Magdalena/Optimización y tiene datos
+    if (isMagdalenaActive && metrics) {
+      console.log('🏗️ Procesando datos de optimización para el patio');
 
-        // Contar grúas asignadas en esta hora
-        let gruasAsignadas = 0;
-        const gruasList: number[] = [];
-        for (let g = 0; g < 12; g++) {
-          if (camilaResults.grueAssignment[g]?.[idx * 8 + currentHour] === 1) {
-            gruasAsignadas++;
-            gruasList.push(g + 1);
-          }
-        }
+      // Crear bloques basados en los datos de ocupación
+      const bloquesOptimizados: BloqueDataExtended[] = metrics.ocupacion.porBloque.map((bloqueData) => {
+        // Obtener ocupación para el período actual
+        const ocupacionActual = metrics.evolucionTemporal.find(
+          t => t.periodo === currentTurno
+        )?.ocupacionPromedio || bloqueData.ocupacionPromedio;
 
         return {
-          id: bloqueId,
+          id: bloqueData.bloque,
           patioId: patioId,
-          name: `Bloque ${bloqueId}`,
-          ocupacion: Math.round(utilizacion),
-          capacidadTotal: capacity,
+          name: `Bloque ${bloqueData.bloque}`,
+          ocupacion: Math.round(ocupacionActual),
+          ocupacionPromedio: Math.round(bloqueData.ocupacionPromedio),
+          capacidadTotal: Math.round(metrics.ocupacion.capacidadTotal / 9), // Dividir entre 9 bloques
           bahias: [],
           tipo: 'contenedores' as const,
           bounds: { x: 0, y: 0, width: 100, height: 100 },
           operationalStatus: 'active' as const,
           equipmentType: 'rtg' as const,
+          stats: {
+            entradas: 0,
+            salidas: 0,
+            remanejos: 0,
+            teusActuales: 0,
+            bahiasTotales: 35,
+            bahiasReefer: 0,
+            gate: { entradas: 0, salidas: 0 },
+            muelle: { entradas: 0, salidas: 0 },
+            despejes: 0,
+            reubicacionesEntreBloques: 0,
+            reubicacionesEntrePatios: 0
+          }
         };
       });
 
-      const patioCamila: PatioData = {
+      const patioOptimizado: PatioData = {
         id: 'costanera',
-        name: 'Patio Costanera - Modelo Camila',
+        name: 'Patio Costanera - Modelo Optimización',
         type: 'contenedores',
-        bloques: bloquesCamila,
-        ocupacionTotal: Math.round(camilaResults.workloadBalance),
+        bloques: bloquesOptimizados,
+        ocupacionTotal: Math.round(metrics.ocupacion.promedio),
         bounds: { x: 0, y: 0, width: 1000, height: 600 },
-        description: `Optimización Camila - ${camilaResults.day} - Turno ${camilaResults.shift} - ${camilaResults.modelType}`,
-        operatingHours: {
-          start: camilaResults.shift === 1 ? '08:00' : camilaResults.shift === 2 ? '16:00' : '00:00',
-          end: camilaResults.shift === 1 ? '16:00' : camilaResults.shift === 2 ? '24:00' : '08:00'
-        },
-        restrictions: []
-      };
-
-      return patioCamila;
-    }
-
-    // Si es Magdalena y tiene datos, procesar esos datos
-    if (isMagdalenaActive && magdalenaMetrics?.bloquesMagdalena && magdalenaMetrics.bloquesMagdalena.length > 0) {
-      const bloquesMagdalena: BloqueDataExtended[] = magdalenaMetrics.bloquesMagdalena.map((blockData) => {
-        const ocupacionTurno = blockData.ocupacionPorTurno && blockData.ocupacionPorTurno[currentTurno - 1] !== undefined
-          ? blockData.ocupacionPorTurno[currentTurno - 1]
-          : blockData.ocupacionPromedio;
-
-        const ocupacionVisible = Math.max(5, Math.round(ocupacionTurno));
-
-        return {
-          id: blockData.bloqueId,
-          patioId: patioId,
-          name: `Bloque ${blockData.bloqueId}`,
-          ocupacion: ocupacionVisible,
-          ocupacionPromedio: Math.max(5, Math.round(blockData.ocupacionPromedio)),
-          capacidadTotal: blockData.capacidad,
-          bahias: [],
-          tipo: 'contenedores' as const,
-          bounds: { x: 0, y: 0, width: 100, height: 100 },
-          operationalStatus: blockData.estado,
-          equipmentType: 'rtg' as const,
-          ocupacionPorTurno: blockData.ocupacionPorTurno ?
-            blockData.ocupacionPorTurno.map(o => Math.max(5, Math.round(o))) :
-            undefined
-        };
-      });
-
-      const totalOcupacion = bloquesMagdalena.reduce((sum, b) => sum + (b.ocupacion * b.capacidadTotal), 0);
-      const totalCapacidad = bloquesMagdalena.reduce((sum, b) => sum + b.capacidadTotal, 0);
-      const ocupacionPromedio = totalCapacidad > 0 ? Math.round(totalOcupacion / totalCapacidad) : 0;
-
-      const patioConDatosMagdalena: PatioData = {
-        id: 'costanera',
-        name: 'Patio Costanera - Modelo Magdalena',
-        type: 'contenedores',
-        bloques: bloquesMagdalena,
-        ocupacionTotal: Math.max(10, ocupacionPromedio),
-        bounds: { x: 0, y: 0, width: 1000, height: 600 },
-        description: `Optimización Magdalena - Semana ${timeState?.magdalenaConfig?.semana || 3} - Turno ${currentTurno}`,
+        description: `${metrics.anio} - Semana ${metrics.semana} - P${metrics.participacion}% - Turno ${currentTurno}`,
         operatingHours: { start: '00:00', end: '23:59' },
         restrictions: []
       };
 
-      return patioConDatosMagdalena;
+      return patioOptimizado;
     }
 
-    // Si hay datos reales y el dataSource es historical
-    if (timeState?.dataSource === 'historical' && realPatioData) {
-      return realPatioData.find(p => p.id === patioId);
-    }
-
-    return null;
-  }, [isMagdalenaActive, isCamilaActive, magdalenaMetrics, camilaResults, patioId, realPatioData, timeState?.dataSource, timeState?.magdalenaConfig?.semana, currentTurno, currentHour]);
+    // ... resto del código existente ...
+  }, [isMagdalenaActive, isCamilaActive, metrics, camilaResults, patioId, realPatioData, timeState?.dataSource, currentTurno]);
 
   // Función para obtener datos de Camila para un bloque específico
   const getCamilaDataForBlock = (bloqueIndex: number) => {

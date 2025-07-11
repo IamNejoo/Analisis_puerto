@@ -237,10 +237,12 @@ export interface TimeState {
   dataSource: DataSource;
 }
 
+// src/types/index.ts - Agregar selectedTurno a ExtendedTimeState
 export interface ExtendedTimeState extends TimeState {
   magdalenaConfig?: MagdalenaConfig;
   camilaConfig?: CamilaConfig;
   hourRange: HourRange;
+  selectedTurno?: number; // NUEVO: turno seleccionado para Magdalena
 }
 
 // Tipos para indicadores de congestión
@@ -324,12 +326,13 @@ export interface ChartsPanelProps {
 }
 
 // Tipos adicionales para integración de Magdalena
+// src/types/index.ts
 export interface MagdalenaConfig {
-  participacion: 68 | 69 | 70;
+  anio: number;              // Dinámico desde BD
+  semana: number;            // Dinámico desde BD
+  participacion: number;     // Dinámico desde BD
   conDispersion: boolean;
-  semana: number;
 }
-
 export interface MagdalenaKPIs {
   distanciaTotal: number;
   mejoraVsReal: number;
