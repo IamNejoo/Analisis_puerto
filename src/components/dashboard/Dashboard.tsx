@@ -5,8 +5,8 @@ import { CorePortKPIPanel } from './CorePortKPIPanel';
 import { CongestionAnalyticsPanel } from './CongestionAnalyticsPanel';
 import { TimeControl } from '../shared/TimeControl'; // AGREGADO
 
-import MagdalenaKPIPanel from '../magdalena/MagdalenaKPIPanel';
-import MagdalenaComparisonPanel from '../magdalena/ComparisonPanel';
+import MagdalenaKPIPanel from '../optimization/MagdalenaKPIPanel';
+import MagdalenaComparisonPanel from '../optimization/ComparisonPanel';
 import CamilaIntegratedPanel from '../camila/CamilaIntegratedPanel';
 import { usePortData } from '../../hooks/usePortData';
 import { useFilters } from '../../hooks/useFilters';

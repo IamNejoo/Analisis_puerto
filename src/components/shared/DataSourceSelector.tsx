@@ -3,8 +3,8 @@
 import React from 'react';
 import { useTimeContext } from '../../contexts/TimeContext';
 import { Database, BarChart3, Activity } from 'lucide-react';
-import { ModelSelector } from '../magdalena/ModelSelector';
-import { CamilaModelSelector } from '../camila/CamilaModelSelector';
+import { ModelSelector } from '../optimization/ModelSelector';
+import ModelConfigSelector from '../camila/selectors/ModelConfigSelector';
 
 export const DataSourceSelector: React.FC = () => {
     const { timeState, setDataSource, setCamilaConfig, isLoadingData } = useTimeContext();
@@ -79,6 +79,18 @@ export const DataSourceSelector: React.FC = () => {
         }
     };
 
+    // Función para manejar el cambio de configuración de Camila
+    const handleCamilaConfigChange = (newConfig: any) => {
+        // Convertir del formato del ModelConfigSelector al formato esperado por setCamilaConfig
+        setCamilaConfig({
+            week: newConfig.semana,
+            day: 'Monday', // O mapear según el turno
+            shift: newConfig.turno,
+            modelType: 'maxmin',
+            withSegregations: newConfig.dispersion === 'K'
+        });
+    };
+
     return (
         <div className="space-y-3">
             {/* Header */}
@@ -125,18 +137,18 @@ export const DataSourceSelector: React.FC = () => {
                 </div>
             )}
 
-            {/* Configuración del modelo Camila - SIMPLIFICADO */}
+            {/* Configuración del modelo Camila */}
             {timeState?.dataSource === 'modelCamila' && (
                 <div className="mt-4 pt-3 border-t border-slate-700">
-                    <CamilaModelSelector
-                        config={timeState.camilaConfig || {
-                            week: 2,
-                            day: 'Monday',
-                            shift: 1,
-                            modelType: 'maxmin',
-                            withSegregations: true
+                    <ModelConfigSelector
+                        config={{
+                            anio: 2022,
+                            semana: timeState.camilaConfig?.week || 2,
+                            turno: timeState.camilaConfig?.shift || 1,
+                            participacion: 68,
+                            dispersion: timeState.camilaConfig?.withSegregations ? 'K' : 'N'
                         }}
-                        onChange={setCamilaConfig}
+                        onChange={handleCamilaConfigChange}
                     />
                 </div>
             )}

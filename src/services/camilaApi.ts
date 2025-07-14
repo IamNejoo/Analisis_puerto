@@ -1,251 +1,356 @@
-// services/camilaApi.ts - Actualizado para el nuevo backend
-import type { CamilaConfig, CamilaResultsV2 } from '../types/camila';
+// src/services/camilaApi.ts - VERSIÓN CORREGIDA
 
-class CamilaAPIService {
-    private baseUrl = 'http://localhost:8000/api/v1/camila';
+import type {
+    CamilaConfig,
+    CamilaDashboardData,
+    CamilaEstadisticas,
+    CamilaComparacionTemporal
+} from '../types/camila';
 
-    /**
-     * Obtener configuraciones disponibles
-     */
-    async getAvailableConfigurations() {
-        const response = await fetch(`${this.baseUrl}/configurations`);
-        if (!response.ok) {
-            throw new Error('Error al obtener configuraciones');
-        }
-        return response.json();
+class CamilaService {
+    private baseUrl = import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL}/api/v1/camila`
+        : 'http://localhost:8000/api/v1/camila';
+
+    constructor() {
+        console.log('🚀 CamilaService inicializado con baseUrl:', this.baseUrl);
     }
 
-    /**
-     * Obtener resultados del modelo (nuevo formato)
-     */
-    async getResultsV2(config: CamilaConfig): Promise<CamilaResultsV2> {
-        const params = new URLSearchParams({
-            semana: config.week.toString(),
-            dia: config.day,
-            turno: config.shift.toString(),
-            modelo_tipo: config.modelType,
-            con_segregaciones: config.withSegregations.toString()
+    private async handleResponse<T>(response: Response, url: string): Promise<T> {
+        console.log(`📥 Respuesta de ${url}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
         });
 
-        const response = await fetch(`${this.baseUrl}/results?${params}`);
         if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('No se encontraron datos para esta configuración');
+            let errorDetail = 'Error desconocido';
+            try {
+                const errorData = await response.json();
+                console.error('❌ Error data:', errorData);
+                errorDetail = errorData.detail || errorData.message || JSON.stringify(errorData);
+            } catch (e) {
+                console.error('❌ No se pudo parsear el error:', e);
             }
-            throw new Error(`Error al cargar resultados: ${response.status}`);
+
+            throw new Error(`Error ${response.status}: ${errorDetail}`);
         }
-        return response.json();
+
+        try {
+            const data = await response.json();
+            console.log(`✅ Datos recibidos de ${url}:`, data);
+            return data;
+        } catch (e) {
+            console.error('❌ Error parseando JSON:', e);
+            throw new Error('Error al parsear la respuesta del servidor');
+        }
     }
 
-    /**
-     * Obtener resultados en formato legacy (para compatibilidad)
-     */
-    async getResults(config: CamilaConfig) {
-        // Obtener datos del nuevo formato
-        const v2Results = await this.getResultsV2(config);
+    private transformDashboardResponse(rawData: any): CamilaDashboardData {
+        console.log('🔄 Transformando respuesta del dashboard:', rawData);
 
-        // Transformar al formato anterior
-        return this.transformToLegacyFormat(v2Results);
-    }
+        // Extraer metadata y métricas
+        const metadata = rawData.metadata || {};
+        const metricas = rawData.metricas_principales || {};
 
-    /**
-     * Transformar resultados V2 a formato legacy
-     */
-    private transformToLegacyFormat(v2: CamilaResultsV2) {
-        // Extraer flujos por tipo de las variables
-        const receptionFlow = this.createFlowMatrix(v2, 'flujo_recepcion');
-        const deliveryFlow = this.createFlowMatrix(v2, 'flujo_entrega');
-        const loadingFlow = this.createFlowMatrix(v2, 'flujo_carga');
-        const unloadingFlow = this.createFlowMatrix(v2, 'flujo_descarga');
-
-        // Calcular cuotas recomendadas
-        const recommendedQuotas = this.calculateRecommendedQuotas(
-            receptionFlow,
-            v2.matriz_disponibilidad
-        );
-
-        return {
-            // Datos de configuración
-            run_id: v2.run_id,
-            config: v2.config,
-
-            // Matrices de flujos
-            grue_assignment: {
-                data: v2.matriz_gruas
+        // Transformar la estructura - INICIALIZAR TODOS LOS ARRAYS
+        const transformed: CamilaDashboardData = {
+            resultado: {
+                id: metadata.resultado_id || '',
+                codigo: metadata.codigo || '',
+                fecha_inicio: metadata.fecha_inicio || '',
+                anio: metadata.anio || 2022,
+                semana: metadata.semana || 1,
+                turno: metadata.turno || 1,
+                turno_del_dia: metadata.turno_del_dia || 1,
+                participacion: metadata.participacion || 68,
+                total_gruas: metricas.gruas_utilizadas || 12,
+                con_dispersion: metadata.con_dispersion || false,
+                total_movimientos: metricas.total_movimientos || 0,
+                total_segregaciones: metricas.segregaciones_atendidas || 0,
+                total_bloques_visitados: metricas.bloques_visitados || 0,
+                utilizacion_promedio: metricas.utilizacion_promedio || 0,
+                coeficiente_variacion: metricas.coeficiente_variacion || 0,
+                tiempo_idle_promedio: metricas.tiempo_idle_promedio || 0,
+                total_frecuencias: metricas.total_frecuencias || 0,
+                total_cuotas_camiones: rawData.resumen_operacional?.total_cuotas_camiones || 0,
+                estado: metricas.total_movimientos > 0 ? 'Factible' : 'Sin solución'
             },
-            reception_flow: {
-                data: receptionFlow
-            },
-            delivery_flow: {
-                data: deliveryFlow
-            },
-            loading_flow: {
-                data: loadingFlow
-            },
-            unloading_flow: {
-                data: unloadingFlow
-            },
-            total_flows: {
-                data: v2.matriz_flujos
-            },
-            capacity: {
-                data: v2.matriz_capacidad
-            },
-            availability: {
-                data: v2.matriz_disponibilidad
-            },
-            recommended_quotas: {
-                data: recommendedQuotas
-            },
-
-            // Métricas
-            block_participation: v2.participacion_bloques,
-            time_participation: v2.participacion_tiempo,
-            std_dev_blocks: this.calculateStdDev(v2.participacion_bloques),
-            std_dev_time: this.calculateStdDev(v2.participacion_tiempo),
-            workload_balance: v2.balance_workload,
-            congestion_index: v2.indice_congestion,
-            objective_value: v2.funcion_objetivo,
-
-            // Datos reales si existen
-            real_data: null,
-            comparison: null
+            asignaciones: [],
+            metricas_gruas: [],
+            cuotas_camiones: [],
+            comparaciones: [] // Siempre inicializado como array vacío
         };
-    }
 
-    /**
-     * Crear matriz de flujo específica desde variables
-     */
-    private createFlowMatrix(v2: CamilaResultsV2, tipoFlujo: string): number[][] {
-        const matrix = Array(9).fill(null).map(() => Array(8).fill(0));
-
-        const flujos = tipoFlujo === 'flujo_recepcion' ? v2.variables_summary.flujos_recepcion :
-            tipoFlujo === 'flujo_entrega' ? v2.variables_summary.flujos_entrega :
-                [];
-
-        flujos.forEach(flujo => {
-            if (flujo.bloque && flujo.tiempo) {
-                const bIdx = parseInt(flujo.bloque.substring(1)) - 1;
-                const tIdx = flujo.tiempo - 1;
-
-                if (bIdx >= 0 && bIdx < 9 && tIdx >= 0 && tIdx < 8) {
-                    matrix[bIdx][tIdx] += flujo.valor;
+        // Transformar asignaciones por periodo
+        if (rawData.asignaciones_por_periodo) {
+            Object.entries(rawData.asignaciones_por_periodo).forEach(([periodo, asignaciones]: [string, any]) => {
+                if (Array.isArray(asignaciones)) {
+                    asignaciones.forEach(asig => {
+                        transformed.asignaciones.push({
+                            segregacion_codigo: asig.segregacion || '',
+                            bloque_codigo: asig.bloque || '',
+                            periodo: parseInt(periodo),
+                            frecuencia: asig.frecuencia || 0
+                        });
+                    });
                 }
-            }
+            });
+        }
+
+        // Transformar métricas por grúa
+        if (rawData.metricas_por_grua && Array.isArray(rawData.metricas_por_grua)) {
+            transformed.metricas_gruas = rawData.metricas_por_grua.map((metrica: any) => ({
+                grua_id: metrica.grua_id || 0,
+                movimientos_asignados: metrica.movimientos || 0,
+                bloques_visitados: metrica.bloques_visitados || 0,
+                tiempo_trabajado: metrica.tiempo_productivo || 0,
+                tiempo_idle: metrica.tiempo_improductivo || 0,
+                utilizacion_pct: metrica.utilizacion || 0
+            }));
+        }
+
+        // Transformar cuotas por periodo
+        if (rawData.cuotas_por_periodo) {
+            Object.entries(rawData.cuotas_por_periodo).forEach(([periodo, cuotas]: [string, any]) => {
+                if (Array.isArray(cuotas)) {
+                    cuotas.forEach(cuota => {
+                        transformed.cuotas_camiones.push({
+                            bloque_codigo: cuota.bloque || '',
+                            periodo: parseInt(periodo),
+                            cuota_camiones: cuota.cuota || 0,
+                            capacidad_maxima: cuota.capacidad || 0,
+                            utilizacion_pct: cuota.capacidad > 0
+                                ? ((cuota.cuota || 0) / cuota.capacidad) * 100
+                                : 0
+                        });
+                    });
+                }
+            });
+        }
+
+        // Transformar comparaciones con Magdalena si existen
+        if (rawData.comparacion_con_magdalena && rawData.comparacion_con_magdalena.por_bloque) {
+            const comparacionesPorBloque = rawData.comparacion_con_magdalena.por_bloque;
+
+            Object.entries(comparacionesPorBloque).forEach(([bloque, datos]: [string, any]) => {
+                // Solo agregar si hay movimientos en alguno de los dos modelos
+                if ((datos.magdalena && datos.magdalena > 0) || (datos.camila && datos.camila > 0)) {
+                    // Verificar que comparaciones existe antes de hacer push
+                    if (transformed.comparaciones) {
+                        transformed.comparaciones.push({
+                            tipo_comparacion: 'por_bloque',
+                            metrica: 'movimientos',
+                            valor_real: Math.round(datos.magdalena || 0),
+                            valor_camila: Math.round(datos.camila || 0),
+                            diferencia_absoluta: Math.round(datos.diferencia || 0),
+                            porcentaje_diferencia: 0, // Calcularlo si es necesario
+                            descripcion: `Bloque ${bloque}`
+                        });
+                    }
+                }
+            });
+        }
+
+        // Actualizar bloques visitados basado en asignaciones
+        const bloquesUnicos = new Set(transformed.asignaciones.map(a => a.bloque_codigo));
+        transformed.resultado.total_bloques_visitados = bloquesUnicos.size;
+
+        // Actualizar total de segregaciones basado en asignaciones
+        const segregacionesUnicas = new Set(transformed.asignaciones.map(a => a.segregacion_codigo));
+        transformed.resultado.total_segregaciones = segregacionesUnicas.size;
+
+        console.log('✅ Dashboard transformado:', {
+            tieneResultado: !!transformed.resultado,
+            numAsignaciones: transformed.asignaciones.length,
+            numMetricas: transformed.metricas_gruas.length,
+            numCuotas: transformed.cuotas_camiones.length,
+            numComparaciones: transformed.comparaciones?.length || 0,
+            bloquesVisitados: transformed.resultado.total_bloques_visitados,
+            segregacionesUnicas: transformed.resultado.total_segregaciones
         });
 
-        return matrix;
+        return transformed;
     }
 
-    /**
-     * Calcular cuotas recomendadas
-     */
-    private calculateRecommendedQuotas(reception: number[][], availability: number[][]): number[][] {
-        const quotas = Array(9).fill(null).map(() => Array(8).fill(0));
-        const FACTOR_SEGURIDAD = 0.8;
+    async getDashboard(config: CamilaConfig): Promise<CamilaDashboardData> {
+        console.log('🔵 getDashboard llamado con config:', config);
 
-        for (let b = 0; b < 9; b++) {
-            for (let t = 0; t < 8; t++) {
-                quotas[b][t] = Math.round(reception[b][t] + (availability[b][t] * FACTOR_SEGURIDAD));
-            }
-        }
-
-        return quotas;
-    }
-
-    /**
-     * Calcular desviación estándar
-     */
-    private calculateStdDev(values: number[]): number {
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-        const squareDiffs = values.map(value => Math.pow(value - avg, 2));
-        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
-        return Math.sqrt(avgSquareDiff);
-    }
-
-    /**
-     * Obtener timeline de grúa
-     */
-    async getGruaTimeline(runId: string, gruaId: string) {
-        const response = await fetch(`${this.baseUrl}/gruas/${gruaId}/timeline?run_id=${runId}`);
-        if (!response.ok) {
-            throw new Error('Error al obtener timeline de grúa');
-        }
-        return response.json();
-    }
-
-    /**
-     * Obtener detalle de bloque
-     */
-    async getBlockDetail(runId: string, blockId: string) {
-        const response = await fetch(`${this.baseUrl}/blocks/${blockId}/detail?run_id=${runId}`);
-        if (!response.ok) {
-            throw new Error('Error al obtener detalle de bloque');
-        }
-        return response.json();
-    }
-
-    /**
-     * Comparar modelos MinMax vs MaxMin
-     */
-    async compareModels(config: Omit<CamilaConfig, 'modelType'>) {
         const params = new URLSearchParams({
-            semana: config.week.toString(),
-            dia: config.day,
-            turno: config.shift.toString(),
-            con_segregaciones: config.withSegregations.toString()
+            anio: config.anio.toString(),
+            semana: config.semana.toString(),
+            turno: config.turno.toString(),
+            participacion: config.participacion.toString(),
+            dispersion: config.dispersion
         });
 
-        const response = await fetch(`${this.baseUrl}/comparison/models?${params}`);
-        if (!response.ok) {
-            throw new Error('Error al comparar modelos');
+        const url = `${this.baseUrl}/dashboard?${params}`;
+        console.log('📤 Fetching URL:', url);
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const rawData = await this.handleResponse<any>(response, url);
+
+            // Transformar la respuesta al formato esperado
+            const transformedData = this.transformDashboardResponse(rawData);
+
+            return transformedData;
+        } catch (error) {
+            console.error('❌ Error en getDashboard:', error);
+            throw error;
         }
-        return response.json();
     }
 
-    /**
-     * Cargar archivos del modelo
-     */
-    async uploadFiles(
-        resultadoFile: File,
-        instanciaFile: File,
-        config: CamilaConfig
-    ) {
-        const formData = new FormData();
-        formData.append('resultado_file', resultadoFile);
-        formData.append('instancia_file', instanciaFile);
-        formData.append('semana', config.week.toString());
-        formData.append('dia', config.day);
-        formData.append('turno', config.shift.toString());
-        formData.append('modelo_tipo', config.modelType);
-        formData.append('con_segregaciones', config.withSegregations.toString());
+    async getEstadisticas(): Promise<CamilaEstadisticas> {
+        console.log('🔵 getEstadisticas llamado');
+        const url = `${this.baseUrl}/estadisticas`;
 
-        const response = await fetch(`${this.baseUrl}/upload`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Error al cargar archivos');
+        try {
+            const response = await fetch(url);
+            return this.handleResponse<CamilaEstadisticas>(response, url);
+        } catch (error) {
+            console.error('❌ Error en getEstadisticas:', error);
+            throw error;
         }
-        return response.json();
     }
 
-    /**
-     * Eliminar un run
-     */
-    async deleteRun(runId: string) {
-        const response = await fetch(`${this.baseUrl}/runs/${runId}`, {
-            method: 'DELETE'
+    async getComparacionTemporal(config: Omit<CamilaConfig, 'turno'>): Promise<CamilaComparacionTemporal> {
+        console.log('🔵 getComparacionTemporal llamado con config:', config);
+
+        const params = new URLSearchParams({
+            anio: config.anio.toString(),
+            semana: config.semana.toString(),
+            participacion: config.participacion.toString(),
+            dispersion: config.dispersion
         });
 
-        if (!response.ok) {
-            throw new Error('Error al eliminar run');
+        const url = `${this.baseUrl}/comparacion-temporal?${params}`;
+
+        try {
+            const response = await fetch(url);
+            return this.handleResponse<CamilaComparacionTemporal>(response, url);
+        } catch (error) {
+            console.error('❌ Error en getComparacionTemporal:', error);
+            throw error;
         }
-        return response.json();
+    }
+
+    async getResultadosDisponibles(): Promise<Array<{
+        anio: number;
+        semanas: number[];
+        participaciones: number[];
+    }>> {
+        console.log('🔵 getResultadosDisponibles llamado');
+        const url = `${this.baseUrl}/resultados?limit=1000`;
+
+        try {
+            const response = await fetch(url);
+            const data = await this.handleResponse<{
+                total: number;
+                items: any[];
+            }>(response, url);
+
+            // Agrupar por año
+            const grouped = new Map<number, { semanas: Set<number>, participaciones: Set<number> }>();
+
+            data.items.forEach(item => {
+                if (!grouped.has(item.anio)) {
+                    grouped.set(item.anio, { semanas: new Set(), participaciones: new Set() });
+                }
+                const group = grouped.get(item.anio)!;
+                group.semanas.add(item.semana);
+                group.participaciones.add(item.participacion);
+            });
+
+            const result = Array.from(grouped.entries()).map(([anio, data]) => ({
+                anio,
+                semanas: Array.from(data.semanas).sort((a, b) => a - b),
+                participaciones: Array.from(data.participaciones).sort((a, b) => a - b)
+            }));
+
+            console.log('✅ Resultados disponibles procesados:', result);
+            return result;
+        } catch (error) {
+            console.error('❌ Error en getResultadosDisponibles:', error);
+            throw error;
+        }
+    }
+
+    async exportarResultados(config: CamilaConfig, formato: 'excel' | 'csv' = 'excel') {
+        console.log('🔵 exportarResultados llamado con config:', config, 'formato:', formato);
+
+        const params = new URLSearchParams({
+            anio: config.anio.toString(),
+            semana: config.semana.toString(),
+            turno: config.turno.toString(),
+            participacion: config.participacion.toString(),
+            dispersion: config.dispersion,
+            formato
+        });
+
+        const url = `${this.baseUrl}/export?${params}`;
+        console.log('📤 Export URL:', url);
+
+        try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                console.error('❌ Error en export:', response.status, response.statusText);
+                throw new Error('Error al exportar datos');
+            }
+
+            const blob = await response.blob();
+            console.log('✅ Blob recibido:', blob.size, 'bytes');
+
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `camila_${config.anio}_S${config.semana}_T${config.turno}.${formato}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+
+            console.log('✅ Archivo descargado exitosamente');
+        } catch (error) {
+            console.error('❌ Error en exportarResultados:', error);
+            throw error;
+        }
+    }
+
+    // Método de prueba para verificar la conexión
+    async testConnection(): Promise<boolean> {
+        console.log('🔵 Probando conexión con el API...');
+        try {
+            const response = await fetch(`${this.baseUrl}/dashboard?anio=2022&semana=1&turno=1&participacion=68&dispersion=K`);
+            console.log('✅ Conexión exitosa:', response.ok);
+            return response.ok;
+        } catch (error) {
+            console.error('❌ Error de conexión:', error);
+            return false;
+        }
     }
 }
 
-// Exportar instancia única del servicio
-export const camilaAPI = new CamilaAPIService();
+export const camilaService = new CamilaService();
+
+// Exportar también la clase por si se necesita crear instancias adicionales
+export { CamilaService };
+
+// Test de conexión automático en desarrollo
+if (import.meta.env.DEV) {
+    camilaService.testConnection().then(connected => {
+        if (connected) {
+            console.log('✅ Camila API está disponible');
+        } else {
+            console.warn('⚠️ Camila API no está disponible');
+        }
+    });
+}

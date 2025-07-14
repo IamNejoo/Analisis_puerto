@@ -39,7 +39,7 @@ export const useOptimizationData = (
 
             setMetrics(data);
             setLastUpdated(new Date());
-            console.log('✅ Datos de optimización cargados');
+            console.log('✅ Datos de optimización cargados:', data);
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -126,10 +126,10 @@ export const useMagdalenaData = (
             },
             workloadPorBloque: [],
             segregacionesPorBloque: [],
-            bloquesMagdalena: metrics.ocupacion.porBloque.map((b, idx) => ({
+            bloquesMagdalena: metrics.ocupacion.porBloque.map((b) => ({
                 bloqueId: b.bloque,
                 ocupacionPromedio: b.ocupacionPromedio,
-                capacidad: metrics.ocupacion.capacidadTotal / 9,
+                capacidad: metrics.ocupacion.capacidadTotal / metrics.ocupacion.porBloque.length,
                 ocupacionPorTurno: [],
                 movimientos: {
                     entrega: 0,
@@ -140,7 +140,13 @@ export const useMagdalenaData = (
                 },
                 estado: 'active' as const
             })),
-            segregacionesInfo: {}
+            segregacionesInfo: metrics.segregaciones.activas.reduce((acc, seg) => {
+                acc[seg.codigo] = {
+                    descripcion: seg.descripcion,
+                    movimientos: seg.movimientos
+                };
+                return acc;
+            }, {} as any)
         } : null,
         realMetrics: metrics ? {
             totalMovimientos: metrics.movimientos.totalReal,
