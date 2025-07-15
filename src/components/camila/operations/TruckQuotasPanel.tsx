@@ -1,19 +1,22 @@
-
-// components/camila/operations/TruckQuotasPanel.tsx - VERSIÓN CORREGIDA
+// components/camila/operations/TruckQuotasPanel.tsx
 
 import React, { useMemo, useState } from 'react';
 import { Truck, AlertCircle, ChevronDown, ChevronUp, Package } from 'lucide-react';
 
-interface CuotaCamiones {
-    bloque_codigo: string;
+interface CuotaCamion {
     periodo: number;
-    cuota_camiones: number;
+    bloque_codigo: string;
+    cuota_modelo: number;
     capacidad_maxima: number;
-    utilizacion_pct: number;
+    gruas_asignadas: number;
+    movimientos_reales?: number;
+    utilizacion_real?: number;
+    tipo_operacion: string;
+    segregaciones: string[];
 }
 
 interface TruckQuotasPanelProps {
-    cuotas: CuotaCamiones[];
+    cuotas: CuotaCamion[];
 }
 
 export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) => {
@@ -24,17 +27,21 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
         if (!cuotas || !Array.isArray(cuotas)) return [];
 
         return cuotas.map(c => ({
-            bloque_codigo: c.bloque_codigo || '',
             periodo: c.periodo || 0,
-            cuota_camiones: c.cuota_camiones || 0,
+            bloque_codigo: c.bloque_codigo || '',
+            cuota_modelo: c.cuota_modelo || 0,
             capacidad_maxima: c.capacidad_maxima || 0,
-            utilizacion_pct: c.utilizacion_pct || 0
+            gruas_asignadas: c.gruas_asignadas || 0,
+            movimientos_reales: c.movimientos_reales || 0,
+            utilizacion_real: c.utilizacion_real || 0,
+            tipo_operacion: c.tipo_operacion || 'mixto',
+            segregaciones: c.segregaciones || []
         }));
     }, [cuotas]);
 
     // Agrupar por período
     const cuotasPorPeriodo = useMemo(() => {
-        const grouped = new Map<number, CuotaCamiones[]>();
+        const grouped = new Map<number, CuotaCamion[]>();
 
         cuotasLimpias.forEach(cuota => {
             const periodo = cuota.periodo;
@@ -46,17 +53,29 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
 
         return Array.from(grouped.entries())
             .sort(([a], [b]) => a - b)
-            .map(([periodo, cuotasPeriodo]) => ({
-                periodo,
-                cuotas: cuotasPeriodo.sort((a, b) =>
-                    a.bloque_codigo.localeCompare(b.bloque_codigo)
-                ),
-                totalCuota: cuotasPeriodo.reduce((sum, c) => sum + c.cuota_camiones, 0),
-                totalCapacidad: cuotasPeriodo.reduce((sum, c) => sum + c.capacidad_maxima, 0),
-                promedioUtilizacion: cuotasPeriodo.length > 0
-                    ? cuotasPeriodo.reduce((sum, c) => sum + c.utilizacion_pct, 0) / cuotasPeriodo.length
-                    : 0
-            }));
+            .map(([periodo, cuotasPeriodo]) => {
+                const totalCuota = cuotasPeriodo.reduce((sum, c) => sum + c.cuota_modelo, 0);
+                const totalCapacidad = cuotasPeriodo.reduce((sum, c) => sum + c.capacidad_maxima, 0);
+                const totalReal = cuotasPeriodo.reduce((sum, c) => sum + (c.movimientos_reales || 0), 0);
+                const totalGruas = cuotasPeriodo.reduce((sum, c) => sum + c.gruas_asignadas, 0);
+
+                const utilizacionModelo = totalCapacidad > 0 ? (totalCuota / totalCapacidad * 100) : 0;
+                const utilizacionReal = totalCapacidad > 0 ? (totalReal / totalCapacidad * 100) : 0;
+
+                return {
+                    periodo,
+                    cuotas: cuotasPeriodo.sort((a, b) =>
+                        a.bloque_codigo.localeCompare(b.bloque_codigo)
+                    ),
+                    totalCuota,
+                    totalCapacidad,
+                    totalReal,
+                    totalGruas,
+                    utilizacionModelo,
+                    utilizacionReal,
+                    tieneReales: totalReal > 0
+                };
+            });
     }, [cuotasLimpias]);
 
     // Si no hay datos
@@ -76,6 +95,9 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
         );
     }
 
+    // Calcular si hay datos reales disponibles
+    const hayDatosReales = cuotasLimpias.some(c => c.movimientos_reales && c.movimientos_reales > 0);
+
     return (
         <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-6">
             <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center">
@@ -84,7 +106,17 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
             </h3>
 
             <div className="space-y-3">
-                {cuotasPorPeriodo.map(({ periodo, cuotas, totalCuota, totalCapacidad, promedioUtilizacion }) => {
+                {cuotasPorPeriodo.map(({
+                    periodo,
+                    cuotas,
+                    totalCuota,
+                    totalCapacidad,
+                    totalReal,
+                    totalGruas,
+                    utilizacionModelo,
+                    utilizacionReal,
+                    tieneReales
+                }) => {
                     const isExpanded = expandedPeriod === periodo;
 
                     return (
@@ -99,18 +131,30 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
                                     </span>
                                     <div className="flex items-center space-x-3 text-sm">
                                         <span className="text-slate-400">
-                                            Total: <span className="text-slate-200 font-medium">
-                                                {totalCuota || 0} camiones
+                                            Cuota: <span className="text-slate-200 font-medium">
+                                                {totalCuota}
+                                            </span>
+                                        </span>
+                                        {tieneReales && (
+                                            <span className="text-slate-400">
+                                                Real: <span className="text-green-400 font-medium">
+                                                    {totalReal}
+                                                </span>
+                                            </span>
+                                        )}
+                                        <span className="text-slate-400">
+                                            Capacidad: <span className="text-slate-200 font-medium">
+                                                {totalCapacidad}
                                             </span>
                                         </span>
                                         <span className="text-slate-400">
-                                            Capacidad: <span className="text-slate-200 font-medium">
-                                                {totalCapacidad || 0}
+                                            Grúas: <span className="text-slate-200 font-medium">
+                                                {totalGruas}
                                             </span>
                                         </span>
                                         <span className="text-slate-400">
                                             Utilización: <span className="text-blue-400 font-medium">
-                                                {isNaN(promedioUtilizacion) ? '0.0' : promedioUtilizacion.toFixed(1)}%
+                                                {utilizacionModelo.toFixed(1)}%
                                             </span>
                                         </span>
                                     </div>
@@ -125,50 +169,65 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
                             {isExpanded && (
                                 <div className="p-4 bg-slate-900/50">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {cuotas.map((cuota) => (
-                                            <div
-                                                key={`${cuota.bloque_codigo}-${cuota.periodo}`}
-                                                className="bg-slate-800 rounded-lg p-3 border border-slate-700"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-medium text-slate-100 flex items-center">
-                                                        <Package size={16} className="mr-1 text-blue-400" />
-                                                        {cuota.bloque_codigo}
-                                                    </span>
-                                                    <span className={`text-sm font-medium ${cuota.utilizacion_pct > 80
-                                                        ? 'text-red-400'
-                                                        : cuota.utilizacion_pct > 60
-                                                            ? 'text-yellow-400'
-                                                            : 'text-green-400'
-                                                        }`}>
-                                                        {isNaN(cuota.utilizacion_pct) ? '0.0' : cuota.utilizacion_pct.toFixed(1)}%
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1 text-sm">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-400">Cuota:</span>
-                                                        <span className="text-slate-200">{cuota.cuota_camiones || 0}</span>
+                                        {cuotas.map((cuota) => {
+                                            const utilizacionCuota = cuota.capacidad_maxima > 0
+                                                ? (cuota.cuota_modelo / cuota.capacidad_maxima * 100)
+                                                : 0;
+                                            return (
+                                                <div
+                                                    key={`${cuota.bloque_codigo}-${cuota.periodo}`}
+                                                    className="bg-slate-800 rounded-lg p-3 border border-slate-700"
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-medium text-slate-100 flex items-center">
+                                                            <Package size={16} className="mr-1 text-blue-400" />
+                                                            {cuota.bloque_codigo}
+                                                        </span>
+                                                        <span className={`text-sm font-medium ${utilizacionCuota > 80
+                                                                ? 'text-red-400'
+                                                                : utilizacionCuota > 60
+                                                                    ? 'text-yellow-400'
+                                                                    : 'text-green-400'
+                                                            }`}>
+                                                            {utilizacionCuota.toFixed(1)}%
+                                                        </span>
                                                     </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-400">Capacidad:</span>
-                                                        <span className="text-slate-200">{cuota.capacidad_maxima || 0}</span>
+                                                    <div className="space-y-1 text-sm">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">Cuota:</span>
+                                                            <span className="text-slate-200">{cuota.cuota_modelo}</span>
+                                                        </div>
+                                                        {cuota.movimientos_reales > 0 && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-slate-400">Real:</span>
+                                                                <span className="text-green-400">{cuota.movimientos_reales}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">Capacidad:</span>
+                                                            <span className="text-slate-200">{cuota.capacidad_maxima}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">Grúas:</span>
+                                                            <span className="text-slate-200">{cuota.gruas_asignadas}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-2 w-full bg-slate-700 rounded-full h-2">
+                                                        <div
+                                                            className="h-2 rounded-full transition-all duration-300"
+                                                            style={{
+                                                                width: `${Math.min(100, Math.max(0, utilizacionCuota))}%`,
+                                                                backgroundColor: utilizacionCuota > 80
+                                                                    ? '#ef4444'
+                                                                    : utilizacionCuota > 60
+                                                                        ? '#f59e0b'
+                                                                        : '#10b981'
+                                                            }}
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="mt-2 w-full bg-slate-700 rounded-full h-2">
-                                                    <div
-                                                        className="h-2 rounded-full transition-all duration-300"
-                                                        style={{
-                                                            width: `${Math.min(100, Math.max(0, cuota.utilizacion_pct || 0))}%`,
-                                                            backgroundColor: cuota.utilizacion_pct > 80
-                                                                ? '#ef4444'
-                                                                : cuota.utilizacion_pct > 60
-                                                                    ? '#f59e0b'
-                                                                    : '#10b981'
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -180,13 +239,21 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
             {/* Resumen */}
             <div className="mt-6 bg-slate-700/50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-slate-100 mb-3">Resumen Total</h4>
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div>
-                        <span className="text-slate-400 block">Total Camiones</span>
+                        <span className="text-slate-400 block">Total Cuota Modelo</span>
                         <span className="text-xl font-bold text-slate-100">
-                            {cuotasLimpias.reduce((sum, c) => sum + c.cuota_camiones, 0)}
+                            {cuotasLimpias.reduce((sum, c) => sum + c.cuota_modelo, 0)}
                         </span>
                     </div>
+                    {hayDatosReales && (
+                        <div>
+                            <span className="text-slate-400 block">Total Real</span>
+                            <span className="text-xl font-bold text-green-400">
+                                {cuotasLimpias.reduce((sum, c) => sum + (c.movimientos_reales || 0), 0)}
+                            </span>
+                        </div>
+                    )}
                     <div>
                         <span className="text-slate-400 block">Capacidad Total</span>
                         <span className="text-xl font-bold text-slate-100">
@@ -197,14 +264,30 @@ export const TruckQuotasPanel: React.FC<TruckQuotasPanelProps> = ({ cuotas }) =>
                         <span className="text-slate-400 block">Utilización Promedio</span>
                         <span className="text-xl font-bold text-blue-400">
                             {(() => {
-                                const promedio = cuotasLimpias.length > 0
-                                    ? cuotasLimpias.reduce((sum, c) => sum + c.utilizacion_pct, 0) / cuotasLimpias.length
-                                    : 0;
-                                return isNaN(promedio) ? '0.0' : promedio.toFixed(1);
+                                const totalCuota = cuotasLimpias.reduce((sum, c) => sum + c.cuota_modelo, 0);
+                                const totalCapacidad = cuotasLimpias.reduce((sum, c) => sum + c.capacidad_maxima, 0);
+                                const utilizacion = totalCapacidad > 0 ? (totalCuota / totalCapacidad * 100) : 0;
+                                return utilizacion.toFixed(1);
                             })()}%
                         </span>
                     </div>
                 </div>
+
+                {hayDatosReales && (
+                    <div className="mt-4 pt-4 border-t border-slate-600">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-400">Accuracy Modelo vs Real:</span>
+                            <span className="text-lg font-bold text-green-400">
+                                {(() => {
+                                    const totalModelo = cuotasLimpias.reduce((sum, c) => sum + c.cuota_modelo, 0);
+                                    const totalReal = cuotasLimpias.reduce((sum, c) => sum + (c.movimientos_reales || 0), 0);
+                                    const accuracy = Math.min(totalModelo, totalReal) / Math.max(totalModelo, totalReal) * 100;
+                                    return accuracy.toFixed(1);
+                                })()}%
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

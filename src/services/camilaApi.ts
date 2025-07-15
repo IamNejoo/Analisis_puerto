@@ -1,10 +1,17 @@
-// src/services/camilaApi.ts - VERSIÓN CORREGIDA
+// src/services/camilaApi.ts - Versión actualizada para datos reales
 
 import type {
     CamilaConfig,
     CamilaDashboardData,
     CamilaEstadisticas,
-    CamilaComparacionTemporal
+    CamilaComparacionTemporal,
+    CamilaAnalisisAccuracy,
+    CamilaResultadosList,
+    CamilaCuotasDetalle,
+    CamilaMetricasGruas,
+    CamilaAgrupacionHora,
+    CamilaLogProcesamiento,
+    CamilaFilterConfig
 } from '../types/camila';
 
 class CamilaService {
@@ -46,133 +53,6 @@ class CamilaService {
         }
     }
 
-    private transformDashboardResponse(rawData: any): CamilaDashboardData {
-        console.log('🔄 Transformando respuesta del dashboard:', rawData);
-
-        // Extraer metadata y métricas
-        const metadata = rawData.metadata || {};
-        const metricas = rawData.metricas_principales || {};
-
-        // Transformar la estructura - INICIALIZAR TODOS LOS ARRAYS
-        const transformed: CamilaDashboardData = {
-            resultado: {
-                id: metadata.resultado_id || '',
-                codigo: metadata.codigo || '',
-                fecha_inicio: metadata.fecha_inicio || '',
-                anio: metadata.anio || 2022,
-                semana: metadata.semana || 1,
-                turno: metadata.turno || 1,
-                turno_del_dia: metadata.turno_del_dia || 1,
-                participacion: metadata.participacion || 68,
-                total_gruas: metricas.gruas_utilizadas || 12,
-                con_dispersion: metadata.con_dispersion || false,
-                total_movimientos: metricas.total_movimientos || 0,
-                total_segregaciones: metricas.segregaciones_atendidas || 0,
-                total_bloques_visitados: metricas.bloques_visitados || 0,
-                utilizacion_promedio: metricas.utilizacion_promedio || 0,
-                coeficiente_variacion: metricas.coeficiente_variacion || 0,
-                tiempo_idle_promedio: metricas.tiempo_idle_promedio || 0,
-                total_frecuencias: metricas.total_frecuencias || 0,
-                total_cuotas_camiones: rawData.resumen_operacional?.total_cuotas_camiones || 0,
-                estado: metricas.total_movimientos > 0 ? 'Factible' : 'Sin solución'
-            },
-            asignaciones: [],
-            metricas_gruas: [],
-            cuotas_camiones: [],
-            comparaciones: [] // Siempre inicializado como array vacío
-        };
-
-        // Transformar asignaciones por periodo
-        if (rawData.asignaciones_por_periodo) {
-            Object.entries(rawData.asignaciones_por_periodo).forEach(([periodo, asignaciones]: [string, any]) => {
-                if (Array.isArray(asignaciones)) {
-                    asignaciones.forEach(asig => {
-                        transformed.asignaciones.push({
-                            segregacion_codigo: asig.segregacion || '',
-                            bloque_codigo: asig.bloque || '',
-                            periodo: parseInt(periodo),
-                            frecuencia: asig.frecuencia || 0
-                        });
-                    });
-                }
-            });
-        }
-
-        // Transformar métricas por grúa
-        if (rawData.metricas_por_grua && Array.isArray(rawData.metricas_por_grua)) {
-            transformed.metricas_gruas = rawData.metricas_por_grua.map((metrica: any) => ({
-                grua_id: metrica.grua_id || 0,
-                movimientos_asignados: metrica.movimientos || 0,
-                bloques_visitados: metrica.bloques_visitados || 0,
-                tiempo_trabajado: metrica.tiempo_productivo || 0,
-                tiempo_idle: metrica.tiempo_improductivo || 0,
-                utilizacion_pct: metrica.utilizacion || 0
-            }));
-        }
-
-        // Transformar cuotas por periodo
-        if (rawData.cuotas_por_periodo) {
-            Object.entries(rawData.cuotas_por_periodo).forEach(([periodo, cuotas]: [string, any]) => {
-                if (Array.isArray(cuotas)) {
-                    cuotas.forEach(cuota => {
-                        transformed.cuotas_camiones.push({
-                            bloque_codigo: cuota.bloque || '',
-                            periodo: parseInt(periodo),
-                            cuota_camiones: cuota.cuota || 0,
-                            capacidad_maxima: cuota.capacidad || 0,
-                            utilizacion_pct: cuota.capacidad > 0
-                                ? ((cuota.cuota || 0) / cuota.capacidad) * 100
-                                : 0
-                        });
-                    });
-                }
-            });
-        }
-
-        // Transformar comparaciones con Magdalena si existen
-        if (rawData.comparacion_con_magdalena && rawData.comparacion_con_magdalena.por_bloque) {
-            const comparacionesPorBloque = rawData.comparacion_con_magdalena.por_bloque;
-
-            Object.entries(comparacionesPorBloque).forEach(([bloque, datos]: [string, any]) => {
-                // Solo agregar si hay movimientos en alguno de los dos modelos
-                if ((datos.magdalena && datos.magdalena > 0) || (datos.camila && datos.camila > 0)) {
-                    // Verificar que comparaciones existe antes de hacer push
-                    if (transformed.comparaciones) {
-                        transformed.comparaciones.push({
-                            tipo_comparacion: 'por_bloque',
-                            metrica: 'movimientos',
-                            valor_real: Math.round(datos.magdalena || 0),
-                            valor_camila: Math.round(datos.camila || 0),
-                            diferencia_absoluta: Math.round(datos.diferencia || 0),
-                            porcentaje_diferencia: 0, // Calcularlo si es necesario
-                            descripcion: `Bloque ${bloque}`
-                        });
-                    }
-                }
-            });
-        }
-
-        // Actualizar bloques visitados basado en asignaciones
-        const bloquesUnicos = new Set(transformed.asignaciones.map(a => a.bloque_codigo));
-        transformed.resultado.total_bloques_visitados = bloquesUnicos.size;
-
-        // Actualizar total de segregaciones basado en asignaciones
-        const segregacionesUnicas = new Set(transformed.asignaciones.map(a => a.segregacion_codigo));
-        transformed.resultado.total_segregaciones = segregacionesUnicas.size;
-
-        console.log('✅ Dashboard transformado:', {
-            tieneResultado: !!transformed.resultado,
-            numAsignaciones: transformed.asignaciones.length,
-            numMetricas: transformed.metricas_gruas.length,
-            numCuotas: transformed.cuotas_camiones.length,
-            numComparaciones: transformed.comparaciones?.length || 0,
-            bloquesVisitados: transformed.resultado.total_bloques_visitados,
-            segregacionesUnicas: transformed.resultado.total_segregaciones
-        });
-
-        return transformed;
-    }
-
     async getDashboard(config: CamilaConfig): Promise<CamilaDashboardData> {
         console.log('🔵 getDashboard llamado con config:', config);
 
@@ -196,12 +76,9 @@ class CamilaService {
                 }
             });
 
-            const rawData = await this.handleResponse<any>(response, url);
-
-            // Transformar la respuesta al formato esperado
-            const transformedData = this.transformDashboardResponse(rawData);
-
-            return transformedData;
+            const data = await this.handleResponse<CamilaDashboardData>(response, url);
+            console.log('✅ Dashboard data received:', data);
+            return data;
         } catch (error) {
             console.error('❌ Error en getDashboard:', error);
             throw error;
@@ -221,14 +98,18 @@ class CamilaService {
         }
     }
 
-    async getComparacionTemporal(config: Omit<CamilaConfig, 'turno'>): Promise<CamilaComparacionTemporal> {
+    async getComparacionTemporal(
+        config: Omit<CamilaConfig, 'turno'>,
+        incluirDetalles: boolean = false
+    ): Promise<CamilaComparacionTemporal> {
         console.log('🔵 getComparacionTemporal llamado con config:', config);
 
         const params = new URLSearchParams({
             anio: config.anio.toString(),
             semana: config.semana.toString(),
             participacion: config.participacion.toString(),
-            dispersion: config.dispersion
+            dispersion: config.dispersion,
+            incluir_detalles: incluirDetalles.toString()
         });
 
         const url = `${this.baseUrl}/comparacion-temporal?${params}`;
@@ -242,48 +123,194 @@ class CamilaService {
         }
     }
 
-    async getResultadosDisponibles(): Promise<Array<{
-        anio: number;
-        semanas: number[];
-        participaciones: number[];
-    }>> {
-        console.log('🔵 getResultadosDisponibles llamado');
-        const url = `${this.baseUrl}/resultados?limit=1000`;
+    async getAnalisisAccuracy(filters?: {
+        anio?: number;
+        semana?: number;
+        participacion?: number;
+        min_accuracy?: number;
+        max_accuracy?: number;
+        limit?: number;
+    }): Promise<CamilaAnalisisAccuracy> {
+        console.log('🔵 getAnalisisAccuracy llamado con filtros:', filters);
+
+        const params = new URLSearchParams();
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    params.append(key, value.toString());
+                }
+            });
+        }
+
+        const url = `${this.baseUrl}/analisis-accuracy?${params}`;
 
         try {
             const response = await fetch(url);
-            const data = await this.handleResponse<{
-                total: number;
-                items: any[];
-            }>(response, url);
+            return this.handleResponse<CamilaAnalisisAccuracy>(response, url);
+        } catch (error) {
+            console.error('❌ Error en getAnalisisAccuracy:', error);
+            throw error;
+        }
+    }
 
-            // Agrupar por año
-            const grouped = new Map<number, { semanas: Set<number>, participaciones: Set<number> }>();
+    async getResultadosDisponibles(filters?: {
+        anio?: number;
+        semana?: number;
+        turno?: number;
+        participacion?: number;
+        con_dispersion?: boolean;
+        con_comparacion_real?: boolean;
+        limit?: number;
+        offset?: number;
+        ordenar_por?: 'fecha' | 'accuracy' | 'utilizacion';
+        orden?: 'asc' | 'desc';
+    }): Promise<CamilaResultadosList> {
+        console.log('🔵 getResultadosDisponibles llamado con filtros:', filters);
 
-            data.items.forEach(item => {
-                if (!grouped.has(item.anio)) {
-                    grouped.set(item.anio, { semanas: new Set(), participaciones: new Set() });
+        const params = new URLSearchParams();
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    params.append(key, value.toString());
                 }
-                const group = grouped.get(item.anio)!;
-                group.semanas.add(item.semana);
-                group.participaciones.add(item.participacion);
             });
+        }
 
-            const result = Array.from(grouped.entries()).map(([anio, data]) => ({
-                anio,
-                semanas: Array.from(data.semanas).sort((a, b) => a - b),
-                participaciones: Array.from(data.participaciones).sort((a, b) => a - b)
-            }));
+        const url = `${this.baseUrl}/resultados?${params}`;
 
-            console.log('✅ Resultados disponibles procesados:', result);
-            return result;
+        try {
+            const response = await fetch(url);
+            return this.handleResponse<CamilaResultadosList>(response, url);
         } catch (error) {
             console.error('❌ Error en getResultadosDisponibles:', error);
             throw error;
         }
     }
 
-    async exportarResultados(config: CamilaConfig, formato: 'excel' | 'csv' = 'excel') {
+    async getCuotasDetalle(resultadoId: string): Promise<CamilaCuotasDetalle> {
+        console.log('🔵 getCuotasDetalle llamado para:', resultadoId);
+        const url = `${this.baseUrl}/cuotas/${resultadoId}`;
+
+        try {
+            const response = await fetch(url);
+            return this.handleResponse<CamilaCuotasDetalle>(response, url);
+        } catch (error) {
+            console.error('❌ Error en getCuotasDetalle:', error);
+            throw error;
+        }
+    }
+
+    async getMetricasGruas(config: {
+        anio: number;
+        semana: number;
+        turno?: number;
+        participacion: number;
+        dispersion: string;
+    }): Promise<CamilaMetricasGruas> {
+        console.log('🔵 getMetricasGruas llamado con config:', config);
+
+        const params = new URLSearchParams({
+            anio: config.anio.toString(),
+            semana: config.semana.toString(),
+            participacion: config.participacion.toString(),
+            dispersion: config.dispersion
+        });
+
+        if (config.turno) {
+            params.append('turno', config.turno.toString());
+        }
+
+        const url = `${this.baseUrl}/metricas-gruas?${params}`;
+
+        try {
+            const response = await fetch(url);
+            return this.handleResponse<CamilaMetricasGruas>(response, url);
+        } catch (error) {
+            console.error('❌ Error en getMetricasGruas:', error);
+            throw error;
+        }
+    }
+
+    async getLogs(resultadoId: string): Promise<{
+        resultado_id: string;
+        codigo: string;
+        total_logs: number;
+        logs: CamilaLogProcesamiento[];
+    }> {
+        console.log('🔵 getLogs llamado para:', resultadoId);
+        const url = `${this.baseUrl}/logs/${resultadoId}`;
+
+        try {
+            const response = await fetch(url);
+            return this.handleResponse(response, url);
+        } catch (error) {
+            console.error('❌ Error en getLogs:', error);
+            throw error;
+        }
+    }
+
+    // Método para agrupar por hora (personalizado)
+    async getAgrupacionPorHora(config: CamilaFilterConfig): Promise<CamilaAgrupacionHora[]> {
+        console.log('🔵 getAgrupacionPorHora llamado con config:', config);
+
+        // Si el backend no tiene endpoint específico, podemos obtener datos de toda la semana
+        // y agruparlos en el frontend
+        const comparacionTemporal = await this.getComparacionTemporal(config, true);
+
+        // Agrupar por hora
+        const porHora = new Map<number, CamilaAgrupacionHora>();
+
+        comparacionTemporal.serie_temporal.forEach(turno => {
+            // Calcular hora basada en turno_del_dia
+            const horaBase = { 1: 8, 2: 16, 3: 0 }[turno.turno_del_dia] ?? 0;
+
+            // Para cada periodo del turno
+            if (turno.detalle_periodos) {
+                turno.detalle_periodos.forEach((periodo, idx) => {
+                    const hora = (horaBase + idx) % 24;
+
+                    if (!porHora.has(hora)) {
+                        porHora.set(hora, {
+                            hora,
+                            turnos_incluidos: [],
+                            estadisticas: {
+                                movimientos_modelo_total: 0,
+                                movimientos_real_total: 0,
+                                accuracy_promedio: 0,
+                                utilizacion_promedio: 0,
+                                num_turnos: 0
+                            },
+                            distribucion_bloques: {}
+                        });
+                    }
+
+                    const horaData = porHora.get(hora)!;
+                    horaData.turnos_incluidos.push({
+                        turno: turno.turno,
+                        dia: turno.dia,
+                        fecha: turno.fecha_hora
+                    });
+
+                    horaData.estadisticas.movimientos_modelo_total += periodo.modelo;
+                    horaData.estadisticas.movimientos_real_total += periodo.real;
+                    horaData.estadisticas.accuracy_promedio += periodo.accuracy;
+                    horaData.estadisticas.num_turnos += 1;
+                });
+            }
+        });
+
+        // Calcular promedios
+        porHora.forEach(data => {
+            if (data.estadisticas.num_turnos > 0) {
+                data.estadisticas.accuracy_promedio /= data.estadisticas.num_turnos;
+                data.estadisticas.utilizacion_promedio /= data.estadisticas.num_turnos;
+            }
+        });
+
+        return Array.from(porHora.values()).sort((a, b) => a.hora - b.hora);
+    }
+
+    async exportarResultados(config: CamilaConfig, formato: 'excel' | 'csv' = 'excel'): Promise<void> {
         console.log('🔵 exportarResultados llamado con config:', config, 'formato:', formato);
 
         const params = new URLSearchParams({
@@ -325,11 +352,30 @@ class CamilaService {
         }
     }
 
+    // Método helper para obtener resumen rápido de accuracy por semana
+    async getResumenAccuracySemana(anio: number, semana: number): Promise<{
+        accuracy_promedio: number;
+        turnos_con_datos: number;
+        turnos_totales: number;
+        mejor_accuracy: number;
+        peor_accuracy: number;
+    }> {
+        const analisis = await this.getAnalisisAccuracy({ anio, semana });
+
+        return {
+            accuracy_promedio: analisis.estadisticas.accuracy_promedio,
+            turnos_con_datos: analisis.total_resultados,
+            turnos_totales: 21,
+            mejor_accuracy: analisis.estadisticas.accuracy_max,
+            peor_accuracy: analisis.estadisticas.accuracy_min
+        };
+    }
+
     // Método de prueba para verificar la conexión
     async testConnection(): Promise<boolean> {
         console.log('🔵 Probando conexión con el API...');
         try {
-            const response = await fetch(`${this.baseUrl}/dashboard?anio=2022&semana=1&turno=1&participacion=68&dispersion=K`);
+            const response = await fetch(`${this.baseUrl}/estadisticas`);
             console.log('✅ Conexión exitosa:', response.ok);
             return response.ok;
         } catch (error) {

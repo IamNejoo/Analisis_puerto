@@ -1,4 +1,4 @@
-// src/components/map/views/patio/PatioDetails.tsx
+// src/components/map/views/patio/PatioDetails.tsx - CORREGIDO
 import React from 'react';
 import { Info, GitCompare, BarChart3 } from 'lucide-react';
 import { getCamilaDataForBlock, getMagdalenaDataForBlock } from './patioDataHelpers';
@@ -22,6 +22,9 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
     camilaData,
     magdalenaMetrics
 }) => {
+    // Para evitar el error de currentTurno no definido
+    const currentTurno = Math.ceil(currentPeriod / 8); // Aproximación: 8 períodos por turno
+
     return (
         <>
             {/* Detalles Camila */}
@@ -45,16 +48,18 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                         return (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div className="bg-slate-700/50 rounded-lg p-3">
-                                    <h4 className="text-sm font-medium text-teal-400 mb-2">Segregaciones Asignadas</h4>
+                                    <h4 className="text-sm font-medium text-teal-400 mb-2">Movimientos Asignados</h4>
                                     <div className="space-y-1">
-                                        {Array.from(new Map(
-                                            blockData.asignaciones.map(a => [a.segregacion_codigo, a.frecuencia])
-                                        )).map(([seg, freq]) => (
-                                            <div key={seg} className="flex justify-between text-sm">
-                                                <span className="text-slate-300">{seg}</span>
-                                                <span className="font-medium text-teal-300">{freq} mov.</span>
-                                            </div>
-                                        ))}
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-300">Total</span>
+                                            <span className="font-medium text-teal-300">
+                                                {blockData.asignaciones.reduce((sum, a) => sum + a.movimientos_asignados, 0)} mov.
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-300">Asignaciones</span>
+                                            <span className="font-medium text-teal-300">{blockData.asignaciones.length}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -79,7 +84,7 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                         <div className="space-y-1">
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-slate-300">Cuota:</span>
-                                                <span className="font-medium text-blue-300">{blockData.cuotas.cuota_camiones}</span>
+                                                <span className="font-medium text-blue-300">{blockData.cuotas.cuota_modelo}</span>
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-slate-300">Capacidad:</span>
@@ -87,7 +92,11 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-slate-300">Utilización:</span>
-                                                <span className="font-medium text-blue-300">{blockData.cuotas.utilizacion_pct.toFixed(1)}%</span>
+                                                <span className="font-medium text-blue-300">
+                                                    {blockData.cuotas.capacidad_maxima > 0
+                                                        ? ((blockData.cuotas.cuota_modelo / blockData.cuotas.capacidad_maxima) * 100).toFixed(1)
+                                                        : '0.0'}%
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -202,7 +211,7 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                         <div className="flex justify-between">
                                             <span className="text-slate-300">Movimientos:</span>
                                             <span className="font-medium text-teal-300">
-                                                {data.asignaciones.reduce((sum, a) => sum + a.frecuencia, 0)}
+                                                {data.asignaciones.reduce((sum, a) => sum + a.movimientos_asignados, 0)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -228,44 +237,38 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                 <div className="mt-4 bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4">
                     <h3 className="text-lg font-semibold text-slate-100 mb-3 flex items-center">
                         <BarChart3 size={20} className="mr-2 text-blue-400" />
-                        Resumen del {isCamilaActive ? `Período ${currentPeriod}` : `Turno ${currentPeriod}`}
+                        Resumen del {isCamilaActive ? `Período ${currentPeriod}` : `Turno ${currentTurno}`}
                     </h3>
 
                     {isCamilaActive && camilaData && (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-teal-400">
-                                    {camilaData.asignaciones.filter(a => a.periodo === currentPeriod).length}
+                                    {camilaData.asignaciones.filter(a => a.periodo === currentPeriod && a.asignada).length}
                                 </div>
                                 <div className="text-sm text-slate-400">Asignaciones activas</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-purple-400">
                                     {camilaData.asignaciones
-                                        .filter(a => a.periodo === currentPeriod)
-                                        .reduce((sum, a) => sum + a.frecuencia, 0)}
+                                        .filter(a => a.periodo === currentPeriod && a.asignada)
+                                        .reduce((sum, a) => sum + a.movimientos_asignados, 0)}
                                 </div>
                                 <div className="text-sm text-slate-400">Total movimientos</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-blue-400">
                                     {new Set(camilaData.asignaciones
-                                        .filter(a => a.periodo === currentPeriod)
+                                        .filter(a => a.periodo === currentPeriod && a.asignada)
                                         .map(a => a.bloque_codigo)).size}
                                 </div>
                                 <div className="text-sm text-slate-400">Bloques activos</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-orange-400">
-                                    {(() => {
-                                        const activeGruas = new Set<number>();
-                                        camilaData.metricas_gruas.forEach((metrica, idx) => {
-                                            if (metrica.movimientos_asignados > 0) {
-                                                activeGruas.add(idx + 1);
-                                            }
-                                        });
-                                        return activeGruas.size;
-                                    })()}
+                                    {new Set(camilaData.asignaciones
+                                        .filter(a => a.periodo === currentPeriod && a.asignada)
+                                        .map(a => a.grua_id)).size}
                                 </div>
                                 <div className="text-sm text-slate-400">Grúas operando</div>
                             </div>
@@ -276,13 +279,13 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-cyan-400">
-                                    {magdalenaMetrics.evolucionTemporal?.[currentPeriod - 1]?.ocupacionPromedio.toFixed(1) || '0.0'}%
+                                    {magdalenaMetrics.evolucionTemporal?.[currentTurno - 1]?.ocupacionPromedio.toFixed(1) || '0.0'}%
                                 </div>
                                 <div className="text-sm text-slate-400">Ocupación promedio</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-green-400">
-                                    {magdalenaMetrics.evolucionTemporal?.[currentPeriod - 1]?.movimientosModelo || 0}
+                                    {magdalenaMetrics.evolucionTemporal?.[currentTurno - 1]?.movimientosModelo || 0}
                                 </div>
                                 <div className="text-sm text-slate-400">Movimientos optimizados</div>
                             </div>
@@ -294,7 +297,7 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-blue-400">
-                                    {magdalenaMetrics.segregaciones.optimizadas}
+                                    {magdalenaMetrics.segregaciones?.optimizadas || 0}
                                 </div>
                                 <div className="text-sm text-slate-400">Segregaciones activas</div>
                             </div>

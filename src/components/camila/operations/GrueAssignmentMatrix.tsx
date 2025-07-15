@@ -5,10 +5,12 @@ import { Grid3x3, Info } from 'lucide-react';
 
 interface GrueAssignmentMatrixProps {
     asignaciones: {
-        segregacion_codigo: string;
+        grua_id: number;
         bloque_codigo: string;
         periodo: number;
-        frecuencia: number;
+        asignada: boolean;
+        activada: boolean;
+        movimientos_asignados: number;
     }[];
 }
 
@@ -27,8 +29,30 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
 
         // Llenar con datos de asignaciones
         asignaciones.forEach(asig => {
-            if (result[asig.bloque_codigo]) {
-                result[asig.bloque_codigo][asig.periodo] += asig.frecuencia;
+            if (asig.asignada && result[asig.bloque_codigo]) {
+                result[asig.bloque_codigo][asig.periodo] += asig.movimientos_asignados;
+            }
+        });
+
+        return result;
+    }, [asignaciones]);
+
+    // Calcular grúas por bloque-período
+    const gruasPorBloquePeriodo = useMemo(() => {
+        const result: Record<string, Record<number, Set<number>>> = {};
+
+        // Inicializar
+        for (let b = 1; b <= 9; b++) {
+            result[`C${b}`] = {};
+            for (let p = 1; p <= 8; p++) {
+                result[`C${b}`][p] = new Set();
+            }
+        }
+
+        // Contar grúas únicas
+        asignaciones.forEach(asig => {
+            if (asig.asignada && result[asig.bloque_codigo]) {
+                result[asig.bloque_codigo][asig.periodo].add(asig.grua_id);
             }
         });
 
@@ -77,6 +101,23 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
     // Total general
     const totalGeneral = Object.values(totalsPorBloque).reduce((sum, val) => sum + val, 0);
 
+    // Estadísticas de grúas
+    const estadisticasGruas = useMemo(() => {
+        const gruasActivas = new Set(asignaciones.filter(a => a.asignada).map(a => a.grua_id));
+        const gruasPorPeriodo: Record<number, Set<number>> = {};
+
+        for (let p = 1; p <= 8; p++) {
+            gruasPorPeriodo[p] = new Set(
+                asignaciones.filter(a => a.periodo === p && a.asignada).map(a => a.grua_id)
+            );
+        }
+
+        return {
+            totalGruas: gruasActivas.size,
+            gruasPorPeriodo
+        };
+    }, [asignaciones]);
+
     return (
         <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
@@ -86,7 +127,7 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
                 </h3>
                 <div className="flex items-center text-sm text-gray-600">
                     <Info size={16} className="mr-1" />
-                    Frecuencias por Bloque-Período
+                    Movimientos por Bloque-Período
                 </div>
             </div>
 
@@ -105,6 +146,9 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
                                             className="px-3 py-2 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-gray-50"
                                         >
                                             P{periodo}
+                                            <div className="text-xs font-normal text-gray-500">
+                                                ({estadisticasGruas.gruasPorPeriodo[periodo]?.size || 0}g)
+                                            </div>
                                         </th>
                                     ))}
                                     <th className="px-3 py-2 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-gray-100">
@@ -121,19 +165,29 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
                                             <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 {bloque}
                                             </td>
-                                            {Object.entries(periodos).map(([periodo, valor]) => (
-                                                <td
-                                                    key={periodo}
-                                                    className="px-3 py-2 whitespace-nowrap text-sm text-center"
-                                                >
-                                                    <div className={`
-                            inline-flex items-center justify-center min-w-[40px] h-10 rounded
-                            ${getColor(valor)}
-                          `}>
-                                                        {valor > 0 ? valor : '-'}
-                                                    </div>
-                                                </td>
-                                            ))}
+                                            {Object.entries(periodos).map(([periodo, valor]) => {
+                                                const numGruas = gruasPorBloquePeriodo[bloque][parseInt(periodo)].size;
+                                                return (
+                                                    <td
+                                                        key={periodo}
+                                                        className="px-3 py-2 whitespace-nowrap text-sm text-center"
+                                                    >
+                                                        <div className={`
+                                                            inline-flex flex-col items-center justify-center min-w-[50px] h-12 rounded
+                                                            ${getColor(valor)}
+                                                        `}>
+                                                            <div className="font-medium">
+                                                                {valor > 0 ? valor : '-'}
+                                                            </div>
+                                                            {numGruas > 0 && (
+                                                                <div className="text-xs opacity-75">
+                                                                    {numGruas}g
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                );
+                                            })}
                                             <td className="px-3 py-2 whitespace-nowrap text-sm font-bold text-center bg-gray-100">
                                                 {total}
                                             </td>
@@ -189,7 +243,7 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
                         </div>
 
                         <div className="text-sm text-gray-600">
-                            Máx. valor: {maxValue}
+                            Grúas activas: {estadisticasGruas.totalGruas}/12
                         </div>
                     </div>
 
@@ -239,9 +293,9 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-600">Períodos activos:</span>
+                                    <span className="text-gray-600">Grúas utilizadas:</span>
                                     <span className="font-medium text-gray-900">
-                                        {Object.values(totalsPorPeriodo).filter(t => t > 0).length}/8
+                                        {estadisticasGruas.totalGruas}/12
                                     </span>
                                 </div>
                             </div>
@@ -252,10 +306,10 @@ export const GrueAssignmentMatrix: React.FC<GrueAssignmentMatrixProps> = ({ asig
                     <div className="mt-6 bg-blue-50 rounded-lg p-4">
                         <h4 className="text-sm font-medium text-blue-900 mb-2">Interpretación de la Matriz</h4>
                         <ul className="space-y-1 text-sm text-blue-700">
-                            <li>• Cada celda muestra la frecuencia de visitas de grúas al bloque en ese período</li>
+                            <li>• Cada celda muestra los movimientos asignados al bloque en ese período</li>
+                            <li>• El número de grúas (g) indica cuántas grúas diferentes trabajaron en esa combinación</li>
                             <li>• Los valores más altos indican mayor actividad y demanda de recursos</li>
                             <li>• La distribución debe ser balanceada para evitar congestión</li>
-                            <li>• Los períodos corresponden a intervalos de una hora dentro del turno</li>
                         </ul>
                     </div>
                 </>

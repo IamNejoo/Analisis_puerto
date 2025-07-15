@@ -1,4 +1,4 @@
-// src/components/map/views/patio/patioDataHelpers.ts
+// src/components/map/views/patio/patioDataHelpers.ts - MODIFICADO PARA CAMILA
 import type { CamilaDashboardData } from '../../../../types/camila';
 import type { OptimizationMetrics } from '../../../../types/optimization';
 import type { CamilaBlockData, MagdalenaBlockData } from '../../../../types/patioView.types';
@@ -11,27 +11,35 @@ export const getCamilaDataForBlock = (
     if (!camilaData || !camilaData.asignaciones) return null;
 
     try {
+        // Filtrar asignaciones del bloque y período actual
         const asignacionesBloque = camilaData.asignaciones.filter(
-            a => a?.bloque_codigo === bloqueId && a?.periodo === currentPeriod
+            a => a?.bloque_codigo === bloqueId &&
+                a?.periodo === currentPeriod &&
+                a?.asignada === true
         ) || [];
 
+        // Obtener grúas únicas asignadas a este bloque
         const gruasBloque = new Set<number>();
-        if (camilaData.metricas_gruas && Array.isArray(camilaData.metricas_gruas)) {
-            camilaData.metricas_gruas.forEach((metrica, idx) => {
-                if (metrica?.movimientos_asignados > 0 && asignacionesBloque.length > 0) {
-                    gruasBloque.add(idx + 1);
-                }
-            });
-        }
+        asignacionesBloque.forEach(asig => {
+            if (asig.grua_id) {
+                gruasBloque.add(asig.grua_id);
+            }
+        });
 
+        // Obtener cuota del bloque
         const cuotaBloque = camilaData.cuotas_camiones?.find(
             c => c?.bloque_codigo === bloqueId && c?.periodo === currentPeriod
         );
 
+        // Obtener métricas de las grúas asignadas
+        const metricasGruas = camilaData.metricas_gruas?.filter(
+            m => gruasBloque.has(m.grua_id)
+        ) || [];
+
         return {
             asignaciones: asignacionesBloque,
             gruas: Array.from(gruasBloque),
-            metricas: camilaData.metricas_gruas?.filter((_, idx) => gruasBloque.has(idx + 1)) || [],
+            metricas: metricasGruas,
             cuotas: cuotaBloque
         };
     } catch (error) {

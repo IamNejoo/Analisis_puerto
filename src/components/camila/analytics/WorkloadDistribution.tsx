@@ -10,21 +10,32 @@ interface WorkloadDistributionProps {
 
 export const WorkloadDistribution: React.FC<WorkloadDistributionProps> = ({ data }) => {
     const chartData = useMemo(() => {
-        // Agregar movimientos por bloque
-        const bloqueMap = new Map<string, number>();
+        // Usar distribucion_bloques si está disponible
+        if (data.distribucion_bloques) {
+            return Object.entries(data.distribucion_bloques)
+                .map(([bloque, movimientos]) => ({
+                    bloque,
+                    movimientos,
+                    porcentaje: data.resultado.total_movimientos_modelo > 0
+                        ? (movimientos / data.resultado.total_movimientos_modelo * 100).toFixed(1)
+                        : 0
+                }))
+                .sort((a, b) => a.bloque.localeCompare(b.bloque));
+        }
 
+        // Si no, calcular desde asignaciones
+        const bloqueMap = new Map<string, number>();
         data.asignaciones.forEach(asig => {
             const current = bloqueMap.get(asig.bloque_codigo) || 0;
-            bloqueMap.set(asig.bloque_codigo, current + asig.frecuencia);
+            bloqueMap.set(asig.bloque_codigo, current + asig.movimientos_asignados);
         });
 
-        // Convertir a formato para el gráfico
         return Array.from(bloqueMap.entries())
             .map(([bloque, movimientos]) => ({
                 bloque,
                 movimientos,
-                porcentaje: data.resultado.total_movimientos > 0
-                    ? (movimientos / data.resultado.total_movimientos * 100).toFixed(1)
+                porcentaje: data.resultado.total_movimientos_modelo > 0
+                    ? (movimientos / data.resultado.total_movimientos_modelo * 100).toFixed(1)
                     : 0
             }))
             .sort((a, b) => a.bloque.localeCompare(b.bloque));
@@ -32,7 +43,7 @@ export const WorkloadDistribution: React.FC<WorkloadDistributionProps> = ({ data
 
     // Colores según la carga
     const getColor = (value: number) => {
-        const avg = data.resultado.total_movimientos / 9; // 9 bloques
+        const avg = data.resultado.total_movimientos_modelo / 9; // 9 bloques
         if (value > avg * 1.5) return '#ef4444'; // Rojo - Sobrecargado
         if (value > avg * 1.2) return '#f59e0b'; // Naranja - Alto
         if (value > avg * 0.8) return '#10b981'; // Verde - Normal
@@ -81,7 +92,7 @@ export const WorkloadDistribution: React.FC<WorkloadDistributionProps> = ({ data
                             <h4 className="font-medium text-gray-700 mb-2">Estadísticas</h4>
                             <div className="space-y-1 text-gray-600">
                                 <div>Total bloques activos: {chartData.filter(d => d.movimientos > 0).length}</div>
-                                <div>Promedio por bloque: {(data.resultado.total_movimientos / 9).toFixed(0)} mov</div>
+                                <div>Promedio por bloque: {(data.resultado.total_movimientos_modelo / 9).toFixed(0)} mov</div>
                                 <div>Máximo: {Math.max(...chartData.map(d => d.movimientos))} mov</div>
                                 <div>Mínimo: {Math.min(...chartData.map(d => d.movimientos))} mov</div>
                             </div>

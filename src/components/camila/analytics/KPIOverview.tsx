@@ -9,7 +9,8 @@ import {
     Truck,
     Package,
     Clock,
-    AlertTriangle
+    AlertTriangle,
+    GitCompare
 } from 'lucide-react';
 import type { CamilaDashboardData } from '../../../types/camila';
 import MetricCard from '../shared/MetricCard';
@@ -19,16 +20,19 @@ interface KPIOverviewProps {
 }
 
 export const KPIOverview: React.FC<KPIOverviewProps> = ({ data }) => {
-    const { resultado, metricas_gruas, asignaciones } = data;
+    const { resultado, metricas_gruas } = data;
 
     // Calcular métricas
     const gruasActivas = metricas_gruas.filter(g => g.utilizacion_pct > 0).length;
-    const utilizacionPromedio = resultado.utilizacion_promedio || 0;
+    const utilizacionPromedio = resultado.utilizacion_modelo || 0;
     const coeficienteVariacion = resultado.coeficiente_variacion || 0;
 
     // Estado de balance
     const balanceStatus = coeficienteVariacion < 30 ? 'good' :
         coeficienteVariacion < 50 ? 'warning' : 'critical';
+
+    // Verificar si hay comparación con datos reales
+    const tieneComparacionReal = resultado.total_movimientos_real > 0;
 
     return (
         <div className="space-y-4">
@@ -38,12 +42,11 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ data }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
-                    title="Movimientos Totales"
-                    value={resultado.total_movimientos.toLocaleString()}
-                    subtitle="Asignados en el turno"
+                    title="Movimientos Modelo"
+                    value={resultado.total_movimientos_modelo.toLocaleString()}
+                    subtitle="Optimizados por Camila"
                     icon={<Package />}
-                    trend={resultado.total_movimientos > 0 ? 'up' : 'neutral'}
-                    trendValue={resultado.total_movimientos > 0 ? '+100%' : '0%'}
+                    trend={resultado.total_movimientos_modelo > 0 ? 'up' : 'neutral'}
                 />
 
                 <MetricCard
@@ -96,23 +99,35 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ data }) => {
 
                 <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Frecuencias</span>
+                        <span className="text-sm text-gray-600">Capacidad Teórica</span>
                         <Clock size={16} className="text-gray-400" />
                     </div>
                     <div className="text-xl font-semibold text-gray-900">
-                        {resultado.total_frecuencias}
+                        {resultado.capacidad_teorica}
                     </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">CV%</span>
-                        <AlertTriangle size={16} className="text-gray-400" />
+                {tieneComparacionReal ? (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">Accuracy</span>
+                            <GitCompare size={16} className="text-gray-400" />
+                        </div>
+                        <div className="text-xl font-semibold text-gray-900">
+                            {resultado.accuracy_global.toFixed(1)}%
+                        </div>
                     </div>
-                    <div className="text-xl font-semibold text-gray-900">
-                        {coeficienteVariacion.toFixed(1)}%
+                ) : (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">CV%</span>
+                            <AlertTriangle size={16} className="text-gray-400" />
+                        </div>
+                        <div className="text-xl font-semibold text-gray-900">
+                            {coeficienteVariacion.toFixed(1)}%
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Alerta si hay problemas */}
@@ -127,6 +142,25 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ data }) => {
                             <p className="text-sm text-amber-700 mt-1">
                                 El coeficiente de variación ({coeficienteVariacion.toFixed(1)}%) indica una distribución
                                 desigual de la carga entre grúas. Considere redistribuir las asignaciones.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Información de comparación real si está disponible */}
+            {tieneComparacionReal && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start">
+                        <GitCompare className="text-blue-600 mt-0.5 mr-3" size={20} />
+                        <div>
+                            <h4 className="font-medium text-blue-900">
+                                Comparación con Datos Reales Disponible
+                            </h4>
+                            <p className="text-sm text-blue-700 mt-1">
+                                Modelo: {resultado.total_movimientos_modelo} movimientos |
+                                Real: {resultado.total_movimientos_real} movimientos |
+                                Brecha: {resultado.brecha_movimientos} movimientos
                             </p>
                         </div>
                     </div>

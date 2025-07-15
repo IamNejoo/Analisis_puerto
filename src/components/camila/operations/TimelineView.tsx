@@ -10,60 +10,60 @@ interface TimelineViewProps {
 }
 
 export const TimelineView: React.FC<TimelineViewProps> = ({ data }) => {
-    // Procesar datos por período
+    // Usar timeline si viene del backend, sino procesar datos por período
     const timelineData = useMemo(() => {
+        // Si el backend envía timeline, usarlo directamente
+        if (data.timeline && data.timeline.length > 0) {
+            return data.timeline.map(t => ({
+                periodo: t.periodo,
+                hora: t.hora,
+                movimientos: t.movimientos_modelo,
+                movimientosReales: t.movimientos_real,
+                capacidad: t.capacidad,
+                bloques: t.bloques_activos,
+                cuotaCamiones: 0, // No viene del backend
+                gruasActivas: Math.min(12, Math.ceil(t.movimientos_modelo / 30))
+            }));
+        }
+
+        // Si no, calcular desde otros datos
         const periodos = Array.from({ length: 8 }, (_, i) => i + 1);
 
         return periodos.map(periodo => {
-            // Asignaciones por período
-            const asignacionesPeriodo = data.asignaciones?.filter(a => a.periodo === periodo) || [];
-            const totalMovimientos = asignacionesPeriodo.reduce((sum, a) => sum + (a.frecuencia || 0), 0);
-
-            // Bloques únicos
-            const bloquesUnicos = new Set(asignacionesPeriodo.map(a => a.bloque_codigo));
-
-            // Cuotas por período
-            const cuotasPeriodo = data.cuotas_camiones?.filter(c => c.periodo === periodo) || [];
-            const totalCuotas = cuotasPeriodo.reduce((sum, c) => sum + (c.cuota_camiones || 0), 0);
-
-            // Grúas activas (aproximación basada en movimientos)
-            const gruasActivas = Math.min(12, Math.ceil(totalMovimientos / 30));
+            // Filtrar cuotas por periodo
+            const cuotasPeriodo = data.cuotas_camiones.filter(c => c.periodo === periodo);
+            const totalMovimientos = cuotasPeriodo.reduce((sum, c) => sum + c.cuota_modelo, 0);
+            const totalCapacidad = cuotasPeriodo.reduce((sum, c) => sum + c.capacidad_maxima, 0);
+            const gruasActivas = cuotasPeriodo.reduce((sum, c) => sum + c.gruas_asignadas, 0);
+            const bloquesActivos = new Set(cuotasPeriodo.filter(c => c.cuota_modelo > 0).map(c => c.bloque_codigo)).size;
 
             return {
                 periodo,
                 movimientos: totalMovimientos,
-                bloques: bloquesUnicos.size,
-                cuotaCamiones: totalCuotas,
-                gruasActivas,
-                hora: getHourForPeriod(periodo, data.resultado?.turno_del_dia || 1)
+                movimientosReales: cuotasPeriodo.reduce((sum, c) => sum + (c.movimientos_reales || 0), 0),
+                bloques: bloquesActivos,
+                cuotaCamiones: totalMovimientos,
+                gruasActivas: gruasActivas,
+                capacidad: totalCapacidad,
+                hora: getHourForPeriod(periodo, data.resultado.turno_del_dia)
             };
         });
     }, [data]);
 
     // Estadísticas generales
     const stats = useMemo(() => {
-        if (!data.resultado) {
-            return {
-                totalMovimientos: 0,
-                promedioMovimientos: 0,
-                maxMovimientos: 0,
-                periodoPico: 1,
-                totalBloques: 0
-            };
-        }
-
         const movimientos = timelineData.map(d => d.movimientos);
         const maxMovimientos = Math.max(...movimientos, 0);
         const periodoPico = timelineData.findIndex(d => d.movimientos === maxMovimientos) + 1;
 
         return {
-            totalMovimientos: data.resultado.total_movimientos || 0,
+            totalMovimientos: data.resultado.total_movimientos_modelo,
             promedioMovimientos: movimientos.length > 0
                 ? movimientos.reduce((a, b) => a + b, 0) / movimientos.length
                 : 0,
             maxMovimientos,
             periodoPico,
-            totalBloques: data.resultado.total_bloques_visitados || 0
+            totalBloques: data.resultado.total_bloques_visitados
         };
     }, [data, timelineData]);
 
@@ -92,7 +92,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ data }) => {
                         Promedio/Período
                     </div>
                     <div className="text-xl font-bold text-green-400">
-                        {isNaN(stats.promedioMovimientos) ? '0' : stats.promedioMovimientos.toFixed(0)}
+                        {stats.promedioMovimientos.toFixed(0)}
                     </div>
                 </div>
 
@@ -156,24 +156,27 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ data }) => {
                             dataKey="movimientos"
                             stroke="#14b8a6"
                             strokeWidth={2}
-                            name="Movimientos"
+                            name="Movimientos Modelo"
                             dot={{ fill: '#14b8a6' }}
                         />
-                        <Line
-                            type="monotone"
-                            dataKey="cuotaCamiones"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            name="Cuota Camiones"
-                            dot={{ fill: '#3b82f6' }}
-                        />
+                        {data.comparaciones_real.length > 0 && (
+                            <Line
+                                type="monotone"
+                                dataKey="movimientosReales"
+                                stroke="#f59e0b"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                name="Movimientos Reales"
+                                dot={{ fill: '#f59e0b' }}
+                            />
+                        )}
                         <Line
                             type="monotone"
                             dataKey="gruasActivas"
-                            stroke="#f59e0b"
+                            stroke="#a855f7"
                             strokeWidth={2}
                             name="Grúas Activas"
-                            dot={{ fill: '#f59e0b' }}
+                            dot={{ fill: '#a855f7' }}
                             yAxisId="right"
                         />
                         <YAxis
@@ -193,10 +196,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ data }) => {
                         <tr className="border-b border-slate-700">
                             <th className="text-left py-2 text-slate-400 font-medium">Período</th>
                             <th className="text-left py-2 text-slate-400 font-medium">Hora</th>
-                            <th className="text-right py-2 text-slate-400 font-medium">Movimientos</th>
+                            <th className="text-right py-2 text-slate-400 font-medium">Modelo</th>
+                            {data.comparaciones_real.length > 0 && (
+                                <th className="text-right py-2 text-slate-400 font-medium">Real</th>
+                            )}
                             <th className="text-right py-2 text-slate-400 font-medium">Bloques</th>
-                            <th className="text-right py-2 text-slate-400 font-medium">Cuota Camiones</th>
-                            <th className="text-right py-2 text-slate-400 font-medium">Grúas Activas</th>
+                            <th className="text-right py-2 text-slate-400 font-medium">Capacidad</th>
+                            <th className="text-right py-2 text-slate-400 font-medium">Grúas</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -205,8 +211,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ data }) => {
                                 <td className="py-2 text-slate-300">Período {row.periodo}</td>
                                 <td className="py-2 text-slate-300">{row.hora}</td>
                                 <td className="text-right py-2 text-slate-300">{row.movimientos}</td>
+                                {data.comparaciones_real.length > 0 && (
+                                    <td className="text-right py-2 text-slate-300">{row.movimientosReales}</td>
+                                )}
                                 <td className="text-right py-2 text-slate-300">{row.bloques}</td>
-                                <td className="text-right py-2 text-slate-300">{row.cuotaCamiones}</td>
+                                <td className="text-right py-2 text-slate-300">{row.capacidad}</td>
                                 <td className="text-right py-2 text-slate-300">{row.gruasActivas}</td>
                             </tr>
                         ))}
@@ -217,11 +226,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ data }) => {
                             <td className="text-right py-2 text-slate-100">
                                 {timelineData.reduce((sum, d) => sum + d.movimientos, 0)}
                             </td>
+                            {data.comparaciones_real.length > 0 && (
+                                <td className="text-right py-2 text-slate-100">
+                                    {timelineData.reduce((sum, d) => sum + d.movimientosReales, 0)}
+                                </td>
+                            )}
                             <td className="text-right py-2 text-slate-100">
-                                {new Set(timelineData.flatMap(d => Array.from({ length: d.bloques }))).size}
+                                {data.resultado.total_bloques_visitados}
                             </td>
                             <td className="text-right py-2 text-slate-100">
-                                {timelineData.reduce((sum, d) => sum + d.cuotaCamiones, 0)}
+                                {timelineData.reduce((sum, d) => sum + d.capacidad, 0)}
                             </td>
                             <td className="text-right py-2 text-slate-100">
                                 {Math.max(...timelineData.map(d => d.gruasActivas), 0)}
@@ -243,9 +257,8 @@ function getHourForPeriod(period: number, turnoDelDia: number): string {
         case 3: baseHour = 0; break;   // 00:00-08:00
     }
 
-    const hour = baseHour + period - 1;
-    const displayHour = hour >= 24 ? hour - 24 : hour;
-    return `${displayHour < 10 ? '0' : ''}${displayHour}:00`;
+    const hour = (baseHour + period - 1) % 24;
+    return `${hour < 10 ? '0' : ''}${hour}:00`;
 }
 
 export default TimelineView;

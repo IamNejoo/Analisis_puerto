@@ -1,4 +1,4 @@
-// src/components/map/views/patio/PatioKPIs.tsx - CON VALIDACIONES
+// src/components/map/views/patio/PatioKPIs.tsx - MODIFICADO PARA CAMILA
 import React from 'react';
 import { Zap, Truck, Target, Gauge, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { CamilaDashboardData } from '../../../../types/camila';
@@ -18,6 +18,8 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
     magdalenaMetrics
 }) => {
     if (isCamilaActive && camilaData?.resultado) {
+        const gruasActivas = camilaData.metricas_gruas?.filter(g => g.movimientos_modelo > 0).length || 0;
+
         return (
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
                 <div className="bg-teal-950/20 rounded-lg p-3 border border-teal-800">
@@ -26,7 +28,7 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
                         Movimientos
                     </div>
                     <div className="text-xl font-bold text-teal-300">
-                        {camilaData.resultado.total_movimientos || 0}
+                        {camilaData.resultado.total_movimientos_modelo || 0}
                     </div>
                     <div className="text-xs text-teal-400">
                         Total turno
@@ -39,7 +41,7 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
                         Grúas Activas
                     </div>
                     <div className="text-xl font-bold text-purple-300">
-                        {camilaData.metricas_gruas?.filter(g => g.utilizacion_pct > 0).length || 0}/12
+                        {gruasActivas}/12
                     </div>
                     <div className="text-xs text-purple-400">
                         En operación
@@ -72,12 +74,12 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
                     </div>
                 </div>
 
-                <div className={`rounded-lg p-3 border ${camilaData.resultado.total_movimientos > 0
-                    ? 'bg-green-950/20 border-green-800'
-                    : 'bg-red-950/20 border-red-800'
+                <div className={`rounded-lg p-3 border ${camilaData.resultado.total_movimientos_modelo > 0
+                        ? 'bg-green-950/20 border-green-800'
+                        : 'bg-red-950/20 border-red-800'
                     }`}>
                     <div className="flex items-center text-sm">
-                        {camilaData.resultado.total_movimientos > 0 ? (
+                        {camilaData.resultado.total_movimientos_modelo > 0 ? (
                             <>
                                 <CheckCircle size={16} className="mr-1 text-green-400" />
                                 <span className="text-green-400">Estado</span>
@@ -89,9 +91,9 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
                             </>
                         )}
                     </div>
-                    <div className={`text-sm font-bold ${camilaData.resultado.total_movimientos > 0 ? 'text-green-300' : 'text-red-300'
+                    <div className={`text-sm font-bold ${camilaData.resultado.total_movimientos_modelo > 0 ? 'text-green-300' : 'text-red-300'
                         }`}>
-                        {camilaData.resultado.total_movimientos > 0 ? 'Factible' : 'Sin Solución'}
+                        {camilaData.resultado.total_movimientos_modelo > 0 ? 'Factible' : 'Sin Solución'}
                     </div>
                     <div className="text-xs opacity-75">
                         {camilaData.resultado.estado || 'Sin estado'}

@@ -1,4 +1,4 @@
-// src/components/map/views/patio/PatioHeader.tsx - CON VALIDACIONES
+// src/components/map/views/patio/PatioHeader.tsx - MODIFICADO PARA CAMILA
 import React from 'react';
 import { Database, RefreshCw } from 'lucide-react';
 import type { PatioData } from '../../../../types';
@@ -53,11 +53,11 @@ export const PatioHeader: React.FC<PatioHeaderProps> = ({
                 <div className="text-right">
                     <div className="text-3xl font-bold text-blue-400">
                         {isCamilaActive && camilaData?.resultado ?
-                            `${camilaData.resultado.utilizacion_promedio.toFixed(1)}%` :
+                            `${camilaData.resultado.utilizacion_modelo.toFixed(1)}%` :
                             `${patio.ocupacionTotal}%`}
                     </div>
                     <div className="text-sm text-slate-500">
-                        {isCamilaActive ? 'Utilización Promedio' :
+                        {isCamilaActive ? 'Utilización Modelo' :
                             isMagdalenaActive ? `Ocupación Turno ${currentTurno}` :
                                 'Ocupación Total'}
                     </div>

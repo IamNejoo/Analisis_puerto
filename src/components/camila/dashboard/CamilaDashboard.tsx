@@ -36,7 +36,7 @@ export const CamilaDashboard: React.FC = () => {
     if (error) return <ErrorState error={error} onRetry={() => window.location.reload()} />;
     if (!data) return <EmptyState message="No hay datos disponibles para la configuración seleccionada" />;
 
-    const hasSolution = data.resultado.total_movimientos > 0;
+    const hasSolution = data.resultado.total_movimientos_modelo > 0;
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -53,7 +53,7 @@ export const CamilaDashboard: React.FC = () => {
                 <CamilaStatusBar
                     hasSolution={hasSolution}
                     estadoResultado={data.resultado.estado}
-                    totalMovimientos={data.resultado.total_movimientos}
+                    totalMovimientos={data.resultado.total_movimientos_modelo}
                 />
 
                 {/* Selector de configuración */}
@@ -96,9 +96,9 @@ export const CamilaDashboard: React.FC = () => {
                 {/* Vista Comparison */}
                 {activeView === 'comparison' && (
                     <div className="space-y-6">
-                        {data.comparaciones ? (
+                        {data.comparaciones_real && data.comparaciones_real.length > 0 ? (
                             <>
-                                <RealDataComparison comparaciones={data.comparaciones} />
+                                <RealDataComparison comparaciones={data.comparaciones_real} />
                                 <FeasibilityAnalysis data={data} />
                             </>
                         ) : (

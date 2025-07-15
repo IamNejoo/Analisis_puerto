@@ -1,7 +1,7 @@
 // components/camila/selectors/ModelConfigSelector.tsx
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, Clock, Percent, Shuffle, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, Percent, Shuffle, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import type { CamilaConfig } from '../../../types/camila';
 import { useResultadosDisponibles } from '../../../hooks/useCamilaData';
 
@@ -14,30 +14,40 @@ export const ModelConfigSelector: React.FC<ModelConfigSelectorProps> = ({
     config,
     onChange
 }) => {
-    const { data: disponibles, loading } = useResultadosDisponibles();
+    const { data: resultadosList, loading } = useResultadosDisponibles();
+    const [availableYears, setAvailableYears] = useState<number[]>([]);
     const [availableWeeks, setAvailableWeeks] = useState<number[]>([]);
     const [availableParticipations, setAvailableParticipations] = useState<number[]>([]);
 
     useEffect(() => {
-        if (!disponibles || disponibles.length === 0) return;
+        if (!resultadosList || !resultadosList.resultados || resultadosList.resultados.length === 0) return;
 
-        const yearData = disponibles.find(d => d.anio === config.anio);
-        if (yearData) {
-            setAvailableWeeks(yearData.semanas);
-            setAvailableParticipations(yearData.participaciones);
-        }
-    }, [disponibles, config.anio]);
+        // Extraer años únicos
+        const years = [...new Set(resultadosList.resultados.map(r => r.anio))].sort();
+        setAvailableYears(years);
+
+        // Filtrar por año actual
+        const yearResults = resultadosList.resultados.filter(r => r.anio === config.anio);
+
+        // Extraer semanas únicas para el año
+        const weeks = [...new Set(yearResults.map(r => r.semana))].sort((a, b) => a - b);
+        setAvailableWeeks(weeks);
+
+        // Extraer participaciones únicas
+        const participations = [...new Set(resultadosList.resultados.map(r => r.participacion))].sort((a, b) => a - b);
+        setAvailableParticipations(participations);
+    }, [resultadosList, config.anio]);
 
     const handleAnioChange = (anio: number) => {
-        const yearData = disponibles.find(d => d.anio === anio);
-        if (yearData) {
-            onChange({
-                ...config,
-                anio,
-                semana: yearData.semanas[0] || 1,
-                participacion: yearData.participaciones[0] || 68
-            });
-        }
+        // Al cambiar el año, ajustar semana si es necesario
+        const yearResults = resultadosList?.resultados.filter(r => r.anio === anio) || [];
+        const weeks = [...new Set(yearResults.map(r => r.semana))].sort((a, b) => a - b);
+
+        onChange({
+            ...config,
+            anio,
+            semana: weeks.includes(config.semana) ? config.semana : (weeks[0] || 1)
+        });
     };
 
     const turnos = Array.from({ length: 21 }, (_, i) => i + 1);
@@ -69,11 +79,15 @@ export const ModelConfigSelector: React.FC<ModelConfigSelectorProps> = ({
                         onChange={(e) => handleAnioChange(Number(e.target.value))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                        {disponibles.map(d => (
-                            <option key={d.anio} value={d.anio}>
-                                {d.anio}
-                            </option>
-                        ))}
+                        {availableYears.length > 0 ? (
+                            availableYears.map(anio => (
+                                <option key={anio} value={anio}>
+                                    {anio}
+                                </option>
+                            ))
+                        ) : (
+                            <option value={2022}>2022</option>
+                        )}
                     </select>
                 </div>
 
@@ -88,11 +102,19 @@ export const ModelConfigSelector: React.FC<ModelConfigSelectorProps> = ({
                         onChange={(e) => onChange({ ...config, semana: Number(e.target.value) })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                        {availableWeeks.map(semana => (
-                            <option key={semana} value={semana}>
-                                Semana {semana}
-                            </option>
-                        ))}
+                        {availableWeeks.length > 0 ? (
+                            availableWeeks.map(semana => (
+                                <option key={semana} value={semana}>
+                                    Semana {semana}
+                                </option>
+                            ))
+                        ) : (
+                            Array.from({ length: 52 }, (_, i) => i + 1).map(semana => (
+                                <option key={semana} value={semana}>
+                                    Semana {semana}
+                                </option>
+                            ))
+                        )}
                     </select>
                 </div>
 
@@ -126,11 +148,19 @@ export const ModelConfigSelector: React.FC<ModelConfigSelectorProps> = ({
                         onChange={(e) => onChange({ ...config, participacion: Number(e.target.value) })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                        {availableParticipations.map(participacion => (
-                            <option key={participacion} value={participacion}>
-                                {participacion}%
-                            </option>
-                        ))}
+                        {availableParticipations.length > 0 ? (
+                            availableParticipations.map(participacion => (
+                                <option key={participacion} value={participacion}>
+                                    {participacion}%
+                                </option>
+                            ))
+                        ) : (
+                            [60, 65, 68, 70, 75, 80].map(participacion => (
+                                <option key={participacion} value={participacion}>
+                                    {participacion}%
+                                </option>
+                            ))
+                        )}
                     </select>
                 </div>
 
@@ -148,7 +178,7 @@ export const ModelConfigSelector: React.FC<ModelConfigSelectorProps> = ({
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
                         >
-                            K
+                            Con
                         </button>
                         <button
                             onClick={() => onChange({ ...config, dispersion: 'N' })}
@@ -157,18 +187,42 @@ export const ModelConfigSelector: React.FC<ModelConfigSelectorProps> = ({
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
                         >
-                            N
+                            Sin
                         </button>
                     </div>
                 </div>
             </div>
 
+            {/* Resumen de configuración con indicadores */}
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">
                     <span className="font-medium">Configuración actual:</span> Año {config.anio},
                     Semana {config.semana}, Turno {config.turno},
-                    Participación {config.participacion}%, Dispersión {config.dispersion}
+                    Participación {config.participacion}%, {config.dispersion === 'K' ? 'Con' : 'Sin'} Dispersión
                 </p>
+
+                {/* Mostrar si hay datos para esta configuración */}
+                {resultadosList && resultadosList.resultados && (
+                    <div className="mt-2">
+                        {resultadosList.resultados.find(r =>
+                            r.anio === config.anio &&
+                            r.semana === config.semana &&
+                            r.turno === config.turno &&
+                            r.participacion === config.participacion &&
+                            r.dispersion === config.dispersion
+                        ) ? (
+                            <span className="inline-flex items-center text-xs text-green-600">
+                                <CheckCircle size={14} className="mr-1" />
+                                Datos disponibles
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center text-xs text-gray-500">
+                                <XCircle size={14} className="mr-1" />
+                                Sin datos para esta configuración
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -98,17 +98,7 @@ export const CamilaIntegratedPanel: React.FC = () => {
     if (error) return <ErrorState error={error} onRetry={() => window.location.reload()} />;
     if (!data) return <EmptyState message="No hay datos disponibles para la configuración seleccionada" />;
 
-    // VALIDACIÓN IMPORTANTE: Verificar que data.resultado existe
-    if (!data.resultado) {
-        return (
-            <EmptyState
-                message="Los datos están incompletos. No se encontró información del resultado."
-                icon={<AlertCircle className="text-yellow-400" size={48} />}
-            />
-        );
-    }
-
-    const hasSolution = data.resultado.total_movimientos > 0;
+    const hasSolution = data.resultado.total_movimientos_modelo > 0;
 
     // Función para renderizar el contenido de las pestañas
     const renderTabContent = () => {
@@ -119,32 +109,24 @@ export const CamilaIntegratedPanel: React.FC = () => {
                         <KPIOverview data={data} />
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <WorkloadDistribution data={data} />
-                            <GrueUtilization
-                                metricas={
-                                    (data.metricas_gruas || []).map(m => ({
-                                        ...m,
-                                        tiempo_trabajado: m.tiempo_productivo_hrs ?? 0,
-                                        tiempo_idle: m.tiempo_improductivo_hrs ?? 0
-                                    }))
-                                }
-                            />
+                            <GrueUtilization metricas={data.metricas_gruas} />
                         </div>
                     </div>
                 );
             case 'operations':
                 return (
                     <div className="space-y-6">
-                        <GrueAssignmentMatrix asignaciones={data.asignaciones || []} />
-                        <TruckQuotasPanel cuotas={data.cuotas_camiones || []} />
+                        <GrueAssignmentMatrix asignaciones={data.asignaciones} />
+                        <TruckQuotasPanel cuotas={data.cuotas_camiones} />
                         <TimelineView data={data} />
                     </div>
                 );
             case 'comparison':
                 return (
                     <div className="space-y-6">
-                        {data.comparaciones && data.comparaciones.length > 0 ? (
+                        {data.comparaciones_real && data.comparaciones_real.length > 0 ? (
                             <>
-                                <RealDataComparison comparaciones={data.comparaciones} />
+                                <RealDataComparison comparaciones={data.comparaciones_real} />
                                 <FeasibilityAnalysis data={data} />
                             </>
                         ) : (
@@ -173,15 +155,15 @@ export const CamilaIntegratedPanel: React.FC = () => {
                         <div className="flex items-center space-x-4 mt-2 text-sm text-slate-300">
                             <span className="flex items-center">
                                 <Calendar size={16} className="mr-1 text-teal-400" />
-                                Semana {data.resultado.semana || 'N/A'} • {data.resultado.anio || 2022}
+                                Semana {data.resultado.semana} • {data.resultado.anio}
                             </span>
                             <span className="flex items-center">
                                 <Clock size={16} className="mr-1 text-teal-400" />
-                                Turno {data.resultado.turno || 'N/A'}
+                                Turno {data.resultado.turno}
                                 {data.resultado.turno_del_dia && ` (Turno ${data.resultado.turno_del_dia} del día)`}
                             </span>
                             <span className="bg-teal-700/50 px-2 py-1 rounded text-xs">
-                                P{data.resultado.participacion || 68}% •
+                                P{data.resultado.participacion}% •
                                 {data.resultado.con_dispersion ? ' Con Dispersión' : ' Sin Dispersión'}
                             </span>
                         </div>
@@ -199,8 +181,8 @@ export const CamilaIntegratedPanel: React.FC = () => {
             {/* Alerta si no hay solución */}
             {!hasSolution && (
                 <InfeasibleShifts
-                    turno={data.resultado.turno || 0}
-                    semana={data.resultado.semana || 0}
+                    turno={data.resultado.turno}
+                    semana={data.resultado.semana}
                     mensaje="Camila no encontró una solución factible para este turno"
                 />
             )}
@@ -228,7 +210,7 @@ export const CamilaIntegratedPanel: React.FC = () => {
                     <li>• Balancea la carga de trabajo entre recursos disponibles</li>
                     <li>• Minimiza la congestión en períodos de alta demanda</li>
                     <li>• Genera cuotas de camiones basadas en capacidad real</li>
-                    <li>• Gestiona {data.resultado.total_segregaciones || 0} segregaciones simultáneamente</li>
+                    <li>• Gestiona {data.resultado.total_segregaciones} segregaciones simultáneamente</li>
                 </ul>
             </div>
         </div>
