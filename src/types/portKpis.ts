@@ -29,6 +29,11 @@ export interface PortMovementData {
     maximoTeus: number;
     promedioContenedores: number;
     promedioTeus: number;
+
+    despejosBloques: number;    // Movimientos entre bloques del mismo patio
+    despejosPatios: number;     // Movimientos entre diferentes patios
+    bahias: number;             // Total de bahías del bloque
+    bahiasReefer: number;       // Bahías con refrigeración
 }
 
 // Nuevas interfaces para CDT y TTT

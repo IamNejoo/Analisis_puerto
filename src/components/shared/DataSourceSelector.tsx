@@ -1,6 +1,6 @@
 // components/shared/DataSourceSelector.tsx - Versión corregida
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTimeContext } from '../../contexts/TimeContext';
 import { Database, BarChart3, Activity } from 'lucide-react';
 import { ModelSelector } from '../optimization/ModelSelector';
@@ -8,6 +8,14 @@ import ModelConfigSelector from '../camila/selectors/ModelConfigSelector';
 
 export const DataSourceSelector: React.FC = () => {
     const { timeState, setDataSource, setCamilaConfig, isLoadingData } = useTimeContext();
+
+    // Forzar recarga cuando cambia a histórico
+    useEffect(() => {
+        if (timeState?.dataSource === 'historical') {
+            // Disparar evento para forzar recarga de datos
+            window.dispatchEvent(new CustomEvent('force-historical-reload'));
+        }
+    }, [timeState?.dataSource]);
 
     const dataSources = [
         {

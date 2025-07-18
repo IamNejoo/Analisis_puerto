@@ -1,4 +1,4 @@
-// src/hooks/usePortKPIs.ts
+// src/hooks/usePortKPIs.ts - COMPLETO Y CORREGIDO
 import { useCallback, useMemo } from 'react';
 import { useSharedPortData } from './useSharedPortData';
 import { useViewNavigation } from '../contexts/ViewNavigationContext';
@@ -10,8 +10,58 @@ import type {
     KPIThreshold
 } from '../types/portKpis';
 
-// Umbrales base (para KPIs que no varían)
+// Umbrales base completos para todos los KPIs
 const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
+    // MOVIMIENTOS
+    movimientosGate: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+    movimientosGateHora: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+    movimientosPatio: {
+        warning: 50,
+        critical: 70,
+        isHigherBetter: false
+    },
+    movimientosPatioHora: {
+        warning: 50,
+        critical: 70,
+        isHigherBetter: false
+    },
+    movimientosMuelle: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+    movimientosMuelleHora: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+
+    // FLUJOS PROMEDIO
+    flujoPromedioGates: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+    flujoPromedioPatio: {
+        warning: 50,
+        critical: 70,
+        isHigherBetter: false
+    },
+    flujoPromedioMuelle: {
+        warning: 30,
+        critical: 20,
+        isHigherBetter: true
+    },
+
+    // CAPACIDAD Y UTILIZACIÓN
     utilizacionPorVolumen: {
         warning: 70,
         critical: 85,
@@ -19,6 +69,15 @@ const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
         optimalMin: 50,
         optimalMax: 70
     },
+
+    // VARIABILIDAD
+    variabilidadOperacional: {
+        warning: 40,
+        critical: 60,
+        isHigherBetter: false
+    },
+
+    // BALANCE - Con rango óptimo
     balanceFlujo: {
         warning: 1.3,
         critical: 1.5,
@@ -26,11 +85,15 @@ const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
         optimalMin: 0.9,
         optimalMax: 1.1
     },
+
+    // EFICIENCIA
     indiceRemanejo: {
         warning: 5,
         critical: 8,
         isHigherBetter: false
     },
+
+    // TIEMPOS
     tiempoPermanencia: {
         warning: 5,
         critical: 7,
@@ -40,17 +103,24 @@ const KPI_THRESHOLDS: Record<string, KPIThreshold> = {
         warning: 90,
         critical: 120,
         isHigherBetter: false
+    },
+
+    // PRODUCTIVIDAD
+    productividadOperacional: {
+        warning: 50,
+        critical: 30,
+        isHigherBetter: true
     }
 };
 
-// NUEVA FUNCIÓN: Obtener umbrales según el nivel
+// Función para obtener umbrales según el nivel
 const getThresholdForLevel = (
     kpiName: string,
     viewLevel: 'terminal' | 'patio' | 'bloque'
 ): KPIThreshold => {
 
     // KPIs con umbrales variables según nivel
-    if (kpiName === 'flujoPromedioGates') {
+    if (kpiName === 'flujoPromedioGates' || kpiName === 'movimientosGateHora') {
         switch (viewLevel) {
             case 'terminal':
                 return { warning: 50, critical: 70, isHigherBetter: true };
@@ -106,7 +176,7 @@ interface UsePortKPIsReturn {
 
 export const usePortKPIs = (options?: UsePortKPIsOptions): UsePortKPIsReturn => {
     const sharedData = useSharedPortData();
-    const { viewState } = useViewNavigation(); // AGREGAR ESTO
+    const { viewState } = useViewNavigation();
 
     // Determinar el nivel actual
     const currentLevel = viewState.level as 'terminal' | 'patio' | 'bloque';
@@ -168,7 +238,7 @@ export const usePortKPIs = (options?: UsePortKPIsOptions): UsePortKPIsReturn => 
         }
     }, [sharedData.kpis]);
 
-    // MODIFICAR getStatusForKPI para usar umbrales dinámicos
+    // Función getStatusForKPI CORREGIDA para manejar correctamente Balance y TTT
     const getStatusForKPI = useCallback((kpiName: NumericKPIs): KPIStatus => {
         if (!sharedData.kpis) return 'normal';
 
@@ -176,11 +246,14 @@ export const usePortKPIs = (options?: UsePortKPIsOptions): UsePortKPIsReturn => 
         const value = kpis[kpiName];
         if (value === undefined || value === null) return 'normal';
 
-        // USAR LA FUNCIÓN getThresholdForLevel CON EL NIVEL ACTUAL
+        // Obtener threshold para el KPI
         const threshold = getThresholdForLevel(kpiName, currentLevel);
         if (!threshold) return 'normal';
 
+        // Determinar el valor actual
         let actualValue: number;
+
+        // Casos especiales para KPIs anidados
         if (kpiName === 'tiempoPermanencia' && kpis.tiempoPermanencia) {
             actualValue = kpis.tiempoPermanencia.promedioDias;
         } else if (kpiName === 'tiempoCamiones' && kpis.tiempoCamiones) {
@@ -191,23 +264,60 @@ export const usePortKPIs = (options?: UsePortKPIsOptions): UsePortKPIsReturn => 
             return 'normal';
         }
 
-        if (threshold.isHigherBetter) {
-            if (actualValue >= threshold.critical) return 'good';
-            if (actualValue >= threshold.warning) return 'normal';
-            return 'warning';
-        } else {
-            if (actualValue >= threshold.critical) return 'critical';
-            if (actualValue >= threshold.warning) return 'warning';
+        // CASO ESPECIAL PARA BALANCE
+        if (kpiName === 'balanceFlujo') {
+            // Balance óptimo es 1.0 (equilibrio perfecto)
+            // 0.9 - 1.1 = Good (verde)
+            // 0.7 - 0.9 o 1.1 - 1.3 = Warning (amarillo)
+            // < 0.7 o > 1.3 = Critical (rojo)
+            if (actualValue >= 0.9 && actualValue <= 1.1) return 'good';
+            if (actualValue >= 0.7 && actualValue <= 1.3) return 'warning';
+            return 'critical';
+        }
 
+        // LÓGICA PARA OTROS KPIs
+        if (threshold.isHigherBetter) {
+            // Para KPIs donde más es mejor
+            if (actualValue >= threshold.critical) return 'good';
+            if (actualValue >= threshold.warning) return 'warning';
+            return 'critical';
+        } else {
+            // Para KPIs donde menos es mejor
+
+            // Verificar si tiene rango óptimo (principalmente Utilización)
             if (threshold.optimalMin !== undefined && threshold.optimalMax !== undefined) {
+                // Si está en el rango óptimo, es GOOD
                 if (actualValue >= threshold.optimalMin && actualValue <= threshold.optimalMax) {
                     return 'good';
                 }
-            }
 
-            return 'normal';
+                // Para utilización: fuera del rango óptimo
+                if (kpiName === 'utilizacionPorVolumen') {
+                    if (actualValue < threshold.optimalMin) {
+                        // Subutilización
+                        if (actualValue < 30) return 'critical';
+                        if (actualValue < 50) return 'warning';
+                        return 'normal';
+                    } else {
+                        // Sobreutilización
+                        if (actualValue >= threshold.critical) return 'critical'; // >= 85
+                        if (actualValue >= threshold.warning) return 'warning';   // >= 70
+                        return 'normal';
+                    }
+                }
+
+                // Para otros KPIs con rango óptimo (si los hubiera)
+                if (actualValue >= threshold.critical) return 'critical';
+                if (actualValue >= threshold.warning) return 'warning';
+                return 'warning'; // Cualquier valor fuera del óptimo es al menos warning
+            } else {
+                // Para KPIs sin rango óptimo (TTT, CDT, Remanejos, etc.)
+                if (actualValue <= threshold.warning) return 'good';
+                if (actualValue <= threshold.critical) return 'warning';
+                return 'critical';
+            }
         }
-    }, [sharedData.kpis, currentLevel]); // AGREGAR currentLevel como dependencia
+    }, [sharedData.kpis, currentLevel]);
 
     console.log('📊 usePortKPIs - Returning data:', {
         hasKPIs: !!sharedData.kpis,
@@ -215,7 +325,12 @@ export const usePortKPIs = (options?: UsePortKPIsOptions): UsePortKPIsReturn => 
         isLoading: sharedData.isLoading,
         error: sharedData.error,
         filters: options,
-        currentLevel // Log del nivel actual
+        currentLevel,
+        // Debug específico para Balance y TTT
+        balanceValue: sharedData.kpis?.balanceFlujo,
+        balanceStatus: sharedData.kpis ? getStatusForKPI('balanceFlujo') : 'N/A',
+        tttValue: sharedData.kpis?.tiempoCamiones?.promedio,
+        tttStatus: sharedData.kpis ? getStatusForKPI('tiempoCamiones') : 'N/A'
     });
 
     return {

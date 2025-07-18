@@ -595,7 +595,11 @@ export const MovementAnalysisPanel: React.FC = () => {
     }
 
     return (
-        <div className="bg-slate-900/90 backdrop-blur-sm p-4 rounded-lg shadow-xl border border-slate-700/50 max-h-[90vh] overflow-y-auto">
+        <div className="bg-slate-900/90 backdrop-blur-sm p-4 rounded-lg shadow-xl border border-slate-700/50 max-h-[600px] overflow-y-auto">
+
+
+
+
             <div className="min-w-[800px] max-w-[1000px] space-y-6">
                 {/* Header con selector de patio */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-700/50">

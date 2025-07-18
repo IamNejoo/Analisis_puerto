@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, ComposedChart, Area } from 'recharts';
 import { useOptimizationData } from '../../hooks/useOptimizationData';
-import { useTimeContext } from '../../contexts/TimeContext';
+import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     Activity,
     BarChart3,
@@ -117,14 +117,7 @@ const WorkloadStats: React.FC<WorkloadStatsProps> = ({
 };
 
 export const WorkloadChart: React.FC = () => {
-    const { timeState } = useTimeContext();
-    const config = {
-        anio: timeState.magdalenaConfig?.anio || 2022,
-        semana: timeState.magdalenaConfig?.semana || 3,
-        participacion: timeState.magdalenaConfig?.participacion || 69,
-        conDispersion: true
-    };
-
+    const { config } = useMagdalenaContext();
     const { metrics, isLoading, error } = useOptimizationData(config);
 
     // Procesar datos para gráficos

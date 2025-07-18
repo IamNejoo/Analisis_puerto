@@ -1,168 +1,96 @@
 // components/camila/analytics/KPIOverview.tsx
-
 import React from 'react';
-import {
-    Activity,
-    TrendingUp,
-    Percent,
-    BarChart3,
-    Truck,
-    Package,
-    Clock,
-    AlertTriangle,
-    GitCompare
-} from 'lucide-react';
+import { Activity, TrendingUp, BarChart3, Truck, Target, AlertTriangle } from 'lucide-react';
 import type { CamilaDashboardData } from '../../../types/camila';
-import MetricCard from '../shared/MetricCard';
 
 interface KPIOverviewProps {
     data: CamilaDashboardData;
 }
 
 export const KPIOverview: React.FC<KPIOverviewProps> = ({ data }) => {
-    const { resultado, metricas_gruas } = data;
+    const { resultado } = data;
 
-    // Calcular métricas
-    const gruasActivas = metricas_gruas.filter(g => g.utilizacion_pct > 0).length;
-    const utilizacionPromedio = resultado.utilizacion_modelo || 0;
-    const coeficienteVariacion = resultado.coeficiente_variacion || 0;
+    const kpis = [
+        {
+            title: 'Movimientos',
+            value: resultado.total_movimientos_modelo,
+            icon: <Activity className="text-blue-400" />,
+            subtitle: resultado.total_movimientos_real
+                ? `Real: ${resultado.total_movimientos_real}`
+                : 'Solo modelo',
+            status: 'normal'
+        },
+        {
+            title: 'Utilización',
+            value: `${resultado.utilizacion_modelo}%`,
+            icon: <TrendingUp className="text-green-400" />,
+            subtitle: 'Capacidad usada',
+            status: resultado.utilizacion_modelo > 70 ? 'good' : resultado.utilizacion_modelo > 50 ? 'normal' : 'low'
+        },
+        {
+            title: 'Balance',
+            value: `${resultado.coeficiente_variacion}%`,
+            icon: <BarChart3 className="text-amber-400" />,
+            subtitle: 'CV entre grúas',
+            status: resultado.coeficiente_variacion < 30 ? 'good' : resultado.coeficiente_variacion < 50 ? 'warning' : 'critical'
+        },
+        {
+            title: 'Grúas',
+            value: `${resultado.total_gruas_utilizadas}/12`,
+            icon: <Truck className="text-purple-400" />,
+            subtitle: 'En operación',
+            status: 'normal'
+        }
+    ];
 
-    // Estado de balance
-    const balanceStatus = coeficienteVariacion < 30 ? 'good' :
-        coeficienteVariacion < 50 ? 'warning' : 'critical';
+    // Agregar accuracy si existe
+    if (resultado.accuracy_global > 0) {
+        kpis.push({
+            title: 'Accuracy',
+            value: `${resultado.accuracy_global}%`,
+            icon: <Target className="text-teal-400" />,
+            subtitle: 'Modelo vs Real',
+            status: resultado.accuracy_global > 80 ? 'good' : resultado.accuracy_global > 60 ? 'normal' : 'critical'
+        });
+    }
 
-    // Verificar si hay comparación con datos reales
-    const tieneComparacionReal = resultado.total_movimientos_real > 0;
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'good': return 'border-green-600';
+            case 'warning': return 'border-amber-600';
+            case 'critical': return 'border-red-600';
+            case 'low': return 'border-slate-600';
+            default: return 'border-slate-700';
+        }
+    };
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-800">
-                Indicadores Clave de Desempeño
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard
-                    title="Movimientos Modelo"
-                    value={resultado.total_movimientos_modelo.toLocaleString()}
-                    subtitle="Optimizados por Camila"
-                    icon={<Package />}
-                    trend={resultado.total_movimientos_modelo > 0 ? 'up' : 'neutral'}
-                />
-
-                <MetricCard
-                    title="Utilización Promedio"
-                    value={`${utilizacionPromedio.toFixed(1)}%`}
-                    subtitle="De capacidad de grúas"
-                    icon={<TrendingUp />}
-                    trend={utilizacionPromedio > 70 ? 'up' : utilizacionPromedio > 50 ? 'neutral' : 'down'}
-                    status={utilizacionPromedio > 70 ? 'success' : utilizacionPromedio > 50 ? 'warning' : 'error'}
-                />
-
-                <MetricCard
-                    title="Balance de Carga"
-                    value={`${(100 - coeficienteVariacion).toFixed(1)}%`}
-                    subtitle="Uniformidad entre grúas"
-                    icon={<BarChart3 />}
-                    status={balanceStatus === 'good' ? 'success' : balanceStatus === 'warning' ? 'warning' : 'error'}
-                />
-
-                <MetricCard
-                    title="Grúas Activas"
-                    value={`${gruasActivas}/12`}
-                    subtitle="En operación"
-                    icon={<Truck />}
-                    trend="neutral"
-                />
-            </div>
-
-            {/* Métricas secundarias */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Bloques Visitados</span>
-                        <Activity size={16} className="text-gray-400" />
-                    </div>
-                    <div className="text-xl font-semibold text-gray-900">
-                        {resultado.total_bloques_visitados}
-                    </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Segregaciones</span>
-                        <Activity size={16} className="text-gray-400" />
-                    </div>
-                    <div className="text-xl font-semibold text-gray-900">
-                        {resultado.total_segregaciones}
-                    </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Capacidad Teórica</span>
-                        <Clock size={16} className="text-gray-400" />
-                    </div>
-                    <div className="text-xl font-semibold text-gray-900">
-                        {resultado.capacidad_teorica}
-                    </div>
-                </div>
-
-                {tieneComparacionReal ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
+        <div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                {kpis.map((kpi, index) => (
+                    <div
+                        key={index}
+                        className={`bg-slate-800 rounded-lg p-4 border ${getStatusColor(kpi.status)}`}
+                    >
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600">Accuracy</span>
-                            <GitCompare size={16} className="text-gray-400" />
+                            <span className="text-sm text-slate-400">{kpi.title}</span>
+                            {kpi.icon}
                         </div>
-                        <div className="text-xl font-semibold text-gray-900">
-                            {resultado.accuracy_global.toFixed(1)}%
-                        </div>
+                        <div className="text-2xl font-bold text-slate-100">{kpi.value}</div>
+                        <div className="text-xs text-slate-500 mt-1">{kpi.subtitle}</div>
                     </div>
-                ) : (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600">CV%</span>
-                            <AlertTriangle size={16} className="text-gray-400" />
-                        </div>
-                        <div className="text-xl font-semibold text-gray-900">
-                            {coeficienteVariacion.toFixed(1)}%
-                        </div>
-                    </div>
-                )}
+                ))}
             </div>
 
             {/* Alerta si hay problemas */}
-            {coeficienteVariacion > 50 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                        <AlertTriangle className="text-amber-600 mt-0.5 mr-3" size={20} />
-                        <div>
-                            <h4 className="font-medium text-amber-900">
-                                Desbalance significativo detectado
-                            </h4>
-                            <p className="text-sm text-amber-700 mt-1">
-                                El coeficiente de variación ({coeficienteVariacion.toFixed(1)}%) indica una distribución
-                                desigual de la carga entre grúas. Considere redistribuir las asignaciones.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Información de comparación real si está disponible */}
-            {tieneComparacionReal && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                        <GitCompare className="text-blue-600 mt-0.5 mr-3" size={20} />
-                        <div>
-                            <h4 className="font-medium text-blue-900">
-                                Comparación con Datos Reales Disponible
-                            </h4>
-                            <p className="text-sm text-blue-700 mt-1">
-                                Modelo: {resultado.total_movimientos_modelo} movimientos |
-                                Real: {resultado.total_movimientos_real} movimientos |
-                                Brecha: {resultado.brecha_movimientos} movimientos
-                            </p>
-                        </div>
+            {resultado.coeficiente_variacion > 50 && (
+                <div className="mt-4 bg-amber-950/30 border border-amber-700 rounded-lg p-3">
+                    <div className="flex items-center">
+                        <AlertTriangle className="text-amber-400 mr-2" size={16} />
+                        <p className="text-sm text-amber-300">
+                            Desbalance significativo detectado (CV: {resultado.coeficiente_variacion}%).
+                            Considere redistribuir las asignaciones.
+                        </p>
                     </div>
                 </div>
             )}

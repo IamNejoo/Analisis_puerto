@@ -10,19 +10,22 @@ import {
 import type {
   TimeUnit,
   DataSource,
-  MagdalenaConfig,
   CamilaConfig,
   ExtendedTimeState,
   HourRange
 } from '../types';
 
+// Actualizar el tipo ExtendedTimeState removiendo MagdalenaConfig
+interface UpdatedTimeState extends Omit<ExtendedTimeState, 'magdalenaConfig'> {
+  // No incluye magdalenaConfig
+}
+
 interface ExtendedTimeContextType {
-  timeState: ExtendedTimeState;
+  timeState: UpdatedTimeState;
   isLoadingData: boolean;
   setTimeUnit: (unit: TimeUnit) => void;
   setUnit: (unit: TimeUnit) => void;
   setDataSource: (source: DataSource) => void;
-  setMagdalenaConfig: (config: MagdalenaConfig) => void;
   setCamilaConfig: (config: CamilaConfig) => void;
   setHourRange: (range: HourRange) => void;
   setCurrentDate: (date: string) => void;
@@ -39,39 +42,33 @@ const ExtendedTimeContext = createContext<ExtendedTimeContextType | null>(null);
 
 interface ExtendedTimeProviderProps {
   children: React.ReactNode;
-  initialYear?: number; // Nuevo prop opcional para especificar el año inicial
-  initialWeek?: number; // Nuevo prop opcional para especificar la semana inicial
+  initialYear?: number;
+  initialWeek?: number;
 }
 
 export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
   children,
-  initialYear = 2022, // Por defecto inicia en 2022
-  initialWeek = 1     // Por defecto inicia en la semana 1
+  initialYear = 2022,
+  initialWeek = 1
 }) => {
-  // Estado inicial con el año y semana especificados
+  // Estado inicial sin magdalenaConfig
   const initialDateRange = getISOWeekDateRange(initialWeek, initialYear);
 
-  const [timeState, setTimeState] = useState<ExtendedTimeState>({
+  const [timeState, setTimeState] = useState<UpdatedTimeState>({
     unit: 'week',
     currentDate: initialDateRange.startDate,
     dataSource: 'historical',
-    magdalenaConfig: {
-      participacion: 68,
-      conDispersion: true,
-      semana: initialWeek
-    },
     camilaConfig: {
       modelType: 'maxmin',
       withSegregations: true,
-      week: 2,  // CAMBIAR de 1 a 2
-      day: 'Lunes',  // CAMBIAR de 'Monday' a 'Lunes'
+      week: 2,
+      day: 'Lunes',
       shift: 1
     },
     hourRange: { start: 8, end: 16 }
   });
 
   const [isLoadingData, setIsLoadingData] = useState(false);
-  // Añadir estado para el año actual ISO
   const [currentISOYear, setCurrentISOYear] = useState(initialYear);
 
   const setTimeUnit = useCallback((unit: TimeUnit) => {
@@ -91,9 +88,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
       setTimeState(prev => ({
         ...prev,
         currentDate: newDate,
-        magdalenaConfig: prev.magdalenaConfig ?
-          { ...prev.magdalenaConfig, semana: weekNumber } :
-          { participacion: 68, conDispersion: true, semana: weekNumber },
         camilaConfig: prev.camilaConfig ?
           { ...prev.camilaConfig, week: weekNumber } :
           { modelType: 'minmax', withSegregations: true, week: weekNumber, day: 'Monday', shift: 1 }
@@ -106,17 +100,7 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
     setIsLoadingData(true);
     setTimeState(prev => ({ ...prev, dataSource }));
 
-    if (dataSource === 'modelMagdalena') {
-      setTimeState(prev => ({
-        ...prev,
-        dataSource,
-        magdalenaConfig: prev.magdalenaConfig || {
-          participacion: 68,
-          conDispersion: true,
-          semana: getISOWeekNumber(prev.currentDate)
-        }
-      }));
-    } else if (dataSource === 'modelCamila') {
+    if (dataSource === 'modelCamila') {
       setTimeState(prev => ({
         ...prev,
         dataSource,
@@ -131,13 +115,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
     }
 
     setTimeout(() => setIsLoadingData(false), 500);
-  }, []);
-
-  const setMagdalenaConfig = useCallback((config: MagdalenaConfig) => {
-    setTimeState(prev => ({
-      ...prev,
-      magdalenaConfig: config
-    }));
   }, []);
 
   const setCamilaConfig = useCallback((config: CamilaConfig) => {
@@ -163,10 +140,8 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
           let previousWeek = currentWeek - 1;
           let previousYear = currentYear;
 
-          // Si es semana 1, ir a la última semana del año anterior
           if (previousWeek < 1) {
             previousYear = currentYear - 1;
-            // Verificar cuántas semanas tiene el año anterior
             const weeksInPreviousYear = getISOWeeksInYear(previousYear);
             previousWeek = weeksInPreviousYear;
           }
@@ -178,9 +153,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
           return {
             ...prev,
             currentDate: dateRange.startDate,
-            magdalenaConfig: prev.magdalenaConfig ?
-              { ...prev.magdalenaConfig, semana: previousWeek } :
-              { participacion: 68, conDispersion: true, semana: previousWeek },
             camilaConfig: prev.camilaConfig ?
               { ...prev.camilaConfig, week: previousWeek } :
               { modelType: 'minmax', withSegregations: true, week: previousWeek, day: 'Monday', shift: 1 }
@@ -194,13 +166,10 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
           break;
         case 'hour':
           newDate.setHours(newDate.getHours() + 1);
-          // Si llegamos a hora sin operación, saltar al siguiente período operativo
           if (newDate.getHours() >= 22) {
-            // Saltar a las 8 AM del día siguiente
             newDate.setDate(newDate.getDate() + 1);
             newDate.setHours(8, 0, 0, 0);
           } else if (newDate.getHours() < 8) {
-            // Si estamos antes de las 8 AM, saltar a las 8 AM
             newDate.setHours(8, 0, 0, 0);
           }
           break;
@@ -222,7 +191,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
           let nextWeek = currentWeek + 1;
           let nextYear = currentYear;
 
-          // Verificar si el año actual tiene esa semana
           const weeksInCurrentYear = getISOWeeksInYear(currentYear);
           if (nextWeek > weeksInCurrentYear) {
             nextWeek = 1;
@@ -236,9 +204,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
           return {
             ...prev,
             currentDate: dateRange.startDate,
-            magdalenaConfig: prev.magdalenaConfig ?
-              { ...prev.magdalenaConfig, semana: nextWeek } :
-              { participacion: 68, conDispersion: true, semana: nextWeek },
             camilaConfig: prev.camilaConfig ?
               { ...prev.camilaConfig, week: nextWeek } :
               { modelType: 'minmax', withSegregations: true, week: nextWeek, day: 'Monday', shift: 1 }
@@ -252,13 +217,10 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
           break;
         case 'hour':
           newDate.setHours(newDate.getHours() + 1);
-          // Si llegamos a hora sin operación, saltar al siguiente período operativo
           if (newDate.getHours() >= 22) {
-            // Saltar a las 8 AM del día siguiente
             newDate.setDate(newDate.getDate() + 1);
             newDate.setHours(8, 0, 0, 0);
           } else if (newDate.getHours() < 8) {
-            // Si estamos antes de las 8 AM, saltar a las 8 AM
             newDate.setHours(8, 0, 0, 0);
           }
           break;
@@ -284,9 +246,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
     setTimeState(prev => ({
       ...prev,
       currentDate: dateRange.startDate,
-      magdalenaConfig: prev.magdalenaConfig ?
-        { ...prev.magdalenaConfig, semana: week } :
-        { participacion: 68, conDispersion: true, semana: week },
       camilaConfig: prev.camilaConfig ?
         { ...prev.camilaConfig, week: week } :
         { modelType: 'minmax', withSegregations: true, week: week, day: 'Monday', shift: 1 }
@@ -300,16 +259,12 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
   }, []);
 
   const resetToNow = useCallback(() => {
-    // Modificado para resetear al año inicial en lugar del momento actual
     const resetDateRange = getISOWeekDateRange(initialWeek, initialYear);
     setCurrentISOYear(initialYear);
 
     setTimeState(prev => ({
       ...prev,
       currentDate: resetDateRange.startDate,
-      magdalenaConfig: prev.magdalenaConfig ?
-        { ...prev.magdalenaConfig, semana: initialWeek } :
-        { participacion: 68, conDispersion: true, semana: initialWeek },
       camilaConfig: prev.camilaConfig ?
         { ...prev.camilaConfig, week: initialWeek } :
         { modelType: 'minmax', withSegregations: true, week: initialWeek, day: 'Monday', shift: 1 }
@@ -318,15 +273,7 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
   }, [initialWeek, initialYear]);
 
   const getDisplayFormat = useCallback(() => {
-    const { unit, currentDate, dataSource, magdalenaConfig, camilaConfig, hourRange } = timeState;
-
-    if (dataSource === 'modelMagdalena') {
-      const semana = magdalenaConfig?.semana || getISOWeekNumber(currentDate);
-      const year = getISOYear(currentDate);
-      const participacion = magdalenaConfig?.participacion || 69;
-      const dispersion = magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Centralizada';
-      return `Modelo Magdalena - Semana ISO ${semana}/${year} - ${participacion}% - ${dispersion}`;
-    }
+    const { unit, currentDate, dataSource, camilaConfig, hourRange } = timeState;
 
     if (dataSource === 'modelCamila') {
       const semana = camilaConfig?.week || getISOWeekNumber(currentDate);
@@ -420,7 +367,6 @@ export const ExtendedTimeProvider: React.FC<ExtendedTimeProviderProps> = ({
       setUnit,
       setCurrentDate,
       setDataSource,
-      setMagdalenaConfig,
       setCamilaConfig,
       setHourRange,
       goToPreviousPeriod,
@@ -447,14 +393,10 @@ export const useTimeContext = () => {
 export const TimeProvider = ExtendedTimeProvider;
 
 // Función auxiliar para verificar cuántas semanas tiene un año ISO
-// Función auxiliar para verificar cuántas semanas tiene un año ISO
 function getISOWeeksInYear(year: number): number {
-  // Calcular el número de semanas ISO en un año
-  // Un año tiene 53 semanas si el 1 de enero es jueves o si es un año bisiesto y el 1 de enero es miércoles
   const jan1 = new Date(year, 0, 1);
   const jan1DayOfWeek = jan1.getDay();
 
-  // Si el 1 de enero es jueves (4) o es miércoles (3) en año bisiesto
   const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
 
   if (jan1DayOfWeek === 4 || (jan1DayOfWeek === 3 && isLeapYear)) {

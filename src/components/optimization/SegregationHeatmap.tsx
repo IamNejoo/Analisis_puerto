@@ -1,7 +1,7 @@
 // src/components/optimization/SegregationHeatmap.tsx
 import React, { useMemo, useState } from 'react';
 import { useOptimizationData } from '../../hooks/useOptimizationData';
-import { useTimeContext } from '../../contexts/TimeContext';
+import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     Activity,
     BarChart3,
@@ -70,8 +70,6 @@ const HeatmapCell: React.FC<HeatmapCellProps> = ({
         </div>
     );
 };
-
-// Continuación de SegregationHeatmap.tsx
 
 interface SegregationSummaryCardProps {
     segregacion: string;
@@ -151,16 +149,9 @@ const SegregationSummaryCard: React.FC<SegregationSummaryCardProps> = ({
 };
 
 export const SegregationHeatmap: React.FC = () => {
-    const { timeState } = useTimeContext();
+    const { config } = useMagdalenaContext();
     const [selectedSegregation, setSelectedSegregation] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact');
-
-    const config = {
-        anio: timeState.magdalenaConfig?.anio || 2022,
-        semana: timeState.magdalenaConfig?.semana || 3,
-        participacion: timeState.magdalenaConfig?.participacion || 69,
-        conDispersion: true
-    };
 
     const { metrics, isLoading, error } = useOptimizationData(config);
 

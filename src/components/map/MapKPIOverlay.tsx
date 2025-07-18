@@ -30,7 +30,6 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
         bloqueFilter
     });
 
-    // SOLO mostrar en vista terminal, patio o bloque
     // SOLO mostrar en vista terminal
     if (viewState.level !== 'terminal') {
         return null;
@@ -51,6 +50,10 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
 
     const getStatusColor = (kpi: any) => {
         const status = getStatusForKPI(kpi);
+        // Debug para Balance
+        if (kpi === 'balanceFlujo') {
+            console.log('Balance status:', status, 'Value:', currentKPIs?.balanceFlujo);
+        }
         switch (status) {
             case 'good': return 'text-green-400';
             case 'warning': return 'text-yellow-400';
@@ -66,6 +69,60 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
             case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
             case 'critical': return 'bg-red-500/10 border-red-500/30';
             default: return 'bg-gray-700/50 border-gray-600/30';
+        }
+    };
+
+    // Función para obtener el estado de los KPIs de movimientos
+    const getMovementStatus = (type: 'gate' | 'patio' | 'muelle') => {
+        let value = 0;
+        let thresholds = { good: 0, warning: 0, critical: 0 };
+
+        switch (type) {
+            case 'gate':
+                value = currentKPIs.movimientosGateHora || 0;
+                thresholds = { good: 50, warning: 30, critical: 20 };
+                break;
+            case 'patio':
+                value = currentKPIs.movimientosPatioHora || 0;
+                // Para patio, menos es mejor (menos movimientos internos)
+                thresholds = { good: 30, warning: 50, critical: 70 };
+                break;
+            case 'muelle':
+                value = currentKPIs.movimientosMuelleHora || 0;
+                thresholds = { good: 50, warning: 30, critical: 20 };
+                break;
+        }
+
+        // Lógica invertida para patio (menos es mejor)
+        if (type === 'patio') {
+            if (value <= thresholds.good) return 'good';
+            if (value <= thresholds.warning) return 'warning';
+            return 'critical';
+        }
+
+        // Lógica normal para gate y muelle (más es mejor)
+        if (value >= thresholds.good) return 'good';
+        if (value >= thresholds.warning) return 'warning';
+        return 'critical';
+    };
+
+    const getMovementStatusBg = (type: 'gate' | 'patio' | 'muelle') => {
+        const status = getMovementStatus(type);
+        switch (status) {
+            case 'good': return 'bg-green-500/10 border-green-500/30';
+            case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
+            case 'critical': return 'bg-red-500/10 border-red-500/30';
+            default: return 'bg-gray-700/50 border-gray-600/30';
+        }
+    };
+
+    const getMovementStatusColor = (type: 'gate' | 'patio' | 'muelle') => {
+        const status = getMovementStatus(type);
+        switch (status) {
+            case 'good': return 'text-green-400';
+            case 'warning': return 'text-yellow-400';
+            case 'critical': return 'text-red-400';
+            default: return 'text-gray-400';
         }
     };
 
@@ -99,27 +156,27 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
         switch (kpiName) {
             case 'movimientosGate':
                 const gate = currentKPIs.movimientosGateHora || 0;
-                if (gate < 30) return "Flujo muy bajo";
+                if (gate < 20) return "Flujo crítico";
+                if (gate < 30) return "Flujo bajo";
                 if (gate < 50) return "Flujo moderado";
-                if (gate < 70) return "Flujo activo";
                 return "Alta actividad";
 
             case 'movimientosPatio':
             case 'movimientosInternos':
             case 'remanejos':
                 const patio = currentKPIs.movimientosPatioHora || 0;
-                if (patio < 20) return "Operación eficiente";
-                if (patio < 40) return "Actividad normal";
-                if (patio < 60) return "Alta actividad interna";
+                if (patio < 30) return "Operación eficiente";
+                if (patio < 50) return "Actividad normal";
+                if (patio < 70) return "Alta actividad interna";
                 return "Exceso de movimientos";
 
             case 'movimientosMuelle':
             case 'movimientosInterPatios':
             case 'movimientosOtrosBloques':
                 const muelle = currentKPIs.movimientosMuelleHora || 0;
-                if (muelle < 30) return "Baja actividad";
+                if (muelle < 20) return "Baja operación";
+                if (muelle < 30) return "Actividad reducida";
                 if (muelle < 50) return "Actividad normal";
-                if (muelle < 70) return "Alta operación";
                 return "Operación intensa";
 
             case 'utilizacionPorVolumen':
@@ -197,49 +254,58 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                 {/* Grid 3x3 con los 9 KPIs reorganizados */}
                 <div className="grid grid-cols-3 gap-2">
 
-                    {/* 1. Movimientos Gate */}
-                    <div className={`rounded-lg p-2 border ${getStatusBg('flujoPromedioGates')} hover:scale-105 transition-transform cursor-help`}>
+                    {/* 1. Movimientos Gate - CON ESTADO */}
+                    <div className={`rounded-lg p-2 border ${getMovementStatusBg('gate')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             {getMovementIcon(1)}
                             <span className="text-xs text-gray-300 truncate">{movLabel1}</span>
-                            <div className="text-sm font-bold text-cyan-400">
+                            <div className={`text-sm font-bold ${getMovementStatusColor('gate')}`}>
                                 {formatMovementKPI(currentKPIs.totalMovimientosGate)}
                             </div>
                             <div className="mt-1">
                                 <div className="text-[10px] text-gray-400">
                                     {currentKPIs.movimientosGateHora?.toFixed(0)} mov/h promedio
                                 </div>
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext('movimientosGate')}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Movimientos Patio */}
-                    <div className={`rounded-lg p-2 border ${getStatusBg('flujoPromedioPatio')} hover:scale-105 transition-transform cursor-help`}>
+                    {/* 2. Movimientos Patio - CON ESTADO */}
+                    <div className={`rounded-lg p-2 border ${getMovementStatusBg('patio')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             {getMovementIcon(2)}
                             <span className="text-xs text-gray-300 truncate">{movLabel2}</span>
-                            <div className="text-sm font-bold text-purple-400">
+                            <div className={`text-sm font-bold ${getMovementStatusColor('patio')}`}>
                                 {formatMovementKPI(currentKPIs.totalMovimientosPatio)}
                             </div>
                             <div className="mt-1">
                                 <div className="text-[10px] text-gray-400">
                                     {currentKPIs.movimientosPatioHora?.toFixed(0)} mov/h promedio
                                 </div>
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext('movimientosPatio')}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 3. Movimientos Muelle */}
-                    <div className={`rounded-lg p-2 border bg-gray-700/50 border-gray-600/30 hover:scale-105 transition-transform cursor-help`}>
+                    {/* 3. Movimientos Muelle - CON ESTADO */}
+                    <div className={`rounded-lg p-2 border ${getMovementStatusBg('muelle')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             {getMovementIcon(3)}
                             <span className="text-xs text-gray-300 truncate">{movLabel3}</span>
-                            <div className="text-sm font-bold text-blue-400">
+                            <div className={`text-sm font-bold ${getMovementStatusColor('muelle')}`}>
                                 {formatMovementKPI(currentKPIs.totalMovimientosMuelle)}
                             </div>
                             <div className="mt-1">
                                 <div className="text-[10px] text-gray-400">
                                     {currentKPIs.movimientosMuelleHora?.toFixed(0)} mov/h promedio
+                                </div>
+                                <div className="text-[9px] text-gray-500">
+                                    {getKPIContext('movimientosMuelle')}
                                 </div>
                             </div>
                         </div>
@@ -284,7 +350,7 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                         </div>
                     </div>
 
-                    {/* 6. Balance */}
+                    {/* 6. Balance - CORREGIDO */}
                     <div className={`rounded-lg p-2 border ${getStatusBg('balanceFlujo')} hover:scale-105 transition-transform cursor-help`}>
                         <div className="flex flex-col">
                             <RefreshCw className="w-4 h-4 text-yellow-400 mb-1" />
@@ -371,7 +437,6 @@ export const MapKPIOverlay: React.FC<MapKPIOverlayProps> = ({
                         </div>
                     </div>
                 </div>
-
 
                 {/* Footer con información contextual */}
                 <div className="mt-3 pt-2 border-t border-slate-700/50">

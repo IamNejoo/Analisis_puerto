@@ -169,7 +169,7 @@ export const useSharedPortData = () => {
             const filters: KPIFilters = {
                 startDate,
                 endDate,
-                unit: timeState.unit
+                unit: timeState.unit === 'shift' ? 'hour' : timeState.unit
             };
 
             // LÓGICA CORRECTA DE FILTRADO:
@@ -236,7 +236,18 @@ export const useSharedPortData = () => {
             }
         };
     }, [fetchData]);
+    // Agregar después de los otros useEffect
+    useEffect(() => {
+        const handleForceReload = () => {
+            fetchData(true); // Forzar recarga
+        };
 
+        window.addEventListener('force-historical-reload', handleForceReload);
+
+        return () => {
+            window.removeEventListener('force-historical-reload', handleForceReload);
+        };
+    }, [fetchData]);
     const refresh = useCallback(() => {
         console.log('🔄 useSharedPortData - Manual refresh requested');
         fetchData(true);

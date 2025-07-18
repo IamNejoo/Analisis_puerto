@@ -1,6 +1,7 @@
-// src/components/map/views/PatioView.tsx - VERSIÓN CORREGIDA
+// src/components/map/views/PatioView.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTimeContext } from '../../../contexts/TimeContext';
+import { useMagdalenaContext } from '../../../contexts/MagdalenaContext';
 import { useOptimizationData } from '../../../hooks/useOptimizationData';
 import { useRealPatioData } from '../../../hooks/useRealPatioData';
 import { useCamilaDashboard } from '../../../hooks/useCamilaData';
@@ -9,7 +10,8 @@ import { PatioKPIs } from './patio/PatioKPIs';
 import { PatioGrid } from './patio/PatioGrid';
 import { PatioDetails } from './patio/PatioDetails';
 import { CamilaTimelineControls } from './patio/CamilaTimelineControls';
-import { MagdalenaTimelineControls } from './patio/MagdalenaTimelineControls';
+import { MagdalenaTemporalSelector } from './patio/MagdalenaTemporalSelector';
+
 import { PatioErrorStates } from './patio/PatioErrorStates';
 import { processPatioData } from './patio/patioDataProcessor';
 import type { CamilaConfig } from '../../../types/camila';
@@ -30,7 +32,10 @@ export const PatioView: React.FC<PatioViewProps> = ({
   const [currentPeriod, setCurrentPeriod] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
 
+
+
   const { timeState } = useTimeContext();
+  const { config: magdalenaConfig } = useMagdalenaContext();
 
   // Hook para datos reales
   const {
@@ -40,14 +45,16 @@ export const PatioView: React.FC<PatioViewProps> = ({
     refreshData
   } = useRealPatioData();
 
-  const magdalenaConfig = {
-    anio: timeState?.magdalenaConfig?.anio || 2022,
-    semana: timeState?.magdalenaConfig?.semana || 3,
-    participacion: timeState?.magdalenaConfig?.participacion || 69,
-    conDispersion: timeState?.magdalenaConfig?.conDispersion ?? true
-  };
-
-  const { metrics: magdalenaMetrics, isLoading: magdalenaLoading, error: magdalenaError } = useOptimizationData(magdalenaConfig);
+  // MODIFICADO: Pasar filtros temporales al hook
+  const {
+    metrics: magdalenaMetrics,
+    isLoading: magdalenaLoading,
+    error: magdalenaError
+  } = useOptimizationData(
+    magdalenaConfig,
+    undefined, // bloqueId se maneja por separado
+    undefined, // periodo se maneja por separado
+  );
 
   const camilaConfig = useMemo<CamilaConfig | null>(() => {
     if (!timeState?.camilaConfig) return null;
@@ -64,6 +71,8 @@ export const PatioView: React.FC<PatioViewProps> = ({
 
   const isMagdalenaActive = timeState?.dataSource === 'modelMagdalena' && patioId === 'costanera';
   const isCamilaActive = timeState?.dataSource === 'modelCamila' && patioId === 'costanera';
+
+
 
   // Effect para animación
   useEffect(() => {
@@ -114,6 +123,7 @@ export const PatioView: React.FC<PatioViewProps> = ({
   if (isCamilaActive && !camilaData && !camilaLoading) {
     return <PatioErrorStates type="camila-no-data" config={camilaConfig} />;
   }
+  const [vistaActual, setVistaActual] = useState<'semana' | 'turno'>('semana');
 
   if (isMagdalenaActive && (magdalenaError || (!magdalenaMetrics && !magdalenaLoading))) {
     return <PatioErrorStates type="magdalena-no-data" config={magdalenaConfig} error={magdalenaError} />;
@@ -142,79 +152,86 @@ export const PatioView: React.FC<PatioViewProps> = ({
   // Renderizado principal
   return (
     <div className="w-full h-full bg-slate-900 flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* Timeline Controls - CON VALIDACIÓN */}
-        {isCamilaActive && camilaData && camilaData.resultado && (
-          <CamilaTimelineControls
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-3 sm:p-4 md:p-6 max-w-[1600px] mx-auto">
+          {/* Timeline Controls - CON VALIDACIÓN */}
+          {isCamilaActive && camilaData && camilaData.resultado && (
+            <CamilaTimelineControls
+              currentPeriod={currentPeriod}
+              totalPeriods={8}
+              onPeriodChange={setCurrentPeriod}
+              isPlaying={isPlaying}
+              onPlayPause={() => setIsPlaying(!isPlaying)}
+              turno={camilaData.resultado.turno || 1}
+              turnoDelDia={camilaData.resultado.turno_del_dia || 1}
+            />
+          )}
+          {isMagdalenaActive && magdalenaMetrics && (
+            <MagdalenaTemporalSelector
+              currentTurno={currentTurno}
+              totalTurnos={magdalenaMetrics.evolucionTemporal?.length || 21}
+              onTurnoChange={(turno) => {
+                if (turno === 'semana') {
+                  setCurrentTurno(0); // 0 indica vista agregada
+                } else {
+                  setCurrentTurno(turno);
+                }
+              }}
+              vistaActual={vistaActual}
+              onVistaChange={setVistaActual}
+            />
+          )}
+
+          {/* Header */}
+          <PatioHeader
+            patio={patio}
+            isCamilaActive={isCamilaActive}
+            isMagdalenaActive={isMagdalenaActive}
+            timeState={timeState}
             currentPeriod={currentPeriod}
-            totalPeriods={8}
-            onPeriodChange={setCurrentPeriod}
-            isPlaying={isPlaying}
-            onPlayPause={() => setIsPlaying(!isPlaying)}
-            turno={camilaData.resultado.turno || 1}
-            turnoDelDia={camilaData.resultado.turno_del_dia || 1}
-          />
-        )}
-
-        {isMagdalenaActive && magdalenaMetrics && (
-          <MagdalenaTimelineControls
             currentTurno={currentTurno}
-            totalTurnos={magdalenaMetrics.evolucionTemporal?.length || 21}
-            onTurnoChange={setCurrentTurno}
-            isPlaying={isPlaying}
-            onPlayPause={() => setIsPlaying(!isPlaying)}
+            camilaData={camilaData}
+            onRefresh={refreshData}
           />
-        )}
 
-        {/* Header */}
-        <PatioHeader
-          patio={patio}
-          isCamilaActive={isCamilaActive}
-          isMagdalenaActive={isMagdalenaActive}
-          timeState={timeState}
-          currentPeriod={currentPeriod}
-          currentTurno={currentTurno}
-          camilaData={camilaData}
-          onRefresh={refreshData}
-        />
+          {/* KPIs */}
+          <PatioKPIs
+            isCamilaActive={isCamilaActive}
+            isMagdalenaActive={isMagdalenaActive}
+            camilaData={camilaData}
+            magdalenaMetrics={magdalenaMetrics}
+          />
 
-        {/* KPIs */}
-        <PatioKPIs
-          isCamilaActive={isCamilaActive}
-          isMagdalenaActive={isMagdalenaActive}
-          camilaData={camilaData}
-          magdalenaMetrics={magdalenaMetrics}
-        />
-
-        {/* Grid de bloques */}
-        <PatioGrid
-          patio={patio}
-          selectedBloque={selectedBloque}
-          isCamilaActive={isCamilaActive}
-          isMagdalenaActive={isMagdalenaActive}
-          currentPeriod={currentPeriod}
-          currentTurno={currentTurno}
-          camilaData={camilaData}
-          magdalenaMetrics={magdalenaMetrics}
-          timeState={timeState}
-          getColorForOcupacion={getColorForOcupacion}
-          onBloqueSelect={(bloqueId) => {
-            setSelectedBloque(bloqueId);
-            setTimeout(() => onBloqueClick(patioId, bloqueId), 200);
-          }}
-        />
-
-        {/* Detalles del bloque seleccionado */}
-        {selectedBloque && (
-          <PatioDetails
+          {/* Grid de bloques */}
+          <PatioGrid
+            patio={patio}
             selectedBloque={selectedBloque}
             isCamilaActive={isCamilaActive}
             isMagdalenaActive={isMagdalenaActive}
             currentPeriod={currentPeriod}
+            currentTurno={currentTurno}
             camilaData={camilaData}
             magdalenaMetrics={magdalenaMetrics}
+            timeState={timeState}
+            getColorForOcupacion={getColorForOcupacion}
+            onBloqueSelect={(bloqueId) => {
+              setSelectedBloque(bloqueId);
+              setTimeout(() => onBloqueClick(patioId, bloqueId), 200);
+            }}
           />
-        )}
+
+          {/* Detalles del bloque seleccionado */}
+          {selectedBloque && (
+            <PatioDetails
+              selectedBloque={selectedBloque}
+              isCamilaActive={isCamilaActive}
+              isMagdalenaActive={isMagdalenaActive}
+              currentPeriod={currentPeriod}
+              camilaData={camilaData}
+              magdalenaMetrics={magdalenaMetrics}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

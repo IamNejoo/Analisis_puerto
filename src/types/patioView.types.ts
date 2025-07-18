@@ -6,26 +6,90 @@ export interface BloqueDataExtended extends BloqueData {
     ocupacionPromedio?: number;
     ocupacionPorTurno?: number[];
     stats?: {
-        entradas: number;
-        salidas: number;
-        remanejos: number;
+        // Datos básicos
         teusActuales: number;
         bahiasTotales: number;
         bahiasReefer: number;
+
+        // Gate - AGREGAR CAMPOS INDIVIDUALES
         gate: {
             entradas: number;
             salidas: number;
         };
+        gateEntradas: number;  // NUEVO
+        gateSalidas: number;   // NUEVO
+
+        // Muelle - AGREGAR CAMPOS INDIVIDUALES
         muelle: {
             entradas: number;
             salidas: number;
         };
+        muelleEntradas: number;  // NUEVO
+        muelleSalidas: number;   // NUEVO
+
+        // Despejos - AGREGAR DESGLOSE
         despejes: number;
+        despejosBloques: number;  // NUEVO - Entre bloques del mismo patio
+        despejosPatios: number;   // NUEVO - Entre diferentes patios
+
+        // Reubicaciones
         reubicacionesEntreBloques: number;
         reubicacionesEntrePatios: number;
+
+        // Movimientos generales
+        entradas: number;
+        salidas: number;
+        remanejos: number;
+
+        // Bahías - AGREGAR CAMPO ALTERNATIVO
+        bahias: number;  // NUEVO - Total de bahías (alternativa a bahiasTotales)
     };
 }
+export interface BloqueStats {
+    // Datos básicos
+    teusActuales: number;
+    bahiasTotales: number;
+    bahiasReefer: number;
 
+    // Gate - estructura anidada y campos planos
+    gate: {
+        entradas: number;
+        salidas: number;
+    };
+    gateEntradas: number;
+    gateSalidas: number;
+
+    // Muelle - estructura anidada y campos planos
+    muelle: {
+        entradas: number;
+        salidas: number;
+    };
+    muelleEntradas: number;
+    muelleSalidas: number;
+
+    // Despejos
+    despejes: number;
+    despejosBloques: number;
+    despejosPatios: number;
+
+    // Reubicaciones
+    reubicacionesEntreBloques: number;
+    reubicacionesEntrePatios: number;
+
+    // Movimientos generales
+    entradas: number;
+    salidas: number;
+    remanejos: number;
+
+    // Bahías
+    bahias: number;
+}
+
+export interface BloqueDataExtended extends BloqueData {
+    ocupacionPromedio?: number;
+    ocupacionPorTurno?: number[];
+    stats?: BloqueStats; // Usar la interfaz completa
+}
 export interface CamilaBlockData {
     asignaciones: {
         grua_id: number;
@@ -60,7 +124,6 @@ export interface CamilaBlockData {
         segregaciones: string[];
     };
 }
-
 
 export interface MagdalenaBlockData {
     segregaciones: number;

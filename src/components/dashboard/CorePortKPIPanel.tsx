@@ -43,6 +43,88 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
 
     const isLoading = isLoadingKPIs || isLoadingData;
 
+    // Función para obtener status basado en valores de movimientos
+    const getMovementStatus = (movimientosHora: number | undefined, tipo: 'gate' | 'patio' | 'muelle') => {
+        if (movimientosHora === undefined || movimientosHora === null) return 'normal';
+
+        switch (tipo) {
+            case 'gate':
+                if (movimientosHora < 30) return 'critical';
+                if (movimientosHora < 50) return 'warning';
+                return 'good';
+
+            case 'patio':
+                if (movimientosHora > 60) return 'critical';
+                if (movimientosHora > 40) return 'warning';
+                return 'good';
+
+            case 'muelle':
+                if (movimientosHora < 20) return 'warning';
+                if (movimientosHora > 70) return 'warning';
+                return 'good';
+
+            default:
+                return 'normal';
+        }
+    };
+
+    // Función extendida para obtener status de TODOS los KPIs
+    // Asegúrate de que solo se pasen claves válidas de NumericKPIs a getStatusForKPI
+    const getKPIStatus = (kpiName: string) => {
+        switch (kpiName) {
+            case 'utilizacionPorVolumen':
+                const util = currentKPIs?.utilizacionPorVolumen || 0;
+                if (util > 85) return 'critical';
+                if (util > 70) return 'warning';
+                return 'good';
+
+            case 'balanceFlujo':
+                const balance = currentKPIs?.balanceFlujo || 1;
+                if (balance > 1.3 || balance < 0.7) return 'critical';
+                if (balance > 1.2 || balance < 0.8) return 'warning';
+                return 'good';
+
+            case 'tiempoCamiones':
+                const ttt = currentKPIs?.tiempoCamiones?.promedio || 0;
+                if (ttt > 120) return 'critical';
+                if (ttt > 90) return 'warning';
+                return 'good';
+
+            case 'variabilidadOperacional':
+                const variabilidad = currentKPIs?.variabilidadOperacional || 0;
+                if (variabilidad > 60) return 'critical';
+                if (variabilidad > 40) return 'warning';
+                return 'good';
+
+            case 'indiceRemanejo':
+                const remanejos = currentKPIs?.indiceRemanejo || 0;
+                if (remanejos > 8) return 'critical';
+                if (remanejos > 5) return 'warning';
+                return 'good';
+
+            case 'tiempoPermanencia':
+                const cdt = currentKPIs?.tiempoPermanencia?.promedioDias || 0;
+                if (cdt > 7) return 'critical';
+                if (cdt > 5) return 'warning';
+                return 'good';
+
+            default:
+                // Si el hook tiene status, usarlo solo si kpiName es una clave válida de NumericKPIs
+                const numericKPIKeys: Array<string> = [
+                    'utilizacionPorVolumen',
+                    'balanceFlujo',
+                    'variabilidadOperacional',
+                    'indiceRemanejo',
+                    // agrega aquí otras claves válidas de NumericKPIs si existen
+                ];
+                if (numericKPIKeys.includes(kpiName)) {
+                    const hookStatus = getStatusForKPI(kpiName as any);
+                    return hookStatus || 'normal';
+                }
+                return 'normal';
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
@@ -195,7 +277,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
             case 'bloque':
                 return `KPIs del Bloque ${bloqueFilter}`;
             default:
-                return "KPIs de Congestión";
+                return "KPIs de la terminal";
         }
     };
 
@@ -203,32 +285,32 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
     const getKPIsGrid = () => (
         <>
             {/* FILA 1: MOVIMIENTOS */}
-            {/* 1. Movimientos Gate - CORREGIDO */}
+            {/* 1. Movimientos Gate */}
             <KPICard
                 title={movLabel1}
-                value={formatMovementKPI(currentKPIs.totalMovimientosGate)} // CAMBIAR: usar total
+                value={formatMovementKPI(currentKPIs.totalMovimientosGate)}
                 icon={getMovementIcon(1)}
-                status={getStatusForKPI('flujoPromedioGates')}
+                status={getMovementStatus(currentKPIs.movimientosGateHora, 'gate')}
                 description={`${currentKPIs.movimientosGateHora?.toFixed(0)} mov/h promedio`}
                 tooltip={getKPIContext('movimientosGate')}
             />
 
-            {/* 2. Movimientos Patio - CORREGIDO */}
+            {/* 2. Movimientos Patio */}
             <KPICard
                 title={movLabel2}
-                value={formatMovementKPI(currentKPIs.totalMovimientosPatio)} // CAMBIAR: usar total
+                value={formatMovementKPI(currentKPIs.totalMovimientosPatio)}
                 icon={getMovementIcon(2)}
-                status="normal" // No hay status específico para totales
+                status={getMovementStatus(currentKPIs.movimientosPatioHora, 'patio')}
                 description={`${currentKPIs.movimientosPatioHora?.toFixed(0)} mov/h promedio`}
                 tooltip={getKPIContext('movimientosPatio')}
             />
 
-            {/* 3. Movimientos Muelle - CORREGIDO */}
+            {/* 3. Movimientos Muelle */}
             <KPICard
                 title={movLabel3}
-                value={formatMovementKPI(currentKPIs.totalMovimientosMuelle)} // CAMBIAR: usar total
+                value={formatMovementKPI(currentKPIs.totalMovimientosMuelle)}
                 icon={getMovementIcon(3)}
-                status="normal" // No hay status específico para totales
+                status={getMovementStatus(currentKPIs.movimientosMuelleHora, 'muelle')}
                 description={`${currentKPIs.movimientosMuelleHora?.toFixed(0)} mov/h promedio`}
                 tooltip={getKPIContext('movimientosMuelle')}
             />
@@ -238,7 +320,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 title="% Utilización"
                 value={formatKPIValue('utilizacionPorVolumen')}
                 icon={<Package size={20} />}
-                status={getStatusForKPI('utilizacionPorVolumen')}
+                status={getKPIStatus('utilizacionPorVolumen')}
                 description={`${currentKPIs.promedioTeus?.toFixed(0)}/${currentKPIs.capacidadTotal} TEUs`}
                 subtitle={getKPIContext('utilizacionPorVolumen')}
                 tooltip={`Rango: ${currentKPIs.rangoOperativo} TEUs`}
@@ -248,7 +330,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 title="Variabilidad"
                 value={formatKPIValue('variabilidadOperacional')}
                 icon={<Activity size={20} />}
-                status={getStatusForKPI('variabilidadOperacional')}
+                status={getKPIStatus('variabilidadOperacional')}
                 description={`Rango: ${currentKPIs.rangoOperativo} TEUs`}
                 subtitle={getKPIContext('variabilidadOperacional')}
                 isInverseDelta={true}
@@ -258,7 +340,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 title="Balance"
                 value={formatKPIValue('balanceFlujo')}
                 icon={<RefreshCw size={20} />}
-                status={getStatusForKPI('balanceFlujo')}
+                status={getKPIStatus('balanceFlujo')}
                 description={`E:${currentKPIs.totalEntradas} / S:${currentKPIs.totalSalidas}`}
                 subtitle={getKPIContext('balanceFlujo')}
             />
@@ -268,7 +350,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 title="% Remanejos"
                 value={formatKPIValue('indiceRemanejo')}
                 icon={<Shuffle size={20} />}
-                status={getStatusForKPI('indiceRemanejo')}
+                status={getKPIStatus('indiceRemanejo')}
                 description={`${currentKPIs.totalRemanejos} movimientos`}
                 subtitle={getKPIContext('indiceRemanejo')}
                 isInverseDelta={true}
@@ -278,7 +360,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 title="CDT"
                 value={formatKPIValue('tiempoPermanencia')}
                 icon={<Clock size={20} />}
-                status={getStatusForKPI('tiempoPermanencia')}
+                status={getKPIStatus('tiempoPermanencia')}
                 description={`${currentKPIs.tiempoPermanencia?.totalContenedores} cont`}
                 subtitle={getKPIContext('tiempoPermanencia')}
                 tooltip={currentKPIs.tiempoPermanencia?.criticos > 50 ?
@@ -290,7 +372,7 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 title="TTT"
                 value={formatKPIValue('tiempoCamiones')}
                 icon={<Timer size={20} />}
-                status={getStatusForKPI('tiempoCamiones')}
+                status={getKPIStatus('tiempoCamiones')}
                 description={`${currentKPIs.tiempoCamiones?.totalCamiones} camiones`}
                 subtitle={getKPIContext('tiempoCamiones')}
                 tooltip={currentKPIs.tiempoCamiones?.promedio > 90 ?
@@ -345,8 +427,6 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                 </div>
             )}
 
-
-
             {/* Grid 3x3 de KPIs - SIEMPRE EL MISMO PARA TODOS LOS NIVELES */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {getKPIsGrid()}
@@ -392,20 +472,6 @@ export const CorePortKPIPanel: React.FC<CorePortKPIPanelProps> = ({
                         </div>
                     </div>
                 )}
-
-                {/* Alerta TTT vs Congestión */}
-                {/* 
-                {currentKPIs?.kpiRelations?.tttCongestionStatus === 'critical' && (
-                    <div className="p-3 bg-red-950/30 border border-red-700 rounded-lg">
-                        <div className="flex items-start">
-                            <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm">
-                                <p className="font-semibold text-red-300">⚠️ Cuellos de botella detectados en gates</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                */}
             </div>
         </div>
     );

@@ -1,94 +1,178 @@
 // src/hooks/useSAIData.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { saiApi } from '../services/saiApi';
-import { useTimeContext } from '../contexts/TimeContext';
 
-export interface SAIDataResult {
-    saiMetrics: any | null;
-    isLoading: boolean;
-    error: string | null;
-    lastUpdated: Date | null;
+interface SAIMetrics {
+    bahiasPorBloque: { [key: string]: { [segregacion: string]: number } };
+    volumenPorBloque: { [key: string]: { [segregacion: string]: number } };
+    capacidadesPorBloque: { [bloqueId: string]: number };
+    teusPorSegregacion: { [segregacion: string]: number };
+    segregacionesInfo: { [segregacion: string]: { descripcion: string; movimientos: number } };
 }
 
+interface UseSAIDataReturn {
+    saiMetrics: SAIMetrics | null;
+    isLoading: boolean;
+    error: string | null;
+    refetch: () => void;
+}
+
+// Cache para datos SAI
+const saiCache = new Map<string, SAIMetrics>();
+
 export const useSAIData = (
-    fecha: Date | string | null,
+    fecha: Date | null,
     turno?: number,
-    bloque?: string  // Agregar parámetro opcional de bloque
-): SAIDataResult => {
-    const [saiMetrics, setSaiMetrics] = useState<any | null>(null);
+    bloqueId?: string,
+    unidadTemporal: 'semana' | 'dia' | 'turno' | 'hora' = 'turno'
+): UseSAIDataReturn => {
+    const [saiMetrics, setSaiMetrics] = useState<SAIMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-    const { timeState } = useTimeContext();
+    const abortControllerRef = useRef<AbortController | null>(null);
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (!fecha) {
-                setSaiMetrics(null);
-                return;
-            }
+    const fetchSAIData = useCallback(async () => {
+        if (!fecha || !bloqueId) {
+            setSaiMetrics(null);
+            return;
+        }
 
+        try {
             setIsLoading(true);
             setError(null);
 
-            try {
-                let fechaCompleta: Date | string;
+            // Cancelar petición anterior
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            abortControllerRef.current = new AbortController();
 
-                if (fecha instanceof Date) {
-                    fechaCompleta = fecha;
-                } else if (typeof fecha === 'string') {
-                    if (fecha.includes('T')) {
-                        fechaCompleta = fecha;
-                    } else {
-                        if (timeState.currentDate) {
-                            const [year, month, day] = fecha.split('-').map(Number);
-                            const fechaConHora = new Date(timeState.currentDate);
-                            fechaConHora.setFullYear(year, month - 1, day);
-                            fechaCompleta = fechaConHora;
-                        } else {
-                            fechaCompleta = new Date(`${fecha}T00:00:00`);
-                        }
-                    }
-                } else {
-                    throw new Error('Formato de fecha inválido');
-                }
+            // Crear clave de cache
+            const cacheKey = `${bloqueId}-${fecha.toISOString()}-${unidadTemporal}-${turno || 0}`;
 
-                console.log(`🔄 Cargando datos SAI para ${fechaCompleta instanceof Date ? fechaCompleta.toISOString() : fechaCompleta}, turno ${turno || 'todos'}, bloque ${bloque || 'general'}`);
-
-                let data;
-
-                // Si hay bloque especificado, usar el endpoint de posiciones del bloque
-                if (bloque && turno) {
-                    data = await saiApi.getBlockPositions(bloque, turno, fechaCompleta);
-                } else {
-                    // Si no, usar el endpoint de métricas generales
-                    data = await saiApi.getMetrics(fechaCompleta, turno);
-                }
-
-                setSaiMetrics(data);
-                setLastUpdated(new Date());
-
-                console.log('✅ Datos SAI cargados exitosamente');
-
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-                console.error('❌ Error cargando datos SAI:', errorMessage);
-
-                setError(errorMessage);
-                setSaiMetrics(null);
-            } finally {
+            // Verificar cache
+            if (saiCache.has(cacheKey)) {
+                console.log('✅ Usando datos SAI desde cache:', cacheKey);
+                setSaiMetrics(saiCache.get(cacheKey)!);
                 setIsLoading(false);
+                return;
+            }
+
+            console.log('🔍 Obteniendo datos históricos SAI:', {
+                bloqueId,
+                fecha: fecha.toISOString(),
+                unidadTemporal,
+                turno
+            });
+
+            // Usar saiApi con la unidad temporal
+            const data = await saiApi.getBlockPositions(
+                bloqueId,
+                turno,
+                fecha,
+                unidadTemporal
+            );
+
+            // Transformar la respuesta al formato esperado
+            const metrics: SAIMetrics = {
+                bahiasPorBloque: data.bahiasPorBloque || {},
+                volumenPorBloque: data.volumenPorBloque || {},
+                capacidadesPorBloque: data.capacidadesPorBloque || { [bloqueId]: 35 },
+                teusPorSegregacion: data.teusPorSegregacion || {},
+                segregacionesInfo: data.segregacionesInfo || {}
+            };
+
+            // Guardar en cache
+            saiCache.set(cacheKey, metrics);
+            setSaiMetrics(metrics);
+
+        } catch (err: any) {
+            if (err.name !== 'AbortError') {
+                console.error('❌ Error obteniendo datos SAI:', err);
+                setError(err.message || 'Error al cargar datos históricos');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [fecha, bloqueId, turno, unidadTemporal]);
+
+    const refetch = useCallback(() => {
+        if (fecha && bloqueId) {
+            const cacheKey = `${bloqueId}-${fecha.toISOString()}-${unidadTemporal}-${turno || 0}`;
+            saiCache.delete(cacheKey);
+        }
+        fetchSAIData();
+    }, [fetchSAIData, fecha, bloqueId, turno, unidadTemporal]);
+
+    useEffect(() => {
+        fetchSAIData();
+
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
             }
         };
-
-        loadData();
-    }, [fecha, turno, bloque, timeState.currentDate]);
+    }, [fetchSAIData]);
 
     return {
         saiMetrics,
         isLoading,
         error,
-        lastUpdated
+        refetch
     };
+};
+
+// Hook para dashboard histórico SAI
+export const useSAIDashboard = (
+    fecha: Date,
+    unidadTemporal: 'semana' | 'dia' | 'turno' | 'hora' = 'dia',
+    patio?: string
+) => {
+    const [data, setData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                const params = new URLSearchParams({
+                    fecha: fecha.toISOString(),
+                    unidad_temporal: unidadTemporal
+                });
+
+                if (patio) {
+                    params.append('patio', patio);
+                }
+
+                const response = await fetch(`/api/v1/sai/dashboard/historico?${params}`);
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                setData(result);
+
+            } catch (err: any) {
+                console.error('Error fetching SAI dashboard:', err);
+                setError(err.message || 'Error al cargar dashboard histórico');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboard();
+    }, [fecha, unidadTemporal, patio]);
+
+    return { data, isLoading, error };
+};
+
+// Función helper para limpiar cache
+export const clearSAICache = () => {
+    saiCache.clear();
+    console.log('🧹 Cache SAI limpiado');
 };

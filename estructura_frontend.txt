@@ -1,0 +1,150 @@
+.
+├── ./.dockerignore
+├── ./.env
+├── ./.env.development
+├── ./.gitignore
+├── ./Dockerfile
+├── ./README.md
+├── ./arbol-completo.txt
+├── ./arbol-proyecto.txt
+├── ./docker-compose.yml
+├── ./eslint.config.js
+├── ./estructura.txt
+├── ./index.html
+├── ./nginx.conf
+├── ./package-lock.json
+├── ./package.json
+├── ./postcss.config.js
+├── ./public
+│   ├── ./public/test-files.html
+│   └── ./public/vite.svg
+├── ./src
+│   ├── ./src/App.css
+│   ├── ./src/App.tsx
+│   ├── ./src/assets
+│   │   └── ./src/assets/react.svg
+│   ├── ./src/components
+│   │   ├── ./src/components/PuertoSVG.tsx
+│   │   ├── ./src/components/Toolbar.tsx
+│   │   ├── ./src/components/Untitled 2.html
+│   │   ├── ./src/components/Untitled 3.html
+│   │   ├── ./src/components/Untitled 4.html
+│   │   ├── ./src/components/Untitled.html
+│   │   ├── ./src/components/camila
+│   │   │   ├── ./src/components/camila/CamilaPanel.tsx
+│   │   │   ├── ./src/components/camila/analytics
+│   │   │   │   ├── ./src/components/camila/analytics/GrueUtilization.tsx
+│   │   │   │   ├── ./src/components/camila/analytics/KPIOverview.tsx
+│   │   │   │   └── ./src/components/camila/analytics/WorkloadDistribution.tsx
+│   │   │   ├── ./src/components/camila/comparison
+│   │   │   │   └── ./src/components/camila/comparison/RealDataComparison.tsx
+│   │   │   ├── ./src/components/camila/operations
+│   │   │   │   ├── ./src/components/camila/operations/GrueAssignmentMatrix.tsx
+│   │   │   │   └── ./src/components/camila/operations/TimelineView.tsx
+│   │   │   └── ./src/components/camila/selectors
+│   │   │       └── ./src/components/camila/selectors/ModelConfigSelector.tsx
+│   │   ├── ./src/components/caminos.tsx
+│   │   ├── ./src/components/dashboard
+│   │   │   ├── ./src/components/dashboard/CongestionAnalyticsPanel.tsx
+│   │   │   ├── ./src/components/dashboard/CorePortKPIPanel.tsx
+│   │   │   ├── ./src/components/dashboard/Dashboard.tsx
+│   │   │   ├── ./src/components/dashboard/KPICard.tsx
+│   │   │   ├── ./src/components/dashboard/MapPanel.tsx
+│   │   │   └── ./src/components/dashboard/congestion
+│   │   │       ├── ./src/components/dashboard/congestion/BottleneckAnalysis.tsx
+│   │   │       ├── ./src/components/dashboard/congestion/ControlChartsAnalysis.tsx
+│   │   │       └── ./src/components/dashboard/congestion/MovementTypesAnalysis.tsx
+│   │   ├── ./src/components/map
+│   │   │   ├── ./src/components/map/MapKPIOverlay.tsx
+│   │   │   ├── ./src/components/map/MovementAnalysisPanel.tsx
+│   │   │   ├── ./src/components/map/MultiLevelMap.tsx
+│   │   │   ├── ./src/components/map/NavigationBreadcrumb.tsx
+│   │   │   ├── ./src/components/map/PortMap.tsx
+│   │   │   ├── ./src/components/map/_PortMapLegend.tsx
+│   │   │   ├── ./src/components/map/entities
+│   │   │   │   ├── ./src/components/map/entities/ContainerYardEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/CraneEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/CustomsEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/EspingonEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/GateEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/IMOEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/OHigginsEntity.tsx
+│   │   │   │   ├── ./src/components/map/entities/PassengerTerminalEntity.tsx
+│   │   │   │   └── ./src/components/map/entities/TebasEntity.tsx
+│   │   │   └── ./src/components/map/views
+│   │   │       ├── ./src/components/map/views/BloqueView.tsx
+│   │   │       ├── ./src/components/map/views/PatioView.tsx
+│   │   │       ├── ./src/components/map/views/TerminalView.tsx
+│   │   │       └── ./src/components/map/views/patio
+│   │   │           ├── ./src/components/map/views/patio/BloqueComponent.tsx
+│   │   │           ├── ./src/components/map/views/patio/CamilaTimelineControls.tsx
+│   │   │           ├── ./src/components/map/views/patio/MagdalenaTimelineControls.tsx
+│   │   │           ├── ./src/components/map/views/patio/PatioDetails.tsx
+│   │   │           ├── ./src/components/map/views/patio/PatioErrorStates.tsx
+│   │   │           ├── ./src/components/map/views/patio/PatioGrid.tsx
+│   │   │           ├── ./src/components/map/views/patio/PatioHeader.tsx
+│   │   │           ├── ./src/components/map/views/patio/PatioKPIs.tsx
+│   │   │           ├── ./src/components/map/views/patio/patioDataHelpers.ts
+│   │   │           └── ./src/components/map/views/patio/patioDataProcessor.ts
+│   │   ├── ./src/components/optimization
+│   │   │   ├── ./src/components/optimization/ComparisonPanel.tsx
+│   │   │   ├── ./src/components/optimization/ModelSelector.tsx
+│   │   │   ├── ./src/components/optimization/OptimizationKPIPanel.tsx
+│   │   │   ├── ./src/components/optimization/OptimizationSummary.tsx
+│   │   │   ├── ./src/components/optimization/RealComparisonPanel.tsx
+│   │   │   ├── ./src/components/optimization/SegregationHeatmap.tsx
+│   │   │   ├── ./src/components/optimization/TemporalAnalysis.tsx
+│   │   │   └── ./src/components/optimization/WorkloadChart.tsx
+│   │   └── ./src/components/shared
+│   │       ├── ./src/components/shared/DataSourceSelector.tsx
+│   │       ├── ./src/components/shared/FilterToggle.tsx
+│   │       ├── ./src/components/shared/KPIRelationsPanel.tsx
+│   │       ├── ./src/components/shared/OccupancyInfoBadge.tsx
+│   │       ├── ./src/components/shared/StatusBadge.tsx
+│   │       ├── ./src/components/shared/Tabs.tsx
+│   │       └── ./src/components/shared/TimeControl.tsx
+│   ├── ./src/constants
+│   │   └── ./src/constants/blockCapacities.ts
+│   ├── ./src/contexts
+│   │   ├── ./src/contexts/MagdalenaContext.tsx
+│   │   ├── ./src/contexts/PortContext.tsx
+│   │   ├── ./src/contexts/PortDataContext.tsx
+│   │   ├── ./src/contexts/TimeContext.tsx
+│   │   └── ./src/contexts/ViewNavigationContext.tsx
+│   ├── ./src/estructura_actual.txt
+│   ├── ./src/hooks
+│   │   ├── ./src/hooks/useAvailableConfigurations.ts
+│   │   ├── ./src/hooks/useCamilaData.ts
+│   │   ├── ./src/hooks/useFilters.ts
+│   │   ├── ./src/hooks/useOptimizationData.ts
+│   │   ├── ./src/hooks/usePortData.ts
+│   │   ├── ./src/hooks/usePortKPIs.ts
+│   │   ├── ./src/hooks/useRealPatioData.ts
+│   │   ├── ./src/hooks/useSAIData.ts
+│   │   ├── ./src/hooks/useSharedPortData.ts
+│   │   └── ./src/hooks/useTemporalAggregation.ts
+│   ├── ./src/index.css
+│   ├── ./src/legacy-config.json
+│   ├── ./src/main.tsx
+│   ├── ./src/services
+│   │   ├── ./src/services/camilaApi.ts
+│   │   ├── ./src/services/optimizationApi.ts
+│   │   ├── ./src/services/portApi.ts
+│   │   └── ./src/services/saiApi.ts
+│   ├── ./src/types
+│   │   ├── ./src/types/camila.ts
+│   │   ├── ./src/types/index.ts
+│   │   ├── ./src/types/optimization.ts
+│   │   ├── ./src/types/patioView.types.ts
+│   │   └── ./src/types/portKpis.ts
+│   ├── ./src/utils
+│   │   ├── ./src/utils/isoWeekUtils.ts
+│   │   └── ./src/utils/weekDateMapping.ts
+│   └── ./src/vite-env.d.ts
+├── ./tailwind.config.js
+├── ./tsconfig.app.json
+├── ./tsconfig.json
+├── ./tsconfig.node.json
+└── ./vite.config.ts
+
+2134 directories, 25374 files

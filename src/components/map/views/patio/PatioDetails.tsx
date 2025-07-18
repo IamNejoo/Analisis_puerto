@@ -1,7 +1,7 @@
-// src/components/map/views/patio/PatioDetails.tsx - CORREGIDO
+// src/components/map/views/patio/PatioDetails.tsx
 import React from 'react';
 import { Info, GitCompare, BarChart3 } from 'lucide-react';
-import { getCamilaDataForBlock, getMagdalenaDataForBlock } from './patioDataHelpers';
+import { getCamilaDataForBlock, getMagdalenaDataForBlock, getAggregatedStats } from './patioDataHelpers';
 import type { CamilaDashboardData } from '../../../../types/camila';
 import type { OptimizationMetrics } from '../../../../types/optimization';
 
@@ -10,6 +10,7 @@ interface PatioDetailsProps {
     isCamilaActive: boolean;
     isMagdalenaActive: boolean;
     currentPeriod: number;
+    currentTurno?: number;
     camilaData?: CamilaDashboardData | null;
     magdalenaMetrics?: OptimizationMetrics | null;
 }
@@ -19,11 +20,15 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
     isCamilaActive,
     isMagdalenaActive,
     currentPeriod,
+    currentTurno,
     camilaData,
     magdalenaMetrics
 }) => {
-    // Para evitar el error de currentTurno no definido
-    const currentTurno = Math.ceil(currentPeriod / 8); // Aproximación: 8 períodos por turno
+    // Calcular turno si no viene como prop
+    const turno = currentTurno || Math.ceil(currentPeriod / 8);
+
+    // Obtener estadísticas agregadas
+    const aggregatedStats = getAggregatedStats(magdalenaMetrics, camilaData, currentPeriod);
 
     return (
         <>
@@ -32,7 +37,7 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                 <div className="mt-4 bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4">
                     <h3 className="text-lg font-semibold text-slate-100 mb-3 flex items-center">
                         <Info size={20} className="mr-2 text-teal-400" />
-                        Detalles del Bloque {selectedBloque}
+                        Detalles del Bloque {selectedBloque} - Camila
                     </h3>
 
                     {(() => {
@@ -112,11 +117,11 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                 <div className="mt-4 bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4">
                     <h3 className="text-lg font-semibold text-slate-100 mb-3 flex items-center">
                         <Info size={20} className="mr-2 text-cyan-400" />
-                        Detalles del Bloque {selectedBloque}
+                        Detalles del Bloque {selectedBloque} - Magdalena
                     </h3>
 
                     {(() => {
-                        const blockData = getMagdalenaDataForBlock(selectedBloque, magdalenaMetrics);
+                        const blockData = getMagdalenaDataForBlock(selectedBloque, magdalenaMetrics, turno);
                         if (!blockData) {
                             return (
                                 <div className="text-center py-4 text-slate-400">
@@ -142,6 +147,12 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                             <span className="text-slate-300">Mínima:</span>
                                             <span className="font-medium text-green-300">{blockData.ocupacionMinima.toFixed(1)}%</span>
                                         </div>
+                                        {turno && (
+                                            <div className="flex justify-between text-sm border-t border-slate-600 pt-1 mt-1">
+                                                <span className="text-slate-300">Turno {turno}:</span>
+                                                <span className="font-medium text-cyan-300">{blockData.ocupacionTurno.toFixed(1)}%</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -151,6 +162,14 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                         <div className="text-2xl font-bold text-blue-300">{blockData.segregaciones}</div>
                                         <div className="text-xs text-slate-400">Segregaciones activas</div>
                                     </div>
+                                    {blockData.movimientos > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-slate-600">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-300">Mov. Turno:</span>
+                                                <span className="font-medium text-blue-300">{blockData.movimientos}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="bg-slate-700/50 rounded-lg p-3">
@@ -160,6 +179,12 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                             {(blockData.ocupacionMaxima - blockData.ocupacionMinima).toFixed(1)}%
                                         </div>
                                         <div className="text-xs text-slate-400">Rango de ocupación</div>
+                                    </div>
+                                    <div className="mt-2 pt-2 border-t border-slate-600">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-300">Capacidad:</span>
+                                            <span className="font-medium text-purple-300">{blockData.capacidad} TEUs</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -180,7 +205,7 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                         <div className="bg-cyan-950/20 rounded-lg p-3 border border-cyan-800">
                             <h4 className="text-sm font-medium text-cyan-400 mb-2">Modelo Magdalena</h4>
                             {(() => {
-                                const data = getMagdalenaDataForBlock(selectedBloque, magdalenaMetrics);
+                                const data = getMagdalenaDataForBlock(selectedBloque, magdalenaMetrics, turno);
                                 return data ? (
                                     <div className="space-y-1 text-sm">
                                         <div className="flex justify-between">
@@ -190,6 +215,10 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                                         <div className="flex justify-between">
                                             <span className="text-slate-300">Segregaciones:</span>
                                             <span className="font-medium text-cyan-300">{data.segregaciones}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-300">Capacidad:</span>
+                                            <span className="font-medium text-cyan-300">{data.capacidad} TEUs</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-300">Enfoque:</span>
@@ -237,38 +266,32 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                 <div className="mt-4 bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-4">
                     <h3 className="text-lg font-semibold text-slate-100 mb-3 flex items-center">
                         <BarChart3 size={20} className="mr-2 text-blue-400" />
-                        Resumen del {isCamilaActive ? `Período ${currentPeriod}` : `Turno ${currentTurno}`}
+                        Resumen del {isCamilaActive ? `Período ${currentPeriod}` : `Turno ${turno}`}
                     </h3>
 
                     {isCamilaActive && camilaData && (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-teal-400">
-                                    {camilaData.asignaciones.filter(a => a.periodo === currentPeriod && a.asignada).length}
+                                    {aggregatedStats.camila.asignacionesActivas}
                                 </div>
                                 <div className="text-sm text-slate-400">Asignaciones activas</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-purple-400">
-                                    {camilaData.asignaciones
-                                        .filter(a => a.periodo === currentPeriod && a.asignada)
-                                        .reduce((sum, a) => sum + a.movimientos_asignados, 0)}
+                                    {aggregatedStats.camila.movimientosTotales}
                                 </div>
                                 <div className="text-sm text-slate-400">Total movimientos</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-blue-400">
-                                    {new Set(camilaData.asignaciones
-                                        .filter(a => a.periodo === currentPeriod && a.asignada)
-                                        .map(a => a.bloque_codigo)).size}
+                                    {aggregatedStats.camila.bloquesActivos}
                                 </div>
                                 <div className="text-sm text-slate-400">Bloques activos</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-orange-400">
-                                    {new Set(camilaData.asignaciones
-                                        .filter(a => a.periodo === currentPeriod && a.asignada)
-                                        .map(a => a.grua_id)).size}
+                                    {aggregatedStats.camila.gruasOperando}
                                 </div>
                                 <div className="text-sm text-slate-400">Grúas operando</div>
                             </div>
@@ -279,13 +302,13 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-cyan-400">
-                                    {magdalenaMetrics.evolucionTemporal?.[currentTurno - 1]?.ocupacionPromedio.toFixed(1) || '0.0'}%
+                                    {aggregatedStats.magdalena.ocupacionPromedio.toFixed(1)}%
                                 </div>
                                 <div className="text-sm text-slate-400">Ocupación promedio</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-green-400">
-                                    {magdalenaMetrics.evolucionTemporal?.[currentTurno - 1]?.movimientosModelo || 0}
+                                    {aggregatedStats.magdalena.movimientosOptimizados}
                                 </div>
                                 <div className="text-sm text-slate-400">Movimientos optimizados</div>
                             </div>
@@ -297,7 +320,7 @@ export const PatioDetails: React.FC<PatioDetailsProps> = ({
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-blue-400">
-                                    {magdalenaMetrics.segregaciones?.optimizadas || 0}
+                                    {aggregatedStats.magdalena.segregacionesActivas}
                                 </div>
                                 <div className="text-sm text-slate-400">Segregaciones activas</div>
                             </div>

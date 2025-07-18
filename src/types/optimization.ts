@@ -23,7 +23,18 @@ export interface OptimizationMetrics {
         optimizada: number;
         ganancia: number;
     };
-
+    metadata?: {
+        instancia_id: string;
+        codigo: string;
+        anio: number;
+        semana: number;
+        participacion: number;
+        con_dispersion: boolean;
+        fecha_inicio: string;
+        fecha_fin: string;
+        periodos: number;
+        fecha_procesamiento: string | null;
+    };
     movimientos: {
         totalReal: number;
         yardEliminados: number;
@@ -49,11 +60,20 @@ export interface OptimizationMetrics {
         totalReal: number;
         totalModelo: number;
         yardEliminada: number;
+        load: number;
+        dlvr: number;
+        reduccionMetros: number;
         reduccionPorcentaje: number;
-        porTipo?: {
+        distanciaAhorrada: number;
+        porTipo: {
             LOAD: number;
             DLVR: number;
             YARD: number;
+        };
+        desglose?: {
+            yardEliminada: number;
+            loadMantenida: number;
+            dlvrMantenida: number;
         };
     };
 
@@ -112,9 +132,23 @@ export interface OptimizationMetrics {
         };
         ahorroDistancia: {
             valor: number;
+            metrosAhorrados: number;
             porcentaje: number;
             unidad: string;
+            desglose?: {
+                yardEliminada: number;
+                loadMantenida: number;
+                dlvrMantenida: number;
+            };
         };
+    };
+
+    // KPI destacado
+    kpiDistanciaAhorrada?: {
+        valor: number;
+        unidad: string;
+        descripcion: string;
+        equivalencia: string;
     };
 }
 
@@ -146,4 +180,13 @@ export interface SegregationHeatmapData {
     volumen: number;
     tipo?: string;
     categoria?: string;
+}
+
+// src/types/temporal.types.ts
+export interface TemporalFilters {
+    vista: 'semana' | 'turno' | 'dia' | 'hora';
+    dia?: number;
+    turno?: number;
+    periodoInicio?: number;
+    periodoFin?: number;
 }

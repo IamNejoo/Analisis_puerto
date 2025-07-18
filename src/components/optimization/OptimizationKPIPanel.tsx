@@ -1,7 +1,7 @@
 // src/components/optimization/OptimizationKPIPanel.tsx
 import React from 'react';
 import { useOptimizationData } from '../../hooks/useOptimizationData';
-import { useTimeContext } from '../../contexts/TimeContext';
+import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     TrendingUp,
     TrendingDown,
@@ -89,7 +89,7 @@ const KPICard: React.FC<KPICardProps> = ({
                 </p>
                 {trend && (
                     <div className={`flex items-center ${trend === 'up' ? 'text-green-400' :
-                            trend === 'down' ? 'text-red-400' : 'text-slate-400'
+                        trend === 'down' ? 'text-red-400' : 'text-slate-400'
                         }`}>
                         {trend === 'up' ? <TrendingUp size={16} /> :
                             trend === 'down' ? <TrendingDown size={16} /> : null}
@@ -105,14 +105,7 @@ const KPICard: React.FC<KPICardProps> = ({
 };
 
 export const OptimizationKPIPanel: React.FC = () => {
-    const { timeState } = useTimeContext();
-    const config = {
-        anio: timeState.magdalenaConfig?.anio || 2022,
-        semana: timeState.magdalenaConfig?.semana || 3,
-        participacion: timeState.magdalenaConfig?.participacion || 69,
-        conDispersion: true
-    };
-
+    const { config } = useMagdalenaContext();
     const { metrics, isLoading, error } = useOptimizationData(config);
 
     if (error) {
@@ -190,8 +183,10 @@ export const OptimizationKPIPanel: React.FC = () => {
                 {/* Distancia Ahorrada */}
                 <KPICard
                     title="Distancia Ahorrada"
-                    value={`${metrics?.distancias.reduccionPorcentaje.toFixed(1) || 0}%`}
-                    subtitle={`${(metrics?.distancias.yardEliminada || 0).toLocaleString()}m eliminados`}
+                    value={metrics?.distancias.distanciaAhorrada ?
+                        `${(metrics.distancias.distanciaAhorrada / 1000).toFixed(1)} km` : '0 km'
+                    }
+                    subtitle={`${metrics?.distancias.distanciaAhorrada?.toLocaleString() || 0} metros`}
                     trend="down"
                     icon={<Navigation size={20} />}
                     color="purple"
@@ -319,12 +314,35 @@ export const OptimizationKPIPanel: React.FC = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Desglose por tipo */}
+                            <div className="pt-2 border-t border-slate-700">
+                                <div className="text-xs text-slate-400 mb-2">Desglose de distancias:</div>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500">LOAD</span>
+                                        <span className="text-slate-400">{metrics.distancias.porTipo?.LOAD?.toLocaleString() || 0}m</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500">DLVR</span>
+                                        <span className="text-slate-400">{metrics.distancias.porTipo?.DLVR?.toLocaleString() || 0}m</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500">YARD (eliminada)</span>
+                                        <span className="text-green-400 font-semibold">{metrics.distancias.yardEliminada.toLocaleString()}m</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="text-center pt-2 border-t border-slate-700">
                                 <div className="text-2xl font-bold text-purple-400">
-                                    {metrics.distancias.yardEliminada.toLocaleString()}m
+                                    {metrics.distancias.distanciaAhorrada.toLocaleString()}m
                                 </div>
                                 <div className="text-xs text-slate-400">
-                                    Distancia de YARD eliminada
+                                    Distancia total ahorrada
+                                </div>
+                                <div className="text-xs text-purple-300 mt-1">
+                                    Equivalente a {(metrics.distancias.distanciaAhorrada / 1000).toFixed(1)} km
                                 </div>
                             </div>
                         </div>
@@ -335,6 +353,4 @@ export const OptimizationKPIPanel: React.FC = () => {
     );
 };
 
-// Mantener compatibilidad con el nombre anterior
-export const MagdalenaKPIPanel = OptimizationKPIPanel;
 export default OptimizationKPIPanel;

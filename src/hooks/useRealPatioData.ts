@@ -26,7 +26,6 @@ export const useRealPatioData = () => {
             return {
                 bloques: [],
                 stats: null,
-                patioData: staticPatioData
             };
         }
 
@@ -38,11 +37,34 @@ export const useRealPatioData = () => {
             };
         }
 
+        // DEBUG: Ver todos los movimientos
+        console.log('🔍 DEBUG - Total movimientos recibidos:', sharedData.movements.length);
+        console.log('🔍 DEBUG - Primeros 3 movimientos:', sharedData.movements.slice(0, 3));
+
+        // DEBUG: Ver si hay despejos en los datos
+        const movimientosConDespejos = sharedData.movements.filter(m =>
+            m.despejosBloques > 0 || m.despejosPatios > 0
+        );
+        console.log('🔍 DEBUG - Movimientos con despejos:', movimientosConDespejos.length);
+        if (movimientosConDespejos.length > 0) {
+            console.log('🔍 DEBUG - Ejemplo con despejos:', movimientosConDespejos[0]);
+        }
+
         // Agrupar movimientos por bloque
         const movimientosPorBloque = new Map<string, number>();
         const ocupacionPorBloque = new Map<string, number>();
 
+        // NUEVO: Agrupar TODOS los movimientos por bloque para sumarlos
+        const movimientosAgrupadosPorBloque = new Map<string, any[]>();
+
         sharedData.movements.forEach(mov => {
+            // Agrupar para suma posterior
+            if (!movimientosAgrupadosPorBloque.has(mov.bloque)) {
+                movimientosAgrupadosPorBloque.set(mov.bloque, []);
+            }
+            movimientosAgrupadosPorBloque.get(mov.bloque)!.push(mov);
+
+            // Cálculos existentes
             const totalMovimientos =
                 mov.gateEntradaContenedores + mov.gateSalidaContenedores +
                 mov.muelleEntradaContenedores + mov.muelleSalidaContenedores +
@@ -57,6 +79,9 @@ export const useRealPatioData = () => {
             const ocupacion = (mov.promedioContenedores / capacidad) * 100;
             ocupacionPorBloque.set(mov.bloque, ocupacion);
         });
+
+        // DEBUG: Ver agrupación
+        console.log('🔍 DEBUG - Bloques encontrados:', Array.from(movimientosAgrupadosPorBloque.keys()));
 
         // Crear objetos de bloque
         const bloquesData: BloqueData[] = Array.from(movimientosPorBloque.keys()).map(bloqueId => {
@@ -76,7 +101,46 @@ export const useRealPatioData = () => {
             else if (bloqueId.startsWith('I')) patioId = 'imo';
             else if (bloqueId.startsWith('E')) patioId = 'espingon';
 
-            const movimientoActual = sharedData.movements.find(m => m.bloque === bloqueId);
+            // CAMBIO: Sumar TODOS los movimientos del bloque
+            const todosLosMovimientos = movimientosAgrupadosPorBloque.get(bloqueId) || [];
+
+            console.log(`🔍 DEBUG - Bloque ${bloqueId}: ${todosLosMovimientos.length} registros`);
+
+            // Sumar todos los campos
+            const sumaMovimientos = todosLosMovimientos.reduce((acc, mov) => ({
+                gateEntradaContenedores: (acc.gateEntradaContenedores || 0) + (mov.gateEntradaContenedores || 0),
+                gateSalidaContenedores: (acc.gateSalidaContenedores || 0) + (mov.gateSalidaContenedores || 0),
+                muelleEntradaContenedores: (acc.muelleEntradaContenedores || 0) + (mov.muelleEntradaContenedores || 0),
+                muelleSalidaContenedores: (acc.muelleSalidaContenedores || 0) + (mov.muelleSalidaContenedores || 0),
+                despejosBloques: (acc.despejosBloques || 0) + (mov.despejosBloques || 0),
+                despejosPatios: (acc.despejosPatios || 0) + (mov.despejosPatios || 0),
+                patioEntradaContenedores: (acc.patioEntradaContenedores || 0) + (mov.patioEntradaContenedores || 0),
+                patioSalidaContenedores: (acc.patioSalidaContenedores || 0) + (mov.patioSalidaContenedores || 0),
+                terminalEntradaContenedores: (acc.terminalEntradaContenedores || 0) + (mov.terminalEntradaContenedores || 0),
+                terminalSalidaContenedores: (acc.terminalSalidaContenedores || 0) + (mov.terminalSalidaContenedores || 0),
+                remanejosContenedores: (acc.remanejosContenedores || 0) + (mov.remanejosContenedores || 0),
+                bahias: mov.bahias || totalBays,
+                bahiasReefer: mov.bahiasReefer || reeferBays
+            }), {
+                gateEntradaContenedores: 0,
+                gateSalidaContenedores: 0,
+                muelleEntradaContenedores: 0,
+                muelleSalidaContenedores: 0,
+                despejosBloques: 0,
+                despejosPatios: 0,
+                patioEntradaContenedores: 0,
+                patioSalidaContenedores: 0,
+                terminalEntradaContenedores: 0,
+                terminalSalidaContenedores: 0,
+                remanejosContenedores: 0,
+                bahias: totalBays,
+                bahiasReefer: reeferBays
+            });
+
+            // DEBUG: Ver suma para bloques específicos
+            if (bloqueId === 'C9') {
+                console.log('🔍 DEBUG - Suma C9:', sumaMovimientos);
+            }
 
             return {
                 id: bloqueId,
@@ -91,29 +155,51 @@ export const useRealPatioData = () => {
                     teusActuales: Math.round(ocupacion * capacidad / 100),
                     bahiasTotales: totalBays,
                     bahiasReefer: reeferBays,
+
+                    // Gate
                     gate: {
-                        entradas: movimientoActual?.gateEntradaContenedores || 0,
-                        salidas: movimientoActual?.gateSalidaContenedores || 0
+                        entradas: sumaMovimientos.gateEntradaContenedores,
+                        salidas: sumaMovimientos.gateSalidaContenedores
                     },
+                    gateEntradas: sumaMovimientos.gateEntradaContenedores,
+                    gateSalidas: sumaMovimientos.gateSalidaContenedores,
+
+                    // Muelle
                     muelle: {
-                        entradas: movimientoActual?.muelleEntradaContenedores || 0,
-                        salidas: movimientoActual?.muelleSalidaContenedores || 0
+                        entradas: sumaMovimientos.muelleEntradaContenedores,
+                        salidas: sumaMovimientos.muelleSalidaContenedores
                     },
-                    despejes: 0,
-                    reubicacionesEntreBloques: movimientoActual?.patioEntradaContenedores || 0,
-                    reubicacionesEntrePatios: movimientoActual?.terminalEntradaContenedores || 0,
-                    entradas: movimientoActual?.patioEntradaContenedores || 0,
-                    salidas: movimientoActual?.patioSalidaContenedores || 0,
-                    remanejos: movimientoActual?.remanejosContenedores || 0
+                    muelleEntradas: sumaMovimientos.muelleEntradaContenedores,
+                    muelleSalidas: sumaMovimientos.muelleSalidaContenedores,
+
+                    // Despejos - usar los valores sumados
+                    despejosBloques: sumaMovimientos.despejosBloques,
+                    despejosPatios: sumaMovimientos.despejosPatios,
+                    bahias: sumaMovimientos.bahias,
+
+                    // Otros campos
+                    despejes: sumaMovimientos.despejosBloques + sumaMovimientos.despejosPatios,
+                    reubicacionesEntreBloques: sumaMovimientos.patioEntradaContenedores,
+                    reubicacionesEntrePatios: sumaMovimientos.terminalEntradaContenedores,
+                    entradas: sumaMovimientos.patioEntradaContenedores,
+                    salidas: sumaMovimientos.patioSalidaContenedores,
+                    remanejos: sumaMovimientos.remanejosContenedores
                 }
             };
         });
+
+        // DEBUG: Ver resultado final
+        const bloqueC9 = bloquesData.find(b => b.id === 'C9');
+        if (bloqueC9) {
+            console.log('🔍 DEBUG - Bloque C9 final:', bloqueC9.stats);
+        }
 
         // Actualizar patioData con los bloques procesados
         const updatedPatioData = staticPatioData.map(patio => {
             const bloquesDelPatio = bloquesData.filter(b => b.patioId === patio.id);
             const ocupacionTotal = bloquesDelPatio.length > 0
-                ? bloquesDelPatio.reduce((sum, b) => sum + b.ocupacion, 0) / bloquesDelPatio.length
+                ? bloquesDelPatio.reduce((sum, b) => sum + (b.ocupacion * b.capacidadTotal), 0) /
+                bloquesDelPatio.reduce((sum, b) => sum + b.capacidadTotal, 0)
                 : 0;
 
             return {

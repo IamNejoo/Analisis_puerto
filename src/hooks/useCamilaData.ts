@@ -1,4 +1,4 @@
-// hooks/useCamilaData.ts - COMPLETO Y MODIFICADO
+// hooks/useCamilaData.ts - COMPLETO Y CORREGIDO
 
 import { useState, useEffect, useCallback } from 'react';
 import { camilaService } from '../services/camilaApi';
@@ -16,7 +16,7 @@ import type {
 
 // Función para transformar la respuesta del backend al formato esperado
 const transformDashboardResponse = (response: any): CamilaDashboardData => {
-    // Combinar metadata y metricas_principales en resultado
+    // El resultado viene directo del backend, no necesita tanta transformación
     const resultado = {
         id: response.metadata.resultado_id,
         codigo: response.metadata.codigo,
@@ -30,18 +30,18 @@ const transformDashboardResponse = (response: any): CamilaDashboardData => {
         participacion: response.metadata.participacion,
         con_dispersion: response.metadata.con_dispersion,
 
-        // De metricas_principales
+        // Usar directamente las métricas principales del backend
         total_movimientos_modelo: response.metricas_principales.total_movimientos_modelo,
+        total_movimientos_real: response.metricas_principales.total_movimientos_real,
+        accuracy_global: response.metricas_principales.accuracy_global,
+        brecha_movimientos: response.metricas_principales.brecha_movimientos,
         total_gruas_utilizadas: response.metricas_principales.gruas_utilizadas,
         total_bloques_visitados: response.metricas_principales.bloques_visitados,
         total_segregaciones: response.metricas_principales.segregaciones_atendidas,
         capacidad_teorica: response.metricas_principales.capacidad_teorica,
         utilizacion_modelo: response.metricas_principales.utilizacion_modelo,
         coeficiente_variacion: response.metricas_principales.coeficiente_variacion,
-        total_movimientos_real: response.metricas_principales.total_movimientos_real,
-        accuracy_global: response.metricas_principales.accuracy_global,
-        brecha_movimientos: response.metricas_principales.brecha_movimientos,
-        correlacion_temporal: 0, // No viene del backend
+        correlacion_temporal: 0,
 
         archivo_resultado: response.metadata.archivos?.resultado,
         archivo_instancia: response.metadata.archivos?.instancia,
@@ -49,7 +49,7 @@ const transformDashboardResponse = (response: any): CamilaDashboardData => {
         estado: 'completado' as const
     };
 
-    // Transformar cuotas_por_periodo a cuotas_camiones (array plano)
+    // Transformar cuotas - Usar directamente los datos del backend
     const cuotas_camiones: any[] = [];
     response.cuotas_por_periodo?.forEach((periodo: any) => {
         periodo.bloques?.forEach((bloque: any) => {
@@ -59,7 +59,7 @@ const transformDashboardResponse = (response: any): CamilaDashboardData => {
                 cuota_modelo: bloque.cuota,
                 capacidad_maxima: bloque.capacidad,
                 gruas_asignadas: bloque.gruas,
-                movimientos_reales: bloque.real,
+                movimientos_reales: bloque.real || 0,
                 utilizacion_real: bloque.utilizacion_real || 0,
                 tipo_operacion: 'mixto',
                 segregaciones: []
@@ -67,60 +67,55 @@ const transformDashboardResponse = (response: any): CamilaDashboardData => {
         });
     });
 
-    // Transformar comparacion_real (objeto) a comparaciones_real (array)
+    // Transformar comparaciones - Simplificar
     const comparaciones_real: any[] = [];
 
     if (response.comparacion_real) {
-        // Procesar comparaciones generales
-        if (response.comparacion_real.general) {
-            Object.entries(response.comparacion_real.general).forEach(([metrica, valores]: [string, any]) => {
-                comparaciones_real.push({
-                    tipo_comparacion: 'general',
-                    dimension: undefined,
-                    metrica: metrica,
-                    valor_modelo: valores.modelo,
-                    valor_real: valores.real,
-                    diferencia_absoluta: valores.diferencia,
-                    diferencia_porcentual: valores.porcentaje,
-                    accuracy: valores.accuracy
-                });
+        // General
+        if (response.comparacion_real.general?.movimientos_totales) {
+            const comp = response.comparacion_real.general.movimientos_totales;
+            comparaciones_real.push({
+                tipo_comparacion: 'general',
+                dimension: undefined,
+                metrica: 'movimientos_totales',
+                valor_modelo: comp.modelo,
+                valor_real: comp.real,
+                diferencia_absoluta: comp.diferencia,
+                diferencia_porcentual: comp.porcentaje,
+                accuracy: comp.accuracy
             });
         }
 
-        // Procesar comparaciones por periodo
-        if (response.comparacion_real.por_periodo) {
-            Object.entries(response.comparacion_real.por_periodo).forEach(([periodo, valores]: [string, any]) => {
-                comparaciones_real.push({
-                    tipo_comparacion: 'por_periodo',
-                    dimension: periodo,
-                    metrica: 'movimientos',
-                    valor_modelo: valores.modelo,
-                    valor_real: valores.real,
-                    diferencia_absoluta: valores.diferencia,
-                    diferencia_porcentual: 0,
-                    accuracy: valores.accuracy
-                });
+        // Por periodo
+        Object.entries(response.comparacion_real.por_periodo || {}).forEach(([periodo, comp]: [string, any]) => {
+            comparaciones_real.push({
+                tipo_comparacion: 'por_periodo',
+                dimension: periodo,
+                metrica: 'movimientos',
+                valor_modelo: comp.modelo,
+                valor_real: comp.real,
+                diferencia_absoluta: comp.diferencia,
+                diferencia_porcentual: 0,
+                accuracy: comp.accuracy
             });
-        }
+        });
 
-        // Procesar comparaciones por bloque
-        if (response.comparacion_real.por_bloque) {
-            Object.entries(response.comparacion_real.por_bloque).forEach(([bloque, valores]: [string, any]) => {
-                comparaciones_real.push({
-                    tipo_comparacion: 'por_bloque',
-                    dimension: bloque,
-                    metrica: 'movimientos',
-                    valor_modelo: valores.modelo,
-                    valor_real: valores.real,
-                    diferencia_absoluta: valores.diferencia,
-                    diferencia_porcentual: 0,
-                    accuracy: valores.accuracy
-                });
+        // Por bloque
+        Object.entries(response.comparacion_real.por_bloque || {}).forEach(([bloque, comp]: [string, any]) => {
+            comparaciones_real.push({
+                tipo_comparacion: 'por_bloque',
+                dimension: bloque,
+                metrica: 'movimientos',
+                valor_modelo: comp.modelo,
+                valor_real: comp.real,
+                diferencia_absoluta: comp.diferencia,
+                diferencia_porcentual: 0,
+                accuracy: comp.accuracy
             });
-        }
+        });
     }
 
-    // Transformar metricas_gruas
+    // Métricas de grúas - Usar directamente
     const metricas_gruas = response.metricas_gruas?.map((m: any) => ({
         grua_id: m.grua_id,
         movimientos_modelo: m.movimientos,
@@ -131,58 +126,50 @@ const transformDashboardResponse = (response: any): CamilaDashboardData => {
         tiempo_improductivo_hrs: m.tiempo_improductivo,
         utilizacion_pct: m.utilizacion,
         movimientos_reales_estimados: m.movimientos_reales_est,
-        diferencia_vs_real: m.movimientos_reales_est ? m.movimientos - m.movimientos_reales_est : undefined
+        diferencia_vs_real: undefined
     })) || [];
 
-    // Generar asignaciones desde cuotas_por_periodo y matriz_asignacion
+    // Asignaciones - Procesar desde matriz_asignacion
     const asignaciones: any[] = [];
+    Object.entries(response.matriz_asignacion || {}).forEach(([key, movimientos]: [string, any]) => {
+        const match = key.match(/P(\d+)-(\w+)/);
+        if (match) {
+            const periodo = parseInt(match[1]);
+            const bloque = match[2];
 
-    // Primero, crear un mapa de grúas asignadas por periodo-bloque
-    const asignacionesMap = new Map<string, number[]>();
-
-    response.cuotas_por_periodo?.forEach((periodo: any) => {
-        periodo.bloques?.forEach((bloque: any) => {
-            if (bloque.gruas > 0 && bloque.cuota > 0) {
-                const key = `${periodo.periodo}-${bloque.bloque}`;
-                const gruasParaEsteBloque: number[] = [];
-
-                // Distribuir las grúas de manera más inteligente
-                // Intentar asignar grúas que no estén muy ocupadas
-                const gruasDisponibles = Array.from({ length: 12 }, (_, i) => i + 1);
-
-                for (let i = 0; i < bloque.gruas; i++) {
-                    const gruaId = gruasDisponibles[i % gruasDisponibles.length];
-                    gruasParaEsteBloque.push(gruaId);
-
+            // Encontrar grúas para este periodo-bloque
+            const cuota = cuotas_camiones.find(c => c.periodo === periodo && c.bloque_codigo === bloque);
+            if (cuota && cuota.gruas_asignadas > 0 && movimientos > 0) {
+                // Distribuir entre grúas (simplificado)
+                for (let i = 0; i < cuota.gruas_asignadas; i++) {
                     asignaciones.push({
-                        grua_id: gruaId,
-                        bloque_codigo: bloque.bloque,
-                        periodo: periodo.periodo,
+                        grua_id: i + 1,
+                        bloque_codigo: bloque,
+                        periodo: periodo,
                         asignada: true,
                         activada: true,
-                        movimientos_asignados: Math.floor(bloque.cuota / bloque.gruas)
+                        movimientos_asignados: Math.floor(movimientos / cuota.gruas_asignadas)
                     });
                 }
-
-                asignacionesMap.set(key, gruasParaEsteBloque);
             }
-        });
+        }
     });
 
     return {
         resultado,
-        flujos_modelo: [], // No vienen en el dashboard endpoint
+        flujos_modelo: [],
         asignaciones,
         metricas_gruas,
         cuotas_camiones,
         comparaciones_real,
-        timeline: response.timeline,
-        distribucion_bloques: response.distribucion_bloques,
-        matriz_asignacion: response.matriz_asignacion
+        timeline: response.timeline || [],
+        distribucion_bloques: response.distribucion_bloques || {},
+        matriz_asignacion: response.matriz_asignacion || {}
     };
 };
 
-// Hook principal para el dashboard - MODIFICADO
+// Hook principal para el dashboard
+// En useCamilaDashboard, modificar para aceptar config null
 export const useCamilaDashboard = (config: CamilaConfig | null) => {
     const [data, setData] = useState<CamilaDashboardData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -192,6 +179,7 @@ export const useCamilaDashboard = (config: CamilaConfig | null) => {
         if (!config) {
             console.log('🔴 useCamilaDashboard: No hay configuración');
             setData(null);
+            setLoading(false);
             return;
         }
 
@@ -203,13 +191,7 @@ export const useCamilaDashboard = (config: CamilaConfig | null) => {
                 console.log('🔵 useCamilaDashboard: Fetching con config:', config);
 
                 const response = await camilaService.getDashboard(config);
-
-                console.log('🟢 useCamilaDashboard: Respuesta recibida:', response);
-
-                // TRANSFORMAR LA RESPUESTA
                 const transformedData = transformDashboardResponse(response);
-
-                console.log('✅ useCamilaDashboard: Datos transformados:', transformedData);
 
                 setData(transformedData);
             } catch (err) {

@@ -1,7 +1,7 @@
-// src/components/map/views/patio/BloqueComponent.tsx
+// src/components/Terminal/PatioView/components/BloqueComponent.tsx
 import React from 'react';
-import { Truck, Layers, BarChart3 } from 'lucide-react';
-import type { BloqueComponentProps } from '../../../../types/patioView.types';
+import { Truck, Layers, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import type { BloqueComponentProps, BloqueStats } from '../../../../types/patioView.types';
 
 export const BloqueComponent: React.FC<BloqueComponentProps> = ({
     bloque,
@@ -22,7 +22,7 @@ export const BloqueComponent: React.FC<BloqueComponentProps> = ({
     let gruasAsignadas: number[] = [];
 
     if (isCamilaActive && camilaData) {
-        totalMovimientosPeriodo = camilaData.asignaciones.reduce((sum, a) => sum + a.frecuencia, 0);
+        totalMovimientosPeriodo = camilaData.asignaciones.reduce((sum, a) => sum + a.movimientos_asignados, 0);
         gruasAsignadas = camilaData.gruas;
 
         if (totalMovimientosPeriodo > 0 && dashboardData) {
@@ -46,175 +46,220 @@ export const BloqueComponent: React.FC<BloqueComponentProps> = ({
 
     const ocupiedSlots = Math.round(bloque.capacidadTotal * ocupacionActual / 100);
 
+    // Crear un objeto stats con valores por defecto si no existe
+    const stats: BloqueStats = bloque.stats || {
+        teusActuales: 0,
+        bahiasTotales: 33,
+        bahiasReefer: 0,
+        gate: { entradas: 0, salidas: 0 },
+        gateEntradas: 0,
+        gateSalidas: 0,
+        muelle: { entradas: 0, salidas: 0 },
+        muelleEntradas: 0,
+        muelleSalidas: 0,
+        despejes: 0,
+        despejosBloques: 0,
+        despejosPatios: 0,
+        reubicacionesEntreBloques: 0,
+        reubicacionesEntrePatios: 0,
+        entradas: 0,
+        salidas: 0,
+        remanejos: 0,
+        bahias: 33
+    };
+
+    const despejosData = {
+        entreBloques: stats.despejosBloques,
+        entrePatios: stats.despejosPatios
+    };
+
     return (
         <div
-            className={`relative bg-slate-800 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md ${isSelected ? 'border-blue-500 shadow-lg scale-105' : 'border-slate-600 hover:border-slate-500'
+            className={`relative bg-slate-900 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-lg ${isSelected ? 'border-cyan-500 shadow-xl scale-105' : 'border-slate-700 hover:border-slate-600'
                 } ${bloque.operationalStatus === 'maintenance' ? 'opacity-75' : ''}`}
             onClick={onClick}
+            style={{ minHeight: '280px' }}
         >
-            {/* Header del bloque */}
-            <div className="p-3 border-b border-slate-700">
-                <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-lg text-slate-100">{bloque.id}</h4>
-                    <div
-                        className="w-5 h-5 rounded-full border-2 border-slate-700 shadow-sm"
-                        style={{ backgroundColor: color }}
-                    ></div>
-                </div>
-                <p className="text-sm text-slate-400 truncate">{bloque.name}</p>
+            {/* Indicador de estado (círculo verde/amarillo/rojo) */}
+            <div className="absolute top-2 right-2">
+                <div
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                        backgroundColor: ocupacionActual > 80 ? '#ef4444' :
+                            ocupacionActual > 60 ? '#f59e0b' : '#10b981'
+                    }}
+                />
             </div>
 
-            {/* Indicadores especiales */}
-            {isCamilaActive && gruasAsignadas.length > 0 && (
-                <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full px-2 py-1 flex items-center">
-                    <Truck size={14} />
-                    <span className="text-xs font-bold ml-1">{gruasAsignadas.length}</span>
-                </div>
-            )}
+            {/* Header del bloque */}
+            <div className="p-3 pb-2 border-b border-slate-700">
+                <h4 className="font-bold text-base text-white">{bloque.id}</h4>
+                <p className="text-xs text-slate-400">Bloque {bloque.id}</p>
+            </div>
 
-            {isMagdalenaActive && magdalenaData && (
-                <div className="absolute top-1 right-1 bg-cyan-500 text-white rounded-full px-2 py-1 flex items-center">
-                    <Layers size={14} />
-                    <span className="text-xs font-bold ml-1">{magdalenaData.segregaciones || 0}</span>
-                </div>
-            )}
-
-            {/* Contenido del bloque */}
-            <div className="p-3">
-                <div className="space-y-2">
-                    {/* Visualización para Camila */}
-                    {isCamilaActive && camilaData ? (
-                        <>
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm font-medium text-slate-300">Movimientos P{currentPeriod}</span>
-                                    <span className="text-sm font-bold text-teal-300">{totalMovimientosPeriodo}</span>
-                                </div>
-                                {totalMovimientosPeriodo > 0 && (
-                                    <div className="w-full bg-slate-700 rounded-full h-2">
-                                        <div
-                                            className="h-2 rounded-full transition-all duration-300 bg-teal-500"
-                                            style={{ width: `${Math.min(100, (totalMovimientosPeriodo / 30) * 100)}%` }}
-                                        ></div>
-                                    </div>
-                                )}
+            {/* Contenido principal */}
+            <div className="p-3 space-y-2">
+                {/* Visualización para Camila */}
+                {isCamilaActive && camilaData ? (
+                    <>
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-medium text-slate-300">Mov. P{currentPeriod}</span>
+                                <span className="text-sm font-bold text-teal-300">{totalMovimientosPeriodo}</span>
                             </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* Visualización estándar (histórico o Magdalena) */}
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm font-medium text-slate-300">
-                                        {isMagdalenaActive ? 'Ocupación Turno' : 'Ocupación'}
-                                    </span>
-                                    <span className="text-sm font-bold" style={{ color }}>{ocupacionActual}%</span>
-                                </div>
-                                <div className="w-full bg-slate-700 rounded-full h-2">
+                            {totalMovimientosPeriodo > 0 && (
+                                <div className="w-full bg-slate-700 rounded-full h-1.5">
                                     <div
-                                        className="h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${ocupacionActual}%`, backgroundColor: color }}
+                                        className="h-1.5 rounded-full transition-all duration-300 bg-teal-500"
+                                        style={{ width: `${Math.min(100, (totalMovimientosPeriodo / 30) * 100)}%` }}
                                     ></div>
                                 </div>
-                            </div>
-
-                            <div className="text-xs text-slate-400 space-y-1">
-                                <div className="flex justify-between">
-                                    <span>Capacidad:</span>
-                                    <span className="font-medium text-slate-300">
-                                        {bloque.stats?.teusActuales || ocupiedSlots}/{bloque.capacidadTotal} TEUs
-                                    </span>
+                            )}
+                        </div>
+                        {/* Indicadores especiales para Camila */}
+                        {gruasAsignadas.length > 0 && (
+                            <div className="pt-2 border-t border-slate-700">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center text-xs">
+                                        <Truck size={10} className="text-teal-400 mr-1" />
+                                        <span className="text-slate-400">Grúas:</span>
+                                        <span className="font-medium text-white ml-1">{gruasAsignadas.length}</span>
+                                    </div>
                                 </div>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        {/* Visualización estándar (histórico o Magdalena) */}
+                        {/* Ocupación */}
+                        <div className="pb-2">
+                            <div className="flex justify-between items-baseline mb-1">
+                                <span className="text-xs text-slate-400">Ocupación</span>
+                                <span className="text-xl font-bold" style={{ color }}>
+                                    {Math.floor(ocupacionActual)}%
+                                </span>
+                            </div>
+                        </div>
 
-                                {/* Mostrar estadísticas detalladas solo para datos históricos */}
-                                {!isMagdalenaActive && !isCamilaActive && bloque.stats && (
-                                    <>
-                                        <div className="pt-1 border-t border-slate-600">
-                                            <div className="grid grid-cols-2 gap-1">
-                                                <div className="flex items-center">
-                                                    <span className="text-green-400 mr-1">↓</span>
-                                                    <span>{bloque.stats.entradas}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className="text-blue-400 mr-1">↑</span>
-                                                    <span>{bloque.stats.salidas}</span>
-                                                </div>
-                                            </div>
+                        {/* Capacidad */}
+                        <div className="flex justify-between items-center py-1.5 border-b border-slate-700">
+                            <span className="text-xs text-slate-400">Capacidad:</span>
+                            <span className="text-xs font-medium text-white">
+                                {ocupiedSlots}/{bloque.capacidadTotal}
+                            </span>
+                        </div>
+
+                        {/* Mostrar estadísticas detalladas solo para datos históricos */}
+                        {!isMagdalenaActive && !isCamilaActive && bloque.stats && (
+                            <>
+                                {/* Gate */}
+                                <div className="py-1.5 border-b border-slate-700">
+                                    <div className="text-xs text-slate-400 mb-1">Gate:</div>
+                                    <div className="pl-2 space-y-0.5">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Entradas:</span>
+                                            <span className="text-xs font-medium text-green-400">
+                                                ↓ {stats.gateEntradas}
+                                            </span>
                                         </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Salidas:</span>
+                                            <span className="text-xs font-medium text-blue-400">
+                                                ↑ {stats.gateSalidas}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        {bloque.stats.remanejos > 0 && (
-                                            <div className="flex justify-between">
-                                                <span>Remanejos:</span>
-                                                <span className="font-medium text-orange-400">{bloque.stats.remanejos}</span>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
+                                {/* Muelle */}
+                                <div className="py-1.5 border-b border-slate-700">
+                                    <div className="text-xs text-slate-400 mb-1">Muelle:</div>
+                                    <div className="pl-2 space-y-0.5">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Entradas:</span>
+                                            <span className="text-xs font-medium text-green-400">
+                                                ↓ {stats.muelleEntradas}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Salidas:</span>
+                                            <span className="text-xs font-medium text-blue-400">
+                                                ↑ {stats.muelleSalidas}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                <div className="flex justify-between">
-                                    <span>Estado:</span>
-                                    <span className={`font-medium capitalize ${bloque.operationalStatus === 'active' ? 'text-green-400' :
-                                            bloque.operationalStatus === 'maintenance' ? 'text-orange-400' :
-                                                'text-red-400'
-                                        }`}>
-                                        {bloque.operationalStatus === 'active' ? 'Activo' :
-                                            bloque.operationalStatus === 'maintenance' ? 'Mantenimiento' :
-                                                'Restringido'}
+                                {/* Despejos */}
+                                <div className="py-1.5 border-b border-slate-700">
+                                    <div className="text-xs text-slate-400 mb-1">Despejos:</div>
+                                    <div className="pl-2 space-y-0.5">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Entre bloques:</span>
+                                            <span className="text-xs font-medium text-orange-400">
+                                                {despejosData.entreBloques}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Entre patios:</span>
+                                            <span className="text-xs font-medium text-purple-400">
+                                                {despejosData.entrePatios}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bahías */}
+                                <div className="flex justify-between items-center py-1.5 border-b border-slate-700">
+                                    <span className="text-xs text-slate-400">Bahías:</span>
+                                    <span className="text-xs font-medium text-white">
+                                        {stats.bahiasTotales} ({stats.bahiasReefer} reefer)
                                     </span>
                                 </div>
+                            </>
+                        )}
+
+                        {/* Indicadores especiales para Magdalena */}
+                        {isMagdalenaActive && magdalenaData && (
+                            <div className="pt-2 border-t border-slate-700">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center text-xs">
+                                        <Layers size={10} className="text-cyan-400 mr-1" />
+                                        <span className="text-slate-400">Segregaciones:</span>
+                                        <span className="font-medium text-white ml-1">{magdalenaData.segregaciones || 0}</span>
+                                    </div>
+                                </div>
                             </div>
-                        </>
-                    )}
-                </div>
+                        )}
+
+                        {/* Estado */}
+                        <div className="flex justify-between items-center pt-1">
+                            <span className="text-xs text-slate-400">Estado:</span>
+                            <span className={`text-xs font-medium ${bloque.operationalStatus === 'active' ? 'text-green-400' :
+                                bloque.operationalStatus === 'maintenance' ? 'text-orange-400' :
+                                    'text-red-400'
+                                }`}>
+                                {bloque.operationalStatus === 'active' ? 'Activo' :
+                                    bloque.operationalStatus === 'maintenance' ? 'Mantención' :
+                                        'Restringido'}
+                            </span>
+                        </div>
+                    </>
+                )}
 
                 {/* Indicador de fuente de datos */}
-                <div className="mt-2 text-center">
-                    {isCamilaActive && (
-                        <div className="text-xs text-teal-400 bg-teal-950/30 rounded px-2 py-1 border border-teal-800">
-                            Optimización Camila
-                        </div>
-                    )}
-                    {isMagdalenaActive && (
-                        <div className="text-xs text-cyan-400 bg-cyan-950/30 rounded px-2 py-1 border border-cyan-800">
-                            Optimización Magdalena
-                        </div>
-                    )}
-                    {!isCamilaActive && !isMagdalenaActive && (
-                        <div className="text-xs text-blue-400 bg-blue-950/30 rounded px-2 py-1 border border-blue-800">
-                            Datos históricos
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Mini gráfico para datos históricos */}
-            {!isCamilaActive && !isMagdalenaActive && bloque.stats && (
-                <div className="px-3 pb-2">
-                    <div className="h-8 flex items-end justify-around space-x-1">
-                        <div className="flex flex-col items-center">
-                            <div
-                                className="w-6 bg-green-500 rounded-t"
-                                style={{ height: `${Math.min(28, (bloque.stats.entradas / 50) * 28)}px` }}
-                            />
-                            <span className="text-xs text-slate-500 mt-1">E</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <div
-                                className="w-6 bg-blue-500 rounded-t"
-                                style={{ height: `${Math.min(28, (bloque.stats.salidas / 50) * 28)}px` }}
-                            />
-                            <span className="text-xs text-slate-500 mt-1">S</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <div
-                                className="w-6 bg-orange-500 rounded-t"
-                                style={{ height: `${Math.min(28, (bloque.stats.remanejos / 20) * 28)}px` }}
-                            />
-                            <span className="text-xs text-slate-500 mt-1">R</span>
-                        </div>
+                <div className="pt-2 mt-2 border-t border-slate-700">
+                    <div className={`text-center text-xs py-1 px-2 rounded ${isCamilaActive ? 'bg-teal-950/30 text-teal-400 border border-teal-800' :
+                        isMagdalenaActive ? 'bg-cyan-950/30 text-cyan-400 border border-cyan-800' :
+                            'bg-blue-950/30 text-blue-400 border border-blue-800'
+                        }`}>
+                        {isCamilaActive ? 'Optimización Camila' :
+                            isMagdalenaActive ? 'Optimización Magdalena' :
+                                'Datos históricos'}
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };

@@ -1,50 +1,34 @@
-// src/components/optimization/ModelSelector.tsx
 import React, { useEffect, useState } from 'react';
-import { useTimeContext } from '../../contexts/TimeContext';
-import { useAvailableConfigurations } from '../../hooks/useOptimizationData';
-import type { OptimizationConfig } from '../../types/optimization';
+import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
+import { useAvailableConfigurations } from '../../hooks/useAvailableConfigurations';
+import type { OptimizationConfig, AvailableConfiguration } from '../../types/optimization';
 import { Calendar, Package, Activity, AlertCircle } from 'lucide-react';
 
 export const ModelSelector: React.FC = () => {
-    const { timeState, setMagdalenaConfig } = useTimeContext();
+    const { config, updateConfig } = useMagdalenaContext();
     const { configurations, isLoading, error } = useAvailableConfigurations();
 
-    const [localConfig, setLocalConfig] = useState<OptimizationConfig>({
-        anio: timeState?.magdalenaConfig?.anio || 2022,
-        semana: timeState?.magdalenaConfig?.semana || 3,
-        participacion: timeState?.magdalenaConfig?.participacion || 69,
-        conDispersion: true
-    });
-
-    // Obtener valores únicos de las configuraciones disponibles
-    const availableYears = [...new Set(configurations.map(c => c.anio))].sort();
+    // Obtener valores únicos de las configuraciones disponibles con tipos correctos
+    const availableYears = [...new Set(configurations.map((c: AvailableConfiguration) => c.anio))].sort();
     const availableWeeks = [...new Set(
         configurations
-            .filter(c => c.anio === localConfig.anio)
-            .map(c => c.semana)
-    )].sort((a, b) => a - b);
+            .filter((c: AvailableConfiguration) => c.anio === config.anio)
+            .map((c: AvailableConfiguration) => c.semana)
+    )].sort((a: number, b: number) => a - b);
     const availableParticipations = [...new Set(
         configurations
-            .filter(c => c.anio === localConfig.anio && c.semana === localConfig.semana)
-            .map(c => c.participacion)
-    )].sort((a, b) => a - b);
+            .filter((c: AvailableConfiguration) => c.anio === config.anio && c.semana === config.semana)
+            .map((c: AvailableConfiguration) => c.participacion)
+    )].sort((a: number, b: number) => a - b);
 
-    useEffect(() => {
-        // Actualizar el contexto cuando cambie la configuración local
-        setMagdalenaConfig({
-            ...localConfig,
-            semana: localConfig.semana
-        });
-    }, [localConfig, setMagdalenaConfig]);
-
-    const updateConfig = (updates: Partial<OptimizationConfig>) => {
-        const newConfig = { ...localConfig, ...updates };
+    const handleConfigUpdate = (updates: Partial<OptimizationConfig>) => {
+        const newConfig = { ...config, ...updates };
 
         // Validar que la semana existe para el año seleccionado
         if (updates.anio) {
             const weeksForYear = configurations
-                .filter(c => c.anio === newConfig.anio)
-                .map(c => c.semana);
+                .filter((c: AvailableConfiguration) => c.anio === newConfig.anio)
+                .map((c: AvailableConfiguration) => c.semana);
             if (weeksForYear.length > 0 && !weeksForYear.includes(newConfig.semana)) {
                 newConfig.semana = Math.min(...weeksForYear);
             }
@@ -53,14 +37,14 @@ export const ModelSelector: React.FC = () => {
         // Validar que la participación existe
         if (updates.anio || updates.semana) {
             const participationsAvailable = configurations
-                .filter(c => c.anio === newConfig.anio && c.semana === newConfig.semana)
-                .map(c => c.participacion);
+                .filter((c: AvailableConfiguration) => c.anio === newConfig.anio && c.semana === newConfig.semana)
+                .map((c: AvailableConfiguration) => c.participacion);
             if (participationsAvailable.length > 0 && !participationsAvailable.includes(newConfig.participacion)) {
                 newConfig.participacion = participationsAvailable[0];
             }
         }
 
-        setLocalConfig(newConfig);
+        updateConfig(newConfig);
     };
 
     if (isLoading) {
@@ -95,9 +79,9 @@ export const ModelSelector: React.FC = () => {
     }
 
     const hasDataForCurrentConfig = configurations.some(
-        c => c.anio === localConfig.anio &&
-            c.semana === localConfig.semana &&
-            c.participacion === localConfig.participacion
+        (c: AvailableConfiguration) => c.anio === config.anio &&
+            c.semana === config.semana &&
+            c.participacion === config.participacion
     );
 
     return (
@@ -113,12 +97,12 @@ export const ModelSelector: React.FC = () => {
                     Año
                 </label>
                 <select
-                    value={localConfig.anio}
-                    onChange={(e) => updateConfig({ anio: Number(e.target.value) })}
+                    value={config.anio}
+                    onChange={(e) => handleConfigUpdate({ anio: Number(e.target.value) })}
                     className="w-full text-sm bg-slate-800 border border-slate-700 text-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                     disabled={availableYears.length === 0}
                 >
-                    {availableYears.map(year => (
+                    {availableYears.map((year: number) => (
                         <option key={year} value={year}>{year}</option>
                     ))}
                 </select>
@@ -127,27 +111,27 @@ export const ModelSelector: React.FC = () => {
             {/* Semana */}
             <div>
                 <label className="text-xs text-slate-400 mb-1 block">
-                    Semana {localConfig.semana}
+                    Semana {config.semana}
                 </label>
                 <input
                     type="range"
-                    min={Math.min(...availableWeeks)}
-                    max={Math.max(...availableWeeks)}
-                    value={localConfig.semana}
-                    onChange={(e) => updateConfig({ semana: Number(e.target.value) })}
+                    min={Math.min(...availableWeeks) || 1}
+                    max={Math.max(...availableWeeks) || 52}
+                    value={config.semana}
+                    onChange={(e) => handleConfigUpdate({ semana: Number(e.target.value) })}
                     className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
                     style={{
-                        background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${((localConfig.semana - Math.min(...availableWeeks)) /
-                                (Math.max(...availableWeeks) - Math.min(...availableWeeks))) * 100
-                            }%, #334155 ${((localConfig.semana - Math.min(...availableWeeks)) /
-                                (Math.max(...availableWeeks) - Math.min(...availableWeeks))) * 100
+                        background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${((config.semana - (Math.min(...availableWeeks) || 1)) /
+                            ((Math.max(...availableWeeks) || 52) - (Math.min(...availableWeeks) || 1))) * 100
+                            }%, #334155 ${((config.semana - (Math.min(...availableWeeks) || 1)) /
+                                ((Math.max(...availableWeeks) || 52) - (Math.min(...availableWeeks) || 1))) * 100
                             }%, #334155 100%)`
                     }}
                     disabled={availableWeeks.length === 0}
                 />
                 <div className="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>{Math.min(...availableWeeks)}</span>
-                    <span>{Math.max(...availableWeeks)}</span>
+                    <span>{Math.min(...availableWeeks) || 1}</span>
+                    <span>{Math.max(...availableWeeks) || 52}</span>
                 </div>
             </div>
 
@@ -158,15 +142,42 @@ export const ModelSelector: React.FC = () => {
                     Participación
                 </label>
                 <select
-                    value={localConfig.participacion}
-                    onChange={(e) => updateConfig({ participacion: Number(e.target.value) })}
+                    value={config.participacion}
+                    onChange={(e) => handleConfigUpdate({ participacion: Number(e.target.value) })}
                     className="w-full text-sm bg-slate-800 border border-slate-700 text-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                     disabled={availableParticipations.length === 0}
                 >
-                    {availableParticipations.map(part => (
+                    {availableParticipations.map((part: number) => (
                         <option key={part} value={part}>{part}%</option>
                     ))}
                 </select>
+            </div>
+
+            {/* Dispersión */}
+            <div>
+                <label className="text-xs text-slate-400 mb-1 block">
+                    Dispersión
+                </label>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={() => handleConfigUpdate({ conDispersion: true })}
+                        className={`flex-1 text-sm px-3 py-1.5 rounded transition-colors ${config.conDispersion
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}
+                    >
+                        Con dispersión
+                    </button>
+                    <button
+                        onClick={() => handleConfigUpdate({ conDispersion: false })}
+                        className={`flex-1 text-sm px-3 py-1.5 rounded transition-colors ${!config.conDispersion
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}
+                    >
+                        Sin dispersión
+                    </button>
+                </div>
             </div>
 
             {/* Información de disponibilidad */}
@@ -190,19 +201,23 @@ export const ModelSelector: React.FC = () => {
             {hasDataForCurrentConfig && configurations.length > 0 && (
                 <div className="text-xs bg-cyan-950/30 border border-cyan-700 rounded p-2">
                     {(() => {
-                        const config = configurations.find(
-                            c => c.anio === localConfig.anio &&
-                                c.semana === localConfig.semana &&
-                                c.participacion === localConfig.participacion
+                        const configData = configurations.find(
+                            (c: AvailableConfiguration) => c.anio === config.anio &&
+                                c.semana === config.semana &&
+                                c.participacion === config.participacion &&
+                                (config.conDispersion ? c.dispersion === 'K' : c.dispersion === 'N')
                         );
-                        return config ? (
+                        return configData ? (
                             <>
                                 <div className="font-medium text-cyan-300 mb-1">Instancia Seleccionada</div>
                                 <div className="text-cyan-200">
-                                    {config.totalMovimientos.toLocaleString()} movimientos
+                                    {configData.totalMovimientos.toLocaleString()} movimientos
                                 </div>
                                 <div className="text-cyan-200">
-                                    {config.totalSegregaciones} segregaciones
+                                    {configData.totalSegregaciones} segregaciones
+                                </div>
+                                <div className="text-cyan-200 text-xs mt-1">
+                                    {new Date(configData.fechaInicio).toLocaleDateString()} - {new Date(configData.fechaFin).toLocaleDateString()}
                                 </div>
                             </>
                         ) : null;

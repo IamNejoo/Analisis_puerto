@@ -1,5 +1,3 @@
-// src/components/map/views/BloqueView.tsx - VERSIÓN ADAPTADA PARA useOptimizationData
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTimeContext } from '../../../contexts/TimeContext';
 import { useOptimizationData } from '../../../hooks/useOptimizationData';
@@ -10,7 +8,7 @@ import {
   Info, BarChart3, Grid3X3, Activity, TrendingUp,
   AlertTriangle, Database
 } from 'lucide-react';
-import type { DataSource } from '../../../types/index';
+import { useMagdalenaContext } from '../../../contexts/MagdalenaContext';
 
 interface BloqueViewProps {
   patioId: string;
@@ -37,27 +35,30 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
 
   const { timeState } = useTimeContext();
   const { dataSource } = timeState;
+  const { config: magdalenaContextConfig } = useMagdalenaContext();
 
   // Calcular el turno inicial y máximo según la unidad temporal
   const { initialTurno, maxTurnos, turnoLabel } = useMemo(() => {
     if (dataSource === 'historical') {
       switch (timeState.unit) {
         case 'week':
-          // Para semana: 21 turnos (7 días × 3 turnos)
+          // Vista semana: datos acumulados, sin navegación
           return {
             initialTurno: 1,
-            maxTurnos: 21,
-            turnoLabel: (turno: number) => {
-              const dia = Math.floor((turno - 1) / 3) + 1;
-              const turnoDelDia = ((turno - 1) % 3) + 1;
-              const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-              const turnos = ['Turno 1 (8-16h)', 'Turno 2 (16-24h)', 'Turno 3 (0-8h)'];
-              return `${diasSemana[dia - 1]} - ${turnos[turnoDelDia - 1]}`;
-            }
+            maxTurnos: 1,
+            turnoLabel: () => `Semana completa (${timeState.currentDate.toLocaleDateString('es-CL')})`
           };
 
         case 'day':
-          // Para día: 3 turnos
+          // Vista día: datos acumulados del día, sin navegación
+          return {
+            initialTurno: 1,
+            maxTurnos: 1,
+            turnoLabel: () => `Día completo (${timeState.currentDate.toLocaleDateString('es-CL')})`
+          };
+
+        case 'shift':
+          // Vista turno: mostrar el turno actual basado en la hora
           const currentHour = timeState.currentDate.getHours();
           let turnoActual = 1;
           if (currentHour >= 8 && currentHour < 16) turnoActual = 1;
@@ -66,7 +67,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
 
           return {
             initialTurno: turnoActual,
-            maxTurnos: 3,
+            maxTurnos: 3,  // Permitir navegar entre los 3 turnos del día
             turnoLabel: (turno: number) => {
               const turnos = ['Turno 1 (8-16h)', 'Turno 2 (16-24h)', 'Turno 3 (0-8h)'];
               return turnos[turno - 1];
@@ -74,7 +75,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
           };
 
         case 'hour':
-          // Para hora: mostrar solo la hora actual como un único "turno"
+          // Vista hora: datos de la hora actual, sin navegación
           return {
             initialTurno: 1,
             maxTurnos: 1,
@@ -84,24 +85,11 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
             }
           };
 
-        case 'shift':
-          // Para turno: mostrar solo el turno actual
-          return {
-            initialTurno: 1,
-            maxTurnos: 1,
-            turnoLabel: () => {
-              const hour = timeState.currentDate.getHours();
-              if (hour >= 8 && hour < 16) return 'Turno 1 (8-16h)';
-              else if (hour >= 16 && hour < 24) return 'Turno 2 (16-24h)';
-              else return 'Turno 3 (0-8h)';
-            }
-          };
-
         default:
           return { initialTurno: 1, maxTurnos: 1, turnoLabel: () => 'Período actual' };
       }
     } else if (dataSource === 'modelMagdalena') {
-      // Para Magdalena siempre son 21 turnos
+      // Modelo Magdalena sí tiene 21 turnos para navegar
       return {
         initialTurno: 1,
         maxTurnos: 21,
@@ -124,68 +112,58 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     setCurrentTurno(initialTurno);
   }, [initialTurno, timeState.unit, timeState.currentDate]);
 
-  // Hook para datos de Magdalena - USANDO useOptimizationData
+  // Hook para datos de Magdalena
   const magdalenaConfig = useMemo(() => {
-    if (dataSource !== 'modelMagdalena' || !timeState.magdalenaConfig) {
+    if (dataSource !== 'modelMagdalena') {
       return null;
     }
     return {
-      anio: timeState.magdalenaConfig.anio || 2022,
-      semana: timeState.magdalenaConfig.semana || 3,
-      participacion: timeState.magdalenaConfig.participacion || 69,
-      conDispersion: timeState.magdalenaConfig.conDispersion ?? true
+      anio: magdalenaContextConfig.anio,
+      semana: magdalenaContextConfig.semana,
+      participacion: magdalenaContextConfig.participacion,
+      conDispersion: magdalenaContextConfig.conDispersion
     };
-  }, [dataSource, timeState.magdalenaConfig]);
+  }, [dataSource, magdalenaContextConfig]);
 
   const {
     metrics: optimizationMetrics,
+    bloqueDetalle: magdalenaBloqueDetalle,
     isLoading: isLoadingMagdalena,
     error: errorMagdalena
-  } = useOptimizationData(magdalenaConfig || {
-    anio: 2022,
-    semana: 1,
-    participacion: 69,
-    conDispersion: true
-  });
+  } = useOptimizationData(
+    magdalenaConfig || { anio: 2022, semana: 1, participacion: 69, conDispersion: true },
+    dataSource === 'modelMagdalena' ? bloqueId : undefined,
+    dataSource === 'modelMagdalena' ? currentTurno : undefined
+  );
 
-  // Convertir optimizationMetrics al formato esperado por el componente
-  const magdalenaMetrics = useMemo(() => {
-    if (!optimizationMetrics || dataSource !== 'modelMagdalena') return null;
-
-    // Aquí transformamos los datos al formato que espera el componente
-    return {
-      bahiasPorBloque: {},
-      volumenPorBloque: {},
-      capacidadesPorBloque: {},
-      teusPorSegregacion: {},
-      segregacionesInfo: optimizationMetrics.segregaciones.activas.reduce((acc, seg) => {
-        acc[seg.codigo] = {
-          descripcion: seg.descripcion,
-          movimientos: seg.movimientos
-        };
-        return acc;
-      }, {} as any),
-      // Agregar más transformaciones según sea necesario
-      ocupacion: optimizationMetrics.ocupacion,
-      evolucionTemporal: optimizationMetrics.evolucionTemporal
+  const mapTimeUnitForSAI = (unit: 'week' | 'day' | 'shift' | 'hour'): 'semana' | 'dia' | 'turno' | 'hora' => {
+    const mapping: Record<string, 'semana' | 'dia' | 'turno' | 'hora'> = {
+      'week': 'semana',
+      'day': 'dia',
+      'shift': 'turno',
+      'hour': 'hora'
     };
-  }, [optimizationMetrics, dataSource]);
+    return mapping[unit] || 'turno';
+  };
 
-  // Hook para datos SAI (históricos) - Actualizado con bloqueId
-  const { saiMetrics, isLoading: isLoadingSAI, error: errorSAI } = useSAIData(
+  // Hook para datos SAI (históricos)
+  const {
+    saiMetrics,
+    isLoading: isLoadingSAI,
+    error: errorSAI
+  } = useSAIData(
     dataSource === 'historical' ? timeState.currentDate : null,
     currentTurno,
-    bloqueId
+    bloqueId,
+    mapTimeUnitForSAI(timeState.unit)
   );
 
   // Determinar qué datos y estado de carga usar según la fuente
   const isLoading = dataSource === 'modelMagdalena' ? isLoadingMagdalena :
-    dataSource === 'historical' ? isLoadingSAI :
-      false;
+    dataSource === 'historical' ? isLoadingSAI : false;
 
   const error = dataSource === 'modelMagdalena' ? errorMagdalena :
-    dataSource === 'historical' ? errorSAI :
-      null;
+    dataSource === 'historical' ? errorSAI : null;
 
   // Función para asignar colores consistentes a segregaciones
   const getSegregationColor = (segregationId: string): string => {
@@ -195,13 +173,13 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       '#06B6D4', '#A855F7', '#DC2626', '#059669', '#7C3AED',
       '#2563EB', '#EA580C', '#0891B2', '#9333EA', '#16A34A'
     ];
-    const index = parseInt(segregationId.replace('S', '')) % colors.length;
+    const index = parseInt(segregationId.replace(/\D/g, '')) % colors.length;
     return colors[index];
   };
 
   // Procesar datos de bahías para el turno actual
   const { occupancyMatrix, segregacionesStats, bahiasOcupadas, ocupacionReal, segregacionesTotales } = useMemo(() => {
-    console.log('🔄 Iniciando procesamiento de datos');
+    console.log('🔄 Procesando datos para visualización');
 
     const matrix: (CellData | null)[][] = Array(7).fill(null).map(() => Array(30).fill(null));
     const stats = new Map<string, {
@@ -217,9 +195,8 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
     let totalCapacidadTEUs = 0;
 
     // Determinar qué métricas usar según la fuente de datos
-    const metrics = dataSource === 'modelMagdalena' ? magdalenaMetrics :
-      dataSource === 'historical' ? saiMetrics :
-        null;
+    const metrics = dataSource === 'modelMagdalena' ? magdalenaBloqueDetalle :
+      dataSource === 'historical' ? saiMetrics : null;
 
     console.log('📊 Métricas seleccionadas:', {
       dataSource,
@@ -239,147 +216,135 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       };
     }
 
-    // Procesar datos según disponibilidad
-    if (dataSource === 'modelMagdalena' && optimizationMetrics) {
-      // Para Magdalena, usar los datos de optimización directamente
-      const bloqueData = optimizationMetrics.ocupacion.porBloque.find(b => b.bloque === bloqueId);
-      if (bloqueData) {
-        // Aquí necesitarías la lógica específica para procesar los datos de Magdalena
-        // Por ahora, usar la ocupación promedio como indicador
-        const ocupacion = bloqueData.ocupacionPromedio;
-        totalBahiasOcupadas = Math.round((ocupacion / 100) * 30);
-        totalVolumenTEUs = Math.round((ocupacion / 100) * 1050); // Asumiendo capacidad de 35 TEUs por bahía
-        totalCapacidadTEUs = 1050; // 30 bahías * 35 TEUs
-      }
-    } else {
-      // Usar los datos de las métricas (estructura unificada para SAI)
-      const bahiasPorBloque = metrics.bahiasPorBloque || {};
-      const volumenPorBloque = metrics.volumenPorBloque || {};
-      const capacidadesPorBloque = metrics.capacidadesPorBloque || {};
-      const teusPorSegregacion = metrics.teusPorSegregacion || {};
-      const segregacionesInfo = metrics.segregacionesInfo || {};
+    // Usar los datos de las métricas
+    const bahiasPorBloque = metrics.bahiasPorBloque || {};
+    const volumenPorBloque = metrics.volumenPorBloque || {};
+    const capacidadesPorBloque = metrics.capacidadesPorBloque || {};
+    const teusPorSegregacion = metrics.teusPorSegregacion || {};
+    const segregacionesInfo = metrics.segregacionesInfo || {};
 
-      // Normalizar el ID del bloque
-      let normalizedBloqueId = bloqueId;
-      if (!bloqueId.startsWith('C') && !bloqueId.startsWith('H') && !bloqueId.startsWith('T')) {
-        normalizedBloqueId = `C${bloqueId}`;
-      }
+    // Normalizar el ID del bloque
+    let normalizedBloqueId = bloqueId;
+    if (!bloqueId.startsWith('C') && !bloqueId.startsWith('H') && !bloqueId.startsWith('T')) {
+      normalizedBloqueId = `C${bloqueId}`;
+    }
 
-      // Para datos históricos con vista por hora/turno, usar turno 1
-      const turnoKey = (dataSource === 'historical' && (timeState.unit === 'hour' || timeState.unit === 'shift'))
-        ? 1
-        : currentTurno;
+    // Para datos históricos con vista por hora/turno, usar turno 1
+    const turnoKey = (dataSource === 'historical' && (timeState.unit === 'hour' || timeState.unit === 'shift'))
+      ? 1 : currentTurno;
 
-      const key = `${normalizedBloqueId}-${turnoKey}`;
+    const key = `${normalizedBloqueId}-${turnoKey}`;
 
-      console.log('🔑 Procesando con clave:', {
-        bloqueId,
-        normalizedBloqueId,
-        currentTurno,
-        turnoKey,
-        key,
-        timeUnit: timeState.unit
-      });
+    console.log('🔑 Procesando con clave:', {
+      bloqueId,
+      normalizedBloqueId,
+      currentTurno,
+      turnoKey,
+      key,
+      timeUnit: timeState.unit
+    });
 
-      const bahiaInfo = bahiasPorBloque[key] || {};
-      const volumenInfo = volumenPorBloque[key] || {};
-      const capacidadBloque = capacidadesPorBloque[normalizedBloqueId] || 35;
+    const bahiaInfo = bahiasPorBloque[key] || {};
+    const volumenInfo = volumenPorBloque[key] || {};
+    const capacidadBloque = capacidadesPorBloque[normalizedBloqueId] || 35;
 
-      // Procesar cada segregación
-      const segregacionesList: Array<{
-        seg: string,
-        bahias: number,
-        volumen: number,
-        teu: number,
-        tipo: '20' | '40'
-      }> = [];
+    // Procesar cada segregación
+    const segregacionesList: Array<{
+      seg: string,
+      bahias: number,
+      volumen: number,
+      teu: number,
+      tipo: '20' | '40'
+    }> = [];
 
-      Object.keys(bahiaInfo).forEach(segregacion => {
-        const numBahias = bahiaInfo[segregacion] || 0;
-        const volumen = volumenInfo[segregacion] || 0;
-        const teuFactor = teusPorSegregacion[segregacion] || 2;
-        const tipo = teuFactor === 1 ? '20' : '40';
+    Object.keys(bahiaInfo).forEach(segregacion => {
+      const numBahias = bahiaInfo[segregacion] || 0;
+      const volumen = volumenInfo[segregacion] || 0;
+      const teuFactor = teusPorSegregacion[segregacion] || 2;
+      const tipo = teuFactor === 1 ? '20' : '40';
 
-        if (numBahias > 0) {
-          segregacionesList.push({
-            seg: segregacion,
-            bahias: numBahias,
-            volumen,
-            teu: teuFactor,
-            tipo
-          });
+      if (numBahias > 0) {
+        segregacionesList.push({
+          seg: segregacion,
+          bahias: numBahias,
+          volumen,
+          teu: teuFactor,
+          tipo
+        });
 
-          let color;
-          if (segregacion === 'IMPRT') {
-            color = '#3B82F6';
-          } else if (segregacion === 'EXPRT') {
-            color = '#10B981';
-          } else if (segregacion === 'STRGE') {
-            color = '#F59E0B';
-          } else {
-            color = getSegregationColor(segregacion);
-          }
-
-          const capacidadPorBahia = capacidadBloque;
-          const capacidadTotalTEUs = numBahias * capacidadPorBahia * teuFactor;
-          const porcentajeOcupacion = capacidadTotalTEUs > 0 ? (volumen / capacidadTotalTEUs) * 100 : 0;
-
-          stats.set(segregacion, {
-            color,
-            count: 0,
-            bahias: numBahias,
-            volumen: volumen,
-            porcentajeOcupacion: porcentajeOcupacion,
-            tipo: tipo
-          });
-
-          totalVolumenTEUs += volumen;
-          totalCapacidadTEUs += capacidadTotalTEUs;
+        let color;
+        if (segregacion === 'IMPRT' || segregacion === 'IMPORT') {
+          color = '#3B82F6';
+        } else if (segregacion === 'EXPRT' || segregacion === 'EXPORT') {
+          color = '#10B981';
+        } else if (segregacion === 'STRGE' || segregacion === 'STORAGE') {
+          color = '#F59E0B';
+        } else {
+          color = getSegregationColor(segregacion);
         }
-      });
 
-      // Ordenar por número de bahías
-      segregacionesList.sort((a, b) => b.bahias - a.bahias);
-
-      // Llenar la matriz columna por columna
-      let currentColumn = 0;
-      segregacionesList.forEach(({ seg, bahias, volumen, teu, tipo }) => {
         const capacidadPorBahia = capacidadBloque;
-        const capacidadTotalTeus = bahias * capacidadPorBahia * teu;
-        const porcentajeOcupacion = capacidadTotalTeus > 0 ? (volumen / capacidadTotalTeus) * 100 : 100;
+        const capacidadTotalTEUs = numBahias * capacidadPorBahia * teuFactor;
+        const porcentajeOcupacion = capacidadTotalTEUs > 0 ? (volumen / capacidadTotalTEUs) * 100 : 0;
 
-        for (let b = 0; b < bahias && currentColumn < 30; b++) {
-          const celdasAOcupar = Math.ceil((porcentajeOcupacion / 100) * 7);
+        stats.set(segregacion, {
+          color,
+          count: 0,
+          bahias: numBahias,
+          volumen: volumen,
+          porcentajeOcupacion: porcentajeOcupacion,
+          tipo: tipo
+        });
 
-          for (let row = 6; row >= 0; row--) {
-            const celdasOcupadas = 6 - row + 1;
-            if (celdasOcupadas <= celdasAOcupar) {
-              matrix[row][currentColumn] = {
-                segregacion: seg,
-                color: seg === 'IMPRT' ? '#3B82F6' :
-                  seg === 'EXPRT' ? '#10B981' :
-                    seg === 'STRGE' ? '#F59E0B' :
-                      getSegregationColor(seg),
-                percentage: 100,
-                volumenTEUs: volumen,
-                capacidadTEUs: capacidadTotalTeus
-              };
+        totalVolumenTEUs += volumen;
+        totalCapacidadTEUs += capacidadTotalTEUs;
+      }
+    });
 
-              const stat = stats.get(seg);
-              if (stat) {
-                stat.count++;
-                stats.set(seg, stat);
-              }
-            }
+    // Ordenar por número de bahías
+    segregacionesList.sort((a, b) => b.bahias - a.bahias);
+
+    // LÓGICA CORREGIDA: Llenar la matriz columna por columna, de abajo hacia arriba
+    let currentColumn = 0;
+    segregacionesList.forEach(({ seg, bahias, volumen, teu, tipo }) => {
+      const stat = stats.get(seg);
+
+      for (let b = 0; b < bahias && currentColumn < 30; b++) {
+        // Llenar cada columna de abajo (fila 6 = G) hacia arriba (fila 0 = A)
+        for (let row = 6; row >= 0; row--) {
+          matrix[row][currentColumn] = {
+            segregacion: seg,
+            color: stat?.color || getSegregationColor(seg),
+            percentage: 100,
+            volumenTEUs: volumen,
+            capacidadTEUs: bahias * capacidadBloque * teu
+          };
+
+          if (stat) {
+            stat.count++;
+            stats.set(seg, stat);
           }
-          currentColumn++;
-          totalBahiasOcupadas++;
         }
-      });
+        currentColumn++;
+        totalBahiasOcupadas++;
+      }
+    });
+
+    // Si vienen estadísticas del backend, usarlas
+    if (metrics.estadisticas) {
+      const statsFromBackend = metrics.estadisticas;
+      return {
+        occupancyMatrix: matrix,
+        segregacionesStats: stats,
+        bahiasOcupadas: statsFromBackend.bahiasOcupadas || totalBahiasOcupadas,
+        ocupacionReal: statsFromBackend.ocupacionReal || 0,
+        segregacionesTotales: statsFromBackend.segregacionesActivas || stats.size
+      };
     }
 
     const ocupacionRealPorcentaje = totalCapacidadTEUs > 0 ? (totalVolumenTEUs / totalCapacidadTEUs) * 100 : 0;
-    const totalSegregaciones = optimizationMetrics?.segregaciones?.activas?.length || stats.size;
+    const totalSegregaciones = dataSource === 'modelMagdalena' ?
+      (optimizationMetrics?.segregaciones?.activas?.length || stats.size) : stats.size;
 
     return {
       occupancyMatrix: matrix,
@@ -388,7 +353,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
       ocupacionReal: ocupacionRealPorcentaje,
       segregacionesTotales: totalSegregaciones
     };
-  }, [magdalenaMetrics, saiMetrics, bloqueId, currentTurno, dataSource, timeState.unit, optimizationMetrics]);
+  }, [magdalenaBloqueDetalle, saiMetrics, bloqueId, currentTurno, dataSource, timeState.unit, optimizationMetrics]);
 
   const rowLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
   const totalColumns = 30;
@@ -425,9 +390,9 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
               </h2>
               <p className="text-slate-400 text-sm mt-1">
                 {dataSource === 'modelMagdalena'
-                  ? `Semana ${magdalenaConfig?.semana || 3} - Turno ${currentTurno} de ${maxTurnos}`
+                  ? `Modelo Magdalena - Semana ${magdalenaConfig?.semana || 3} - Turno ${currentTurno} de ${maxTurnos}`
                   : dataSource === 'historical'
-                    ? `Datos Históricos - ${timeState.currentDate.toLocaleDateString('es-CL')} - ${turnoLabel(currentTurno)}`
+                    ? `Datos Históricos SAI - ${timeState.currentDate.toLocaleDateString('es-CL')} - ${turnoLabel(currentTurno)}`
                     : 'Vista detallada'} • Vista micro de bahías
               </p>
             </div>
@@ -660,7 +625,9 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                               fontSize="10"
                               fill="#FFF"
                             >
-                              {cellData.segregacion.substring(1)}
+                              {cellData.segregacion.length > 4
+                                ? cellData.segregacion.substring(0, 4)
+                                : cellData.segregacion}
                             </text>
                           )}
                         </g>
@@ -894,6 +861,10 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
               </h4>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
+                  <span className="text-blue-400">Año:</span>
+                  <span className="font-medium text-slate-300">{magdalenaConfig?.anio || 2022}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-blue-400">Semana:</span>
                   <span className="font-medium text-slate-300">{magdalenaConfig?.semana || 3}</span>
                 </div>
@@ -911,12 +882,14 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                   <span className="text-blue-400">Reubicaciones:</span>
                   <span className="font-medium text-green-400">0% (Eliminadas)</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-blue-400">Eficiencia ganada:</span>
-                  <span className="font-medium text-green-400">
-                    {optimizationMetrics.eficiencia.ganancia.toFixed(1)}%
-                  </span>
-                </div>
+                {optimizationMetrics.eficiencia && (
+                  <div className="flex justify-between">
+                    <span className="text-blue-400">Eficiencia ganada:</span>
+                    <span className="font-medium text-green-400">
+                      {optimizationMetrics.eficiencia.ganancia.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -935,6 +908,12 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-green-400">Hora:</span>
+                  <span className="font-medium text-slate-300">
+                    {timeState.currentDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-green-400">Unidad temporal:</span>
                   <span className="font-medium text-slate-300">
                     {timeState.unit === 'week' ? 'Semana' :
@@ -944,7 +923,7 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-400">Fuente:</span>
-                  <span className="font-medium text-slate-300">SAI 2022</span>
+                  <span className="font-medium text-slate-300">SAI 2017-2023</span>
                 </div>
               </div>
             </div>
@@ -961,9 +940,15 @@ export const BloqueView: React.FC<BloqueViewProps> = ({
                   <li>• Bahía coloreada = 100% reservada para esa segregación</li>
                   <li>• Altura del color = % de ocupación real de la bahía</li>
                   <li>• 1 bahía = 35 contenedores máximo</li>
-                  <li>• Los números = ID de la segregación</li>
+                  <li>• Los números/letras = ID de la segregación</li>
                   {timeState.unit === 'week' && (
                     <li className="text-yellow-300">• Vista semanal: 21 turnos (7 días × 3 turnos/día)</li>
+                  )}
+                  {dataSource === 'historical' && (
+                    <li className="text-green-300">• Datos reales del sistema SAI</li>
+                  )}
+                  {dataSource === 'modelMagdalena' && (
+                    <li className="text-blue-300">• Datos del modelo de optimización</li>
                   )}
                 </ul>
               </div>

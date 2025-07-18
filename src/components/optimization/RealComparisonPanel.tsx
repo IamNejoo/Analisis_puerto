@@ -1,7 +1,7 @@
 // src/components/optimization/RealComparisonPanel.tsx
 import React from 'react';
 import { useOptimizationData } from '../../hooks/useOptimizationData';
-import { useTimeContext } from '../../contexts/TimeContext';
+import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     ArrowRight,
     TrendingDown,
@@ -75,14 +75,7 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({
 };
 
 export const RealComparisonPanel: React.FC = () => {
-    const { timeState } = useTimeContext();
-    const config = {
-        anio: timeState.magdalenaConfig?.anio || 2022,
-        semana: timeState.magdalenaConfig?.semana || 3,
-        participacion: timeState.magdalenaConfig?.participacion || 69,
-        conDispersion: true
-    };
-
+    const { config } = useMagdalenaContext();
     const { metrics, isLoading, error } = useOptimizationData(config);
 
     if (isLoading) {
@@ -199,7 +192,7 @@ export const RealComparisonPanel: React.FC = () => {
                     </div>
                     <div className="text-center">
                         <div className="text-2xl font-bold text-purple-400">
-                            {metrics.distancias.yardEliminada.toLocaleString()}m
+                            {metrics.distancias.distanciaAhorrada.toLocaleString()}m
                         </div>
                         <div className="text-sm text-purple-300">Distancia ahorrada</div>
                     </div>

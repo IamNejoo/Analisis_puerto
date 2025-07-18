@@ -63,7 +63,8 @@ export const PatioGrid: React.FC<PatioGridProps> = ({
                 </div>
             )}
 
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {/* Grid fijo de 4 columnas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {patio.bloques.map((bloque) => {
                     const bloqueExtended = bloque as BloqueDataExtended;
                     const camilaBlockData = isCamilaActive && camilaData ?
@@ -81,7 +82,6 @@ export const PatioGrid: React.FC<PatioGridProps> = ({
                             isMagdalenaActive={isMagdalenaActive}
                             isCamilaActive={isCamilaActive}
                             ocupacionTurno={bloque.ocupacion}
-                            camilaData={camilaBlockData ?? undefined}
                             currentPeriod={currentPeriod}
                             dashboardData={camilaData ?? undefined}
                             magdalenaData={magdalenaBlockData ?? undefined}
@@ -90,41 +90,41 @@ export const PatioGrid: React.FC<PatioGridProps> = ({
                 })}
             </div>
 
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-700">
-                <div className="flex items-center space-x-4 text-sm text-slate-300">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 mt-4 border-t border-slate-700 space-y-2 sm:space-y-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-300">
                     {isCamilaActive ? (
                         <>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-                                <span>Baja utilización (&lt;50%)</span>
+                                <div className="w-2.5 h-2.5 bg-green-500 rounded mr-1.5"></div>
+                                <span>Baja (&lt;50%)</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+                                <div className="w-2.5 h-2.5 bg-yellow-500 rounded mr-1.5"></div>
                                 <span>Media (50-80%)</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
+                                <div className="w-2.5 h-2.5 bg-red-500 rounded mr-1.5"></div>
                                 <span>Alta (&gt;80%)</span>
                             </div>
                         </>
                     ) : (
                         <>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+                                <div className="w-2.5 h-2.5 bg-green-500 rounded mr-1.5"></div>
                                 <span>Bajo (&lt;70%)</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+                                <div className="w-2.5 h-2.5 bg-yellow-500 rounded mr-1.5"></div>
                                 <span>Medio (70-85%)</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
+                                <div className="w-2.5 h-2.5 bg-red-500 rounded mr-1.5"></div>
                                 <span>Alto (&gt;85%)</span>
                             </div>
                         </>
                     )}
                 </div>
-                <div className="text-sm text-slate-400">
+                <div className="text-xs sm:text-sm text-slate-400">
                     Clic en bloque para vista micro
                 </div>
             </div>

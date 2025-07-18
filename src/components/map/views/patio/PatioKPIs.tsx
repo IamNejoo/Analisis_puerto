@@ -1,6 +1,6 @@
-// src/components/map/views/patio/PatioKPIs.tsx - MODIFICADO PARA CAMILA
+// src/components/map/views/patio/PatioKPIs.tsx
 import React from 'react';
-import { Zap, Truck, Target, Gauge, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Zap, Truck, Target, Gauge, CheckCircle, AlertTriangle, TrendingDown, Navigation, Package } from 'lucide-react';
 import type { CamilaDashboardData } from '../../../../types/camila';
 import type { OptimizationMetrics } from '../../../../types/optimization';
 
@@ -17,8 +17,9 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
     camilaData,
     magdalenaMetrics
 }) => {
+    // KPIs para Camila
     if (isCamilaActive && camilaData?.resultado) {
-        const gruasActivas = camilaData.metricas_gruas?.filter(g => g.movimientos_modelo > 0).length || 0;
+        const gruasActivas = camilaData.resultado.gruas?.filter((g: { movimientos_modelo: number }) => g.movimientos_modelo > 0).length || 0;
 
         return (
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
@@ -75,8 +76,8 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
                 </div>
 
                 <div className={`rounded-lg p-3 border ${camilaData.resultado.total_movimientos_modelo > 0
-                        ? 'bg-green-950/20 border-green-800'
-                        : 'bg-red-950/20 border-red-800'
+                    ? 'bg-green-950/20 border-green-800'
+                    : 'bg-red-950/20 border-red-800'
                     }`}>
                     <div className="flex items-center text-sm">
                         {camilaData.resultado.total_movimientos_modelo > 0 ? (
@@ -103,20 +104,73 @@ export const PatioKPIs: React.FC<PatioKPIsProps> = ({
         );
     }
 
+    // KPIs para Magdalena
     if (isMagdalenaActive && magdalenaMetrics) {
         return (
-            <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-cyan-950/20 rounded-lg p-3 border border-cyan-800">
-                    <div className="text-sm text-cyan-400">Segregaciones Activas</div>
-                    <div className="text-xl font-bold text-cyan-300">{magdalenaMetrics.segregaciones?.optimizadas || 0}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+                <div className="bg-red-950/20 rounded-lg p-3 border border-red-800">
+                    <div className="flex items-center text-sm text-red-400">
+                        <TrendingDown size={16} className="mr-1" />
+                        YARD Eliminados
+                    </div>
+                    <div className="text-xl font-bold text-red-300">
+                        {magdalenaMetrics.movimientos?.yardEliminados || 0}
+                    </div>
+                    <div className="text-xs text-red-400">
+                        100% eliminación
+                    </div>
                 </div>
-                <div className="bg-blue-950/20 rounded-lg p-3 border border-blue-800">
-                    <div className="text-sm text-blue-400">Balance de Carga</div>
-                    <div className="text-xl font-bold text-blue-300">{magdalenaMetrics.cargaTrabajo?.balance?.toFixed(1) || '0.0'}</div>
-                </div>
+
                 <div className="bg-green-950/20 rounded-lg p-3 border border-green-800">
-                    <div className="text-sm text-green-400">Eficiencia Ganada</div>
-                    <div className="text-xl font-bold text-green-300">{magdalenaMetrics.eficiencia?.ganancia?.toFixed(1) || '0.0'}%</div>
+                    <div className="flex items-center text-sm text-green-400">
+                        <Target size={16} className="mr-1" />
+                        Eficiencia
+                    </div>
+                    <div className="text-xl font-bold text-green-300">
+                        +{magdalenaMetrics.eficiencia?.ganancia?.toFixed(1) || 0}%
+                    </div>
+                    <div className="text-xs text-green-400">
+                        Mejora operacional
+                    </div>
+                </div>
+
+                <div className="bg-purple-950/20 rounded-lg p-3 border border-purple-800">
+                    <div className="flex items-center text-sm text-purple-400">
+                        <Navigation size={16} className="mr-1" />
+                        Distancia
+                    </div>
+                    <div className="text-xl font-bold text-purple-300">
+                        {((magdalenaMetrics.distancias?.distanciaAhorrada || 0) / 1000).toFixed(1)} km
+                    </div>
+                    <div className="text-xs text-purple-400">
+                        Ahorrados
+                    </div>
+                </div>
+
+                <div className="bg-cyan-950/20 rounded-lg p-3 border border-cyan-800">
+                    <div className="flex items-center text-sm text-cyan-400">
+                        <Package size={16} className="mr-1" />
+                        Segregaciones
+                    </div>
+                    <div className="text-xl font-bold text-cyan-300">
+                        {magdalenaMetrics.segregaciones?.optimizadas || 0}
+                    </div>
+                    <div className="text-xs text-cyan-400">
+                        Activas de {magdalenaMetrics.segregaciones?.total || 0}
+                    </div>
+                </div>
+
+                <div className="bg-blue-950/20 rounded-lg p-3 border border-blue-800">
+                    <div className="flex items-center text-sm text-blue-400">
+                        <Gauge size={16} className="mr-1" />
+                        Movimientos
+                    </div>
+                    <div className="text-xl font-bold text-blue-300">
+                        {magdalenaMetrics.movimientos?.optimizados || 0}
+                    </div>
+                    <div className="text-xs text-blue-400">
+                        Optimizados
+                    </div>
                 </div>
             </div>
         );

@@ -4,6 +4,7 @@ import { Dashboard } from './components/dashboard/Dashboard';
 import { PortProvider } from './contexts/PortContext';
 import { ExtendedTimeProvider } from './contexts/TimeContext';
 import { ViewNavigationProvider } from './contexts/ViewNavigationContext';
+import { MagdalenaProvider } from './contexts/MagdalenaContext';
 
 const PORT_DATA_PATH = '/data/Prueba.csv';
 
@@ -20,12 +21,14 @@ const App: React.FC = () => {
     <PortProvider>
       <ExtendedTimeProvider>
         <ViewNavigationProvider>
-          <div>
-            <Dashboard
-              portDataPath={PORT_DATA_PATH}
-              blockCapacities={BLOCK_CAPACITIES}
-            />
-          </div>
+          <MagdalenaProvider>
+            <div>
+              <Dashboard
+                portDataPath={PORT_DATA_PATH}
+                blockCapacities={BLOCK_CAPACITIES}
+              />
+            </div>
+          </MagdalenaProvider>
         </ViewNavigationProvider>
       </ExtendedTimeProvider>
     </PortProvider>

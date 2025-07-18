@@ -24,6 +24,11 @@ interface SAIMetrics {
     }>;
     capacidadesPorBloque: Record<string, number>;
     teusPorSegregacion: Record<string, number>;
+    estadisticas?: {
+        bahiasOcupadas?: number;
+        ocupacionReal?: number;
+        segregacionesActivas?: number;
+    };
 }
 
 interface BlockPositionsResponse {
@@ -46,8 +51,55 @@ interface BlockPositionsResponse {
 }
 
 class SAIApiService {
-    private baseUrl = 'http://localhost:8000/api/v1/container-positions';
-    private saiBaseUrl = 'http://localhost:8000/api/v1/sai'; // Mantener para otros endpoints SAI
+    private baseUrl = 'http://localhost:8000/api/v1/sai';
+
+    /**
+     * Obtener posiciones de contenedores para un bloque específico
+     * USANDO EL ENDPOINT CORRECTO DE SAI
+     */
+    async getBlockPositions(
+        bloque: string,
+        turno: number | undefined,
+        fecha: Date | string,
+        unidadTemporal: string = 'turno'
+    ): Promise<BlockPositionsResponse> {
+        let fechaParam: string;
+
+        if (fecha instanceof Date) {
+            fechaParam = fecha.toISOString();
+        } else {
+            fechaParam = fecha.includes('T') ? fecha : `${fecha}T00:00:00.000Z`;
+        }
+
+        // Construir parámetros según la unidad temporal
+        const params = new URLSearchParams({
+            fecha: fechaParam,
+            unidad_temporal: unidadTemporal
+        });
+
+        // Solo agregar turno si no es vista semanal y si está definido
+        if (unidadTemporal !== 'semana' && turno !== undefined) {
+            params.append('turno', turno.toString());
+        }
+
+        const url = `${this.baseUrl}/bloques/${bloque}/historico?${params}`;
+        console.log('🔍 Llamando a:', url);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error(`No hay datos para el bloque ${bloque} en la fecha ${fechaParam}`);
+            }
+            const errorText = await response.text();
+            console.error('❌ Error response:', errorText);
+            throw new Error(`Error al obtener posiciones del bloque: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        return data;
+    }
 
     /**
      * Obtener métricas de contenedores para una fecha y turno específico
@@ -56,21 +108,18 @@ class SAIApiService {
         let fechaParam: string;
 
         if (fecha instanceof Date) {
-            // Formatear como YYYY-MM-DD (solo fecha)
-            const year = fecha.getFullYear();
-            const month = String(fecha.getMonth() + 1).padStart(2, '0');
-            const day = String(fecha.getDate()).padStart(2, '0');
-            fechaParam = `${year}-${month}-${day}`;
+            fechaParam = fecha.toISOString();
         } else {
-            // Si es string, extraer solo la parte de fecha
-            fechaParam = fecha.split('T')[0];
+            fechaParam = fecha.includes('T') ? fecha : `${fecha}T00:00:00.000Z`;
         }
 
-        // Construir URL para el endpoint de container positions
-        const url = turno
-            ? `${this.baseUrl}/metrics?fecha=${fechaParam}&turno=${turno}`
-            : `${this.baseUrl}/metrics?fecha=${fechaParam}`;
+        // Usar endpoint de dashboard histórico
+        const params = new URLSearchParams({
+            fecha: fechaParam,
+            unidad_temporal: turno ? 'turno' : 'dia'
+        });
 
+        const url = `${this.baseUrl}/dashboard/historico?${params}`;
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -83,104 +132,52 @@ class SAIApiService {
             throw new Error(`Error al cargar datos de contenedores: ${response.status}`);
         }
 
-        return response.json();
-    }
+        const data = await response.json();
 
-    /**
-     * Obtener posiciones de contenedores para un bloque específico
-     */
-    async getBlockPositions(bloque: string, turno: number, fecha: Date | string): Promise<BlockPositionsResponse> {
-        let fechaParam: string;
-
-        if (fecha instanceof Date) {
-            const year = fecha.getFullYear();
-            const month = String(fecha.getMonth() + 1).padStart(2, '0');
-            const day = String(fecha.getDate()).padStart(2, '0');
-            fechaParam = `${year}-${month}-${day}`;
-        } else {
-            fechaParam = fecha.split('T')[0];
-        }
-
-        const url = `${this.baseUrl}/positions/block/${bloque}/${turno}?fecha=${fechaParam}`;
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error(`No hay datos para el bloque ${bloque} en la fecha ${fechaParam}`);
-            }
-            throw new Error(`Error al obtener posiciones del bloque: ${response.status}`);
-        }
-
-        return response.json();
+        // Transformar respuesta del dashboard al formato SAIMetrics
+        return {
+            configId: '',
+            fecha: fechaParam,
+            turno: turno || 1,
+            totalMovimientos: data.kpis_principales?.movimientos?.total_real || 0,
+            totalVolumenTeus: data.kpis_principales?.ocupacion?.teus_total || 0,
+            bloquesActivos: data.kpis_principales?.ocupacion?.bloques_activos || 0,
+            segregacionesActivas: data.kpis_principales?.segregaciones?.total || 0,
+            ocupacionPromedio: 0,
+            ocupacionPorBloque: data.ocupacion_por_bloque?.reduce((acc: any, item: any) => {
+                acc[item.bloque] = item.ocupacion_estimada;
+                return acc;
+            }, {}) || {},
+            bahiasPorBloque: {},
+            volumenPorBloque: {},
+            segregacionesInfo: {},
+            capacidadesPorBloque: {},
+            teusPorSegregacion: {}
+        };
     }
 
     /**
      * Obtener fechas disponibles con datos
      */
     async getAvailableDates(): Promise<string[]> {
-        const response = await fetch(`${this.baseUrl}/positions/dates`);
+        const response = await fetch(`${this.baseUrl}/estadisticas/historico`);
 
         if (!response.ok) {
             throw new Error('Error al obtener fechas disponibles');
         }
 
-        return response.json();
-    }
+        const data = await response.json();
 
-    /**
-     * Obtener vista de bahías para un bloque específico
-     * Actualizado para usar el nuevo endpoint
-     */
-    async getBlockBahiasView(bloque: string, turno: number, semana: number, fecha?: Date | string) {
-        // Si se proporciona fecha, usar el endpoint de container positions
-        if (fecha) {
-            return this.getBlockPositions(bloque, turno, fecha);
+        // Extraer fechas del resumen
+        if (data.resumen?.fecha_inicio && data.resumen?.fecha_fin) {
+            // Generar array de fechas disponibles (simplificado)
+            return [
+                data.resumen.fecha_inicio,
+                data.resumen.fecha_fin
+            ];
         }
 
-        // Si no hay fecha, intentar con el endpoint SAI original
-        const params = new URLSearchParams({
-            semana: semana.toString()
-        });
-
-        const response = await fetch(`${this.saiBaseUrl}/bahias/${bloque}/${turno}?${params}`);
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error(`No hay datos para el bloque ${bloque} en semana ${semana}`);
-            }
-            throw new Error('Error al obtener vista de bahías');
-        }
-
-        return response.json();
-    }
-
-    /**
-     * Obtener lista de configuraciones disponibles (SAI original)
-     */
-    async getConfigurations(skip = 0, limit = 10): Promise<{
-        total: number;
-        items: Array<{
-            id: string;
-            fecha: string;
-            semana: number;
-            participacion: number;
-            con_dispersion: boolean;
-            fecha_carga: string;
-        }>;
-    }> {
-        const params = new URLSearchParams({
-            skip: skip.toString(),
-            limit: limit.toString()
-        });
-
-        const response = await fetch(`${this.saiBaseUrl}/configurations?${params}`);
-
-        if (!response.ok) {
-            throw new Error('Error al obtener configuraciones SAI');
-        }
-
-        return response.json();
+        return [];
     }
 
     /**
@@ -193,7 +190,7 @@ class SAIApiService {
         tipo: string;
         color: string;
     }>> {
-        // Para container positions, retornar las categorías básicas
+        // No hay endpoint específico de segregaciones, usar valores por defecto
         return [
             {
                 id: 'IMPRT',
@@ -220,81 +217,23 @@ class SAIApiService {
     }
 
     /**
-     * Comparar datos de container positions con Magdalena
-     */
-    async compareSAIMagdalena(semana: number, turno: number, participacion = 68, fecha?: Date | string) {
-        // Por ahora retornar null ya que solo tenemos datos de container positions
-        return {
-            fecha: fecha,
-            semana: semana,
-            turno: turno,
-            container_metrics: fecha ? await this.getMetrics(fecha, turno) : null,
-            magdalena_metrics: null,
-            comparacion: {
-                container_volumen_total: 0,
-                container_bloques_activos: 0,
-                container_segregaciones: 3,
-                container_ocupacion_promedio: 0
-            }
-        };
-    }
-
-    /**
-     * Subir archivos SAI (mantener para compatibilidad)
-     */
-    async uploadFiles(files: {
-        flujos: File;
-        instancia: File;
-        evolucion?: File;
-    }, metadata: {
-        fecha: Date | string;
-        semana: number;
-        participacion?: number;
-        con_dispersion?: boolean;
-    }) {
-        const formData = new FormData();
-        formData.append('flujos_file', files.flujos);
-        formData.append('instancia_file', files.instancia);
-        if (files.evolucion) {
-            formData.append('evolucion_file', files.evolucion);
-        }
-
-        const fechaParam = metadata.fecha instanceof Date
-            ? metadata.fecha.toISOString()
-            : metadata.fecha;
-
-        formData.append('fecha', fechaParam);
-        formData.append('semana', metadata.semana.toString());
-        if (metadata.participacion !== undefined) {
-            formData.append('participacion', metadata.participacion.toString());
-        }
-        if (metadata.con_dispersion !== undefined) {
-            formData.append('con_dispersion', metadata.con_dispersion.toString());
-        }
-
-        const response = await fetch(`${this.saiBaseUrl}/upload`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Error al cargar archivos SAI');
-        }
-
-        return response.json();
-    }
-
-    /**
      * Obtener estadísticas por rango de fechas
      */
     async getStatsByDateRange(fechaInicio: Date | string, fechaFin: Date | string) {
+        const fechaInicioParam = fechaInicio instanceof Date
+            ? fechaInicio.toISOString()
+            : fechaInicio.includes('T') ? fechaInicio : `${fechaInicio}T00:00:00.000Z`;
+
+        const fechaFinParam = fechaFin instanceof Date
+            ? fechaFin.toISOString()
+            : fechaFin.includes('T') ? fechaFin : `${fechaFin}T23:59:59.999Z`;
+
         const params = new URLSearchParams({
-            fecha_inicio: fechaInicio instanceof Date ? fechaInicio.toISOString().split('T')[0] : fechaInicio.split('T')[0],
-            fecha_fin: fechaFin instanceof Date ? fechaFin.toISOString().split('T')[0] : fechaFin.split('T')[0]
+            fecha: fechaInicioParam,
+            unidad_temporal: 'dia'
         });
 
-        const response = await fetch(`${this.baseUrl}/stats/range?${params}`);
+        const response = await fetch(`${this.baseUrl}/dashboard/historico?${params}`);
 
         if (!response.ok) {
             throw new Error('Error al obtener estadísticas por rango');
@@ -308,50 +247,65 @@ class SAIApiService {
      */
     async getVolumeByBlockAndShift(fecha: Date | string, bloque?: string) {
         const fechaParam = fecha instanceof Date
-            ? fecha.toISOString().split('T')[0]
-            : fecha.split('T')[0];
+            ? fecha.toISOString()
+            : fecha.includes('T') ? fecha : `${fecha}T00:00:00.000Z`;
 
         const params = new URLSearchParams({
             fecha: fechaParam,
-            ...(bloque && { bloque })
+            unidad_temporal: 'turno'
         });
 
-        const response = await fetch(`${this.baseUrl}/volume/by-block-shift?${params}`);
+        if (bloque) {
+            params.append('patio', bloque);
+        }
+
+        const response = await fetch(`${this.baseUrl}/dashboard/historico?${params}`);
 
         if (!response.ok) {
             throw new Error('Error al obtener volumen por bloque y turno');
         }
 
-        return response.json();
+        const data = await response.json();
+
+        // Transformar respuesta
+        return data.ocupacion_por_bloque || [];
     }
 
     /**
-     * Obtener segregaciones activas por fecha (categorías de contenedores)
+     * Obtener segregaciones activas por fecha
      */
     async getActiveSegregations(fecha: Date | string, turno?: number) {
-        // Para container positions, siempre retornar las 3 categorías
-        return this.getSegregaciones();
-    }
+        const fechaParam = fecha instanceof Date
+            ? fecha.toISOString()
+            : fecha.includes('T') ? fecha : `${fecha}T00:00:00.000Z`;
 
-    /**
-     * Exportar datos a Excel
-     */
-    async exportToExcel(configId: string) {
-        const response = await fetch(`${this.baseUrl}/export/${configId}`);
+        const params = new URLSearchParams({
+            fecha: fechaParam,
+            unidad_temporal: turno ? 'turno' : 'dia'
+        });
+
+        const response = await fetch(`${this.baseUrl}/dashboard/historico?${params}`);
 
         if (!response.ok) {
-            throw new Error('Error al exportar datos');
+            return this.getSegregaciones();
         }
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `container_positions_${configId}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        const data = await response.json();
+
+        // Transformar segregaciones activas del dashboard
+        if (data.segregaciones_activas) {
+            return data.segregaciones_activas.map((seg: any) => ({
+                id: seg.codigo,
+                nombre: seg.codigo,
+                teus: 2,
+                tipo: seg.codigo.includes('IMP') ? 'import' :
+                    seg.codigo.includes('EXP') ? 'export' : 'storage',
+                color: seg.codigo.includes('IMP') ? '#3B82F6' :
+                    seg.codigo.includes('EXP') ? '#10B981' : '#F59E0B'
+            }));
+        }
+
+        return this.getSegregaciones();
     }
 }
 

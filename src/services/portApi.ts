@@ -116,7 +116,7 @@ class PortApiService {
         const params = new URLSearchParams({
             start_date: this.formatDate(filters.startDate),
             end_date: this.formatDate(filters.endDate),
-            // Siempre forzar detalle
+            unit: filters.unit || 'day',
             ...(filters.patioFilter && { patio: filters.patioFilter }),
             ...(filters.bloqueFilter && { bloque: filters.bloqueFilter })
         });
@@ -160,7 +160,12 @@ class PortApiService {
                 maximoContenedores: item.maximoContenedores,
                 maximosTeus: item.maximosTeus,
                 promedioContenedores: item.promedioContenedores,
-                promedioTeus: item.promedioTeus
+                promedioTeus: item.promedioTeus,
+                // NUEVOS CAMPOS MAPEADOS - Despejos y Bahías
+                despejosBloques: item.despejosBloques || 0,
+                despejosPatios: item.despejosPatios || 0,
+                bahias: item.bahias || 0,
+                bahiasReefer: item.bahiasReefer || 0
             }));
         } catch (error) {
             console.error('Error fetching historical movements:', error);

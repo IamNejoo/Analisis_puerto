@@ -1,16 +1,17 @@
-// src/components/dashboard/Dashboard.tsx - VERSIÓN COMPLETA CON FIXES
+// src/components/dashboard/Dashboard.tsx - VERSIÓN CORREGIDA
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { MapPanel } from './MapPanel';
 import { CorePortKPIPanel } from './CorePortKPIPanel';
 import { CongestionAnalyticsPanel } from './CongestionAnalyticsPanel';
-import { TimeControl } from '../shared/TimeControl'; // AGREGADO
-
-import MagdalenaKPIPanel from '../optimization/MagdalenaKPIPanel';
+import { TimeControl } from '../shared/TimeControl';
+import { OptimizationKPIPanel } from '../optimization/OptimizationKPIPanel';
+import ModelSelector from '../optimization/ModelSelector';
 import MagdalenaComparisonPanel from '../optimization/ComparisonPanel';
-import CamilaIntegratedPanel from '../camila/CamilaIntegratedPanel';
+import CamilaPanel from '../camila/CamilaPanel';
 import { usePortData } from '../../hooks/usePortData';
 import { useFilters } from '../../hooks/useFilters';
 import { useTimeContext } from '../../contexts/TimeContext';
+import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import { useViewNavigation } from '../../contexts/ViewNavigationContext';
 import { patioData } from '../../data/patioData';
 import {
@@ -42,7 +43,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showCamilaDetail, setShowCamilaDetail] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
 
-  // Mover el console.log a useEffect para evitar logs en cada render
   useEffect(() => {
     console.log('showAnalytics:', showAnalytics);
   }, [showAnalytics]);
@@ -56,9 +56,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const { filters, toggleFilter } = useFilters();
   const { timeState, isLoadingData } = useTimeContext();
+  const { config: magdalenaConfig } = useMagdalenaContext();
   const { viewState } = useViewNavigation();
 
-  // Variables estáticas para evitar re-cálculos
   const isInCostanera = useMemo(() => {
     return (
       viewState.level === 'patio' &&
@@ -249,9 +249,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               🔮 Modelo Magdalena Activo
                             </span>
                             <div className="text-sm text-green-300 mt-1">
-                              {viewState.selectedPatio} • Semana {timeState.magdalenaConfig?.semana} •
-                              Participación {timeState.magdalenaConfig?.participacion}% •
-                              {timeState.magdalenaConfig?.conDispersion ? 'Con Dispersión' : 'Sin Dispersión'}
+                              {viewState.selectedPatio} • Semana {magdalenaConfig.semana} •
+                              Participación {magdalenaConfig.participacion}% •
+                              {magdalenaConfig.conDispersion ? 'Con Dispersión' : 'Sin Dispersión'}
                             </div>
                           </div>
                         </div>
@@ -347,9 +347,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div>
                               <h3 className="font-bold text-blue-200 text-lg flex items-center">
                                 <BarChart3 size={20} className="mr-3" />
-                                KPIs de Congestión del Terminal
+                                KPIs de la Terminal
                               </h3>
-
                               <p className="text-blue-300 text-sm">
                                 KPIs del patio {viewState.selectedPatio}
                               </p>
@@ -391,7 +390,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </h3>
                           </div>
                           <div className="p-4">
-                            <MagdalenaKPIPanel />
+                            <OptimizationKPIPanel />
                           </div>
                         </div>
                       )}
@@ -450,7 +449,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       </div>
                       <div className="p-6">
-                        <CamilaIntegratedPanel />
+                        <CamilaPanel />
                       </div>
                     </div>
                   </div>
@@ -481,7 +480,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             🔮 Modelo Magdalena Activo
                           </span>
                           <div className="text-sm text-green-300 mt-1">
-                            {viewState.selectedPatio} • Bloque {viewState.selectedBloque} • Semana {timeState.magdalenaConfig?.semana}
+                            {viewState.selectedPatio} • Bloque {viewState.selectedBloque} • Semana {magdalenaConfig.semana}
                           </div>
                         </div>
                       </div>
@@ -535,7 +534,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               <div>
                                 <h3 className="font-bold text-blue-200 text-lg flex items-center">
                                   <BarChart3 size={20} className="mr-3" />
-                                  KPIs de Congestión
+                                  KPIs de la Terminal
                                 </h3>
                                 <p className="text-blue-300 text-sm">
                                   {viewState.selectedPatio} • Bloque {viewState.selectedBloque}
@@ -578,7 +577,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               </h3>
                             </div>
                             <div className="p-4">
-                              <MagdalenaKPIPanel />
+                              <OptimizationKPIPanel />
                             </div>
                           </div>
                         )}
