@@ -1,6 +1,6 @@
 // src/components/optimization/OptimizationKPIPanel.tsx
-import React from 'react';
-import { useOptimizationData } from '../../hooks/useOptimizationData';
+import React, { useEffect, useState } from 'react';
+import { useOptimizationData, useOptimizationComparison } from '../../hooks/useOptimizationData';
 import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     TrendingUp,
@@ -15,7 +15,8 @@ import {
     Package,
     Truck,
     ArrowRightLeft,
-    Calendar
+    Calendar,
+    Info
 } from 'lucide-react';
 
 interface KPICardProps {
@@ -106,7 +107,21 @@ const KPICard: React.FC<KPICardProps> = ({
 
 export const OptimizationKPIPanel: React.FC = () => {
     const { config } = useMagdalenaContext();
-    const { metrics, isLoading, error } = useOptimizationData(config);
+    const { metrics, isLoading: metricsLoading, error: metricsError } = useOptimizationData(config);
+    const { data: comparisonData, isLoading: comparisonLoading, error: comparisonError } = useOptimizationComparison(config);
+
+    const isLoading = metricsLoading || comparisonLoading;
+    const error = metricsError || comparisonError;
+
+    // Usar datos filtrados cuando estén disponibles
+    const movimientosReales = comparisonData?.movimientos_por_tipo?.real_filtrado || metrics?.movimientos.porTipo || {};
+    const totalMovimientosReales = Object.values(movimientosReales).reduce((sum: number, val: any) => sum + (val || 0), 0);
+    const yardEliminados = movimientosReales.YARD || metrics?.movimientos.yardEliminados || 0;
+
+    // Calcular reducción real con datos filtrados
+    const movimientosOptimizados = metrics?.movimientos.optimizados || 0;
+    const reduccionReal = totalMovimientosReales - movimientosOptimizados;
+    const reduccionPorcentaje = totalMovimientosReales > 0 ? (reduccionReal / totalMovimientosReales * 100) : 0;
 
     if (error) {
         return (
@@ -145,7 +160,20 @@ export const OptimizationKPIPanel: React.FC = () => {
                 </div>
             </div>
 
-            {/* KPIs de Eficiencia y Movimientos */}
+            {/* Alerta de cobertura */}
+            {comparisonData?.cobertura_optimizacion && (
+                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-700">
+                    <div className="flex items-center text-amber-300 text-sm">
+                        <Info size={16} className="mr-2 flex-shrink-0" />
+                        <span>
+                            Optimizando {comparisonData.cobertura_optimizacion.segregaciones_optimizadas} segregaciones
+                            ({comparisonData.cobertura_optimizacion.porcentaje_cobertura.toFixed(1)}% del total del sistema)
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {/* KPIs de Eficiencia y Movimientos - CORREGIDOS */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Eficiencia Ganada */}
                 <KPICard
@@ -158,10 +186,10 @@ export const OptimizationKPIPanel: React.FC = () => {
                     isLoading={isLoading}
                 />
 
-                {/* YARD Eliminados */}
+                {/* YARD Eliminados - USAR DATOS FILTRADOS */}
                 <KPICard
                     title="YARD Eliminados"
-                    value={metrics?.movimientos.yardEliminados || 0}
+                    value={yardEliminados}
                     subtitle="100% eliminación"
                     trend="down"
                     icon={<CheckCircle size={20} />}
@@ -169,11 +197,11 @@ export const OptimizationKPIPanel: React.FC = () => {
                     isLoading={isLoading}
                 />
 
-                {/* Reducción Movimientos */}
+                {/* Reducción Movimientos - CORREGIDO */}
                 <KPICard
                     title="Reducción Movimientos"
-                    value={`${metrics?.movimientos.reduccionPorcentaje.toFixed(1) || 0}%`}
-                    subtitle={`${(metrics?.movimientos.totalReal || 0) - (metrics?.movimientos.optimizados || 0)} menos`}
+                    value={`${reduccionPorcentaje.toFixed(1)}%`}
+                    subtitle={`${reduccionReal} menos`}
                     trend="down"
                     icon={<ArrowRightLeft size={20} />}
                     color="cyan"
@@ -200,7 +228,7 @@ export const OptimizationKPIPanel: React.FC = () => {
                 <KPICard
                     title="Segregaciones"
                     value={metrics?.segregaciones.optimizadas || 0}
-                    subtitle={`${metrics?.segregaciones.porcentaje.toFixed(1)}% del total`}
+                    subtitle={`${comparisonData?.cobertura_optimizacion?.porcentaje_cobertura.toFixed(1) || metrics?.segregaciones.porcentaje.toFixed(1)}% del total`}
                     icon={<Layers size={20} />}
                     color="teal"
                     isLoading={isLoading}
@@ -227,18 +255,18 @@ export const OptimizationKPIPanel: React.FC = () => {
                     isLoading={isLoading}
                 />
 
-                {/* Movimientos Optimizados */}
+                {/* Movimientos Totales - CORREGIDO */}
                 <KPICard
                     title="Movimientos Totales"
                     value={metrics?.movimientos.optimizados || 0}
-                    subtitle={`vs ${(metrics?.movimientos.totalReal || 0).toLocaleString()} reales`}
+                    subtitle={`vs ${totalMovimientosReales.toLocaleString()} reales`}
                     icon={<Target size={20} />}
                     color="amber"
                     isLoading={isLoading}
                 />
             </div>
 
-            {/* Resumen detallado */}
+            {/* Resumen detallado - CORREGIDO CON DATOS FILTRADOS */}
             {metrics && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Movimientos por tipo */}
@@ -246,12 +274,15 @@ export const OptimizationKPIPanel: React.FC = () => {
                         <h3 className="font-medium text-slate-100 mb-3 flex items-center">
                             <Truck size={16} className="mr-2 text-blue-400" />
                             Movimientos por Tipo
+                            {comparisonData && (
+                                <span className="ml-2 text-xs text-amber-400">(Filtrados)</span>
+                            )}
                         </h3>
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">DLVR (Entrega)</span>
                                 <div>
-                                    <span className="text-red-400">{metrics.movimientos.porTipo.DLVR.toLocaleString()}</span>
+                                    <span className="text-red-400">{(movimientosReales.DLVR || 0).toLocaleString()}</span>
                                     <span className="text-slate-500 mx-2">→</span>
                                     <span className="text-green-400">{metrics.movimientos.optimizadosPorTipo.entrega.toLocaleString()}</span>
                                 </div>
@@ -259,7 +290,7 @@ export const OptimizationKPIPanel: React.FC = () => {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">RECV (Recepción)</span>
                                 <div>
-                                    <span className="text-red-400">{metrics.movimientos.porTipo.RECV.toLocaleString()}</span>
+                                    <span className="text-red-400">{(movimientosReales.RECV || 0).toLocaleString()}</span>
                                     <span className="text-slate-500 mx-2">→</span>
                                     <span className="text-green-400">{metrics.movimientos.optimizadosPorTipo.recepcion.toLocaleString()}</span>
                                 </div>
@@ -267,7 +298,7 @@ export const OptimizationKPIPanel: React.FC = () => {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">LOAD (Carga)</span>
                                 <div>
-                                    <span className="text-red-400">{metrics.movimientos.porTipo.LOAD.toLocaleString()}</span>
+                                    <span className="text-red-400">{(movimientosReales.LOAD || 0).toLocaleString()}</span>
                                     <span className="text-slate-500 mx-2">→</span>
                                     <span className="text-green-400">{metrics.movimientos.optimizadosPorTipo.carga.toLocaleString()}</span>
                                 </div>
@@ -275,7 +306,7 @@ export const OptimizationKPIPanel: React.FC = () => {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">DSCH (Descarga)</span>
                                 <div>
-                                    <span className="text-red-400">{metrics.movimientos.porTipo.DSCH.toLocaleString()}</span>
+                                    <span className="text-red-400">{(movimientosReales.DSCH || 0).toLocaleString()}</span>
                                     <span className="text-slate-500 mx-2">→</span>
                                     <span className="text-green-400">{metrics.movimientos.optimizadosPorTipo.descarga.toLocaleString()}</span>
                                 </div>
@@ -283,7 +314,7 @@ export const OptimizationKPIPanel: React.FC = () => {
                             <div className="flex justify-between text-sm pt-2 border-t border-slate-700">
                                 <span className="text-slate-400">YARD (Reubicaciones)</span>
                                 <div>
-                                    <span className="text-red-400">{metrics.movimientos.porTipo.YARD.toLocaleString()}</span>
+                                    <span className="text-red-400">{yardEliminados.toLocaleString()}</span>
                                     <span className="text-slate-500 mx-2">→</span>
                                     <span className="text-green-400 font-bold">0</span>
                                 </div>

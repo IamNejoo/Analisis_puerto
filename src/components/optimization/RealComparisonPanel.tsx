@@ -1,6 +1,6 @@
 // src/components/optimization/RealComparisonPanel.tsx
-import React from 'react';
-import { useOptimizationData } from '../../hooks/useOptimizationData';
+import React, { useEffect, useState } from 'react';
+import { useOptimizationData, useOptimizationComparison } from '../../hooks/useOptimizationData';
 import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     ArrowRight,
@@ -11,7 +11,8 @@ import {
     AlertTriangle,
     Navigation,
     Package,
-    Activity
+    Activity,
+    Info
 } from 'lucide-react';
 
 interface ComparisonItemProps {
@@ -76,7 +77,11 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({
 
 export const RealComparisonPanel: React.FC = () => {
     const { config } = useMagdalenaContext();
-    const { metrics, isLoading, error } = useOptimizationData(config);
+    const { metrics, isLoading: metricsLoading, error: metricsError } = useOptimizationData(config);
+    const { data: comparisonData, isLoading: comparisonLoading, error: comparisonError } = useOptimizationComparison(config);
+
+    const isLoading = metricsLoading || comparisonLoading;
+    const error = metricsError || comparisonError;
 
     if (isLoading) {
         return (
@@ -111,6 +116,20 @@ export const RealComparisonPanel: React.FC = () => {
         );
     }
 
+    // Usar datos filtrados del endpoint de comparación si están disponibles
+    const movimientosReales = comparisonData?.movimientos_por_tipo?.real_filtrado || metrics.movimientos.porTipo;
+    const movimientosModelo = comparisonData?.movimientos_por_tipo?.modelo || {
+        RECV: metrics.movimientos.optimizadosPorTipo.recepcion,
+        LOAD: metrics.movimientos.optimizadosPorTipo.carga,
+        DSCH: metrics.movimientos.optimizadosPorTipo.descarga,
+        DLVR: metrics.movimientos.optimizadosPorTipo.entrega,
+        YARD: 0
+    };
+
+    // Calcular totales con los datos filtrados
+    const totalReal = Object.values(movimientosReales).reduce((sum: number, val: any) => sum + (val || 0), 0);
+    const totalModelo = Object.values(movimientosModelo).reduce((sum: number, val: any) => sum + (val || 0), 0);
+
     const comparisons: ComparisonItemProps[] = [
         {
             metric: 'Eficiencia Operacional',
@@ -122,7 +141,7 @@ export const RealComparisonPanel: React.FC = () => {
         },
         {
             metric: 'Reubicaciones (YARD)',
-            realValue: metrics.movimientos.yardEliminados,
+            realValue: movimientosReales.YARD || 0,
             optimizedValue: 0,
             improvement: '100% eliminadas',
             improvementType: 'positive',
@@ -130,9 +149,9 @@ export const RealComparisonPanel: React.FC = () => {
         },
         {
             metric: 'Total Movimientos',
-            realValue: metrics.movimientos.totalReal,
-            optimizedValue: metrics.movimientos.optimizados,
-            improvement: `-${metrics.movimientos.reduccionPorcentaje.toFixed(1)}%`,
+            realValue: totalReal,
+            optimizedValue: totalModelo,
+            improvement: `-${((totalReal - totalModelo) / totalReal * 100).toFixed(1)}%`,
             improvementType: 'positive',
             icon: <Target size={16} />
         },
@@ -175,12 +194,30 @@ export const RealComparisonPanel: React.FC = () => {
                 </div>
             </div>
 
+            {/* Alerta de cobertura si está disponible */}
+            {comparisonData?.cobertura_optimizacion && (
+                <div className="bg-amber-950/30 rounded-lg p-4 border border-amber-700">
+                    <div className="flex items-start">
+                        <Info size={20} className="text-amber-400 mr-3 mt-0.5" />
+                        <div className="text-sm text-amber-300">
+                            <p className="font-semibold mb-1">Cobertura de Optimización</p>
+                            <p>El modelo optimiza <strong>{comparisonData.cobertura_optimizacion.segregaciones_optimizadas}</strong> segregaciones
+                                que representan el <strong>{comparisonData.cobertura_optimizacion.porcentaje_cobertura.toFixed(1)}%</strong> de
+                                los movimientos totales ({comparisonData.cobertura_optimizacion.movimientos_cubiertos.toLocaleString()} de {comparisonData.cobertura_optimizacion.movimientos_totales_sistema.toLocaleString()})</p>
+                            {comparisonData.cobertura_optimizacion.usa_mapeo_camila && (
+                                <p className="text-xs mt-1 text-amber-400">✓ Usando mapeo de segregaciones de Camila</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Summary Stats */}
             <div className="bg-gradient-to-r from-green-900/30 to-cyan-900/30 rounded-lg p-4 border border-green-700">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="text-center">
                         <div className="text-2xl font-bold text-green-400">
-                            {metrics.movimientos.yardEliminados.toLocaleString()}
+                            {(movimientosReales.YARD || 0).toLocaleString()}
                         </div>
                         <div className="text-sm text-green-300">YARD eliminados</div>
                     </div>
@@ -212,11 +249,16 @@ export const RealComparisonPanel: React.FC = () => {
                 ))}
             </div>
 
-            {/* Movement Type Comparison */}
+            {/* Movement Type Comparison - CORREGIDO */}
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
                 <h3 className="font-medium text-slate-50 mb-4 flex items-center">
                     <Activity size={16} className="mr-2 text-blue-400" />
                     Comparación Detallada de Movimientos
+                    {comparisonData && (
+                        <span className="ml-2 text-xs text-amber-400">
+                            (Solo segregaciones optimizadas)
+                        </span>
+                    )}
                 </h3>
                 <div className="space-y-4">
                     {/* Tabla comparativa */}
@@ -234,73 +276,116 @@ export const RealComparisonPanel: React.FC = () => {
                             <tbody>
                                 <tr className="border-b border-slate-700/50">
                                     <td className="py-2 text-slate-300">Entrega (DLVR)</td>
-                                    <td className="text-right text-red-400">{metrics.movimientos.porTipo.DLVR.toLocaleString()}</td>
-                                    <td className="text-right text-green-400">{metrics.movimientos.optimizadosPorTipo.entrega.toLocaleString()}</td>
+                                    <td className="text-right text-red-400">{(movimientosReales.DLVR || 0).toLocaleString()}</td>
+                                    <td className="text-right text-green-400">{(movimientosModelo.DLVR || 0).toLocaleString()}</td>
                                     <td className="text-right text-slate-300">
-                                        {(metrics.movimientos.porTipo.DLVR - metrics.movimientos.optimizadosPorTipo.entrega).toLocaleString()}
+                                        {((movimientosReales.DLVR || 0) - (movimientosModelo.DLVR || 0)).toLocaleString()}
                                     </td>
                                     <td className="text-right text-slate-400">
-                                        {((metrics.movimientos.porTipo.DLVR - metrics.movimientos.optimizadosPorTipo.entrega) / metrics.movimientos.porTipo.DLVR * 100).toFixed(1)}%
+                                        {movimientosReales.DLVR > 0 ?
+                                            (((movimientosReales.DLVR || 0) - (movimientosModelo.DLVR || 0)) / movimientosReales.DLVR * 100).toFixed(1) :
+                                            '0.0'}%
                                     </td>
                                 </tr>
                                 <tr className="border-b border-slate-700/50">
                                     <td className="py-2 text-slate-300">Recepción (RECV)</td>
-                                    <td className="text-right text-red-400">{metrics.movimientos.porTipo.RECV.toLocaleString()}</td>
-                                    <td className="text-right text-green-400">{metrics.movimientos.optimizadosPorTipo.recepcion.toLocaleString()}</td>
+                                    <td className="text-right text-red-400">{(movimientosReales.RECV || 0).toLocaleString()}</td>
+                                    <td className="text-right text-green-400">{(movimientosModelo.RECV || 0).toLocaleString()}</td>
                                     <td className="text-right text-slate-300">
-                                        {(metrics.movimientos.porTipo.RECV - metrics.movimientos.optimizadosPorTipo.recepcion).toLocaleString()}
+                                        {((movimientosReales.RECV || 0) - (movimientosModelo.RECV || 0)).toLocaleString()}
                                     </td>
                                     <td className="text-right text-slate-400">
-                                        {((metrics.movimientos.porTipo.RECV - metrics.movimientos.optimizadosPorTipo.recepcion) / metrics.movimientos.porTipo.RECV * 100).toFixed(1)}%
+                                        {movimientosReales.RECV > 0 ?
+                                            (((movimientosReales.RECV || 0) - (movimientosModelo.RECV || 0)) / movimientosReales.RECV * 100).toFixed(1) :
+                                            '0.0'}%
                                     </td>
                                 </tr>
                                 <tr className="border-b border-slate-700/50">
                                     <td className="py-2 text-slate-300">Carga (LOAD)</td>
-                                    <td className="text-right text-red-400">{metrics.movimientos.porTipo.LOAD.toLocaleString()}</td>
-                                    <td className="text-right text-green-400">{metrics.movimientos.optimizadosPorTipo.carga.toLocaleString()}</td>
+                                    <td className="text-right text-red-400">{(movimientosReales.LOAD || 0).toLocaleString()}</td>
+                                    <td className="text-right text-green-400">{(movimientosModelo.LOAD || 0).toLocaleString()}</td>
                                     <td className="text-right text-slate-300">
-                                        {(metrics.movimientos.porTipo.LOAD - metrics.movimientos.optimizadosPorTipo.carga).toLocaleString()}
+                                        {((movimientosReales.LOAD || 0) - (movimientosModelo.LOAD || 0)).toLocaleString()}
                                     </td>
                                     <td className="text-right text-slate-400">
-                                        {((metrics.movimientos.porTipo.LOAD - metrics.movimientos.optimizadosPorTipo.carga) / metrics.movimientos.porTipo.LOAD * 100).toFixed(1)}%
+                                        {movimientosReales.LOAD > 0 ?
+                                            (((movimientosReales.LOAD || 0) - (movimientosModelo.LOAD || 0)) / movimientosReales.LOAD * 100).toFixed(1) :
+                                            '0.0'}%
                                     </td>
                                 </tr>
                                 <tr className="border-b border-slate-700/50">
                                     <td className="py-2 text-slate-300">Descarga (DSCH)</td>
-                                    <td className="text-right text-red-400">{metrics.movimientos.porTipo.DSCH.toLocaleString()}</td>
-                                    <td className="text-right text-green-400">{metrics.movimientos.optimizadosPorTipo.descarga.toLocaleString()}</td>
+                                    <td className="text-right text-red-400">{(movimientosReales.DSCH || 0).toLocaleString()}</td>
+                                    <td className="text-right text-green-400">{(movimientosModelo.DSCH || 0).toLocaleString()}</td>
                                     <td className="text-right text-slate-300">
-                                        {(metrics.movimientos.porTipo.DSCH - metrics.movimientos.optimizadosPorTipo.descarga).toLocaleString()}
+                                        {((movimientosReales.DSCH || 0) - (movimientosModelo.DSCH || 0)).toLocaleString()}
                                     </td>
                                     <td className="text-right text-slate-400">
-                                        {((metrics.movimientos.porTipo.DSCH - metrics.movimientos.optimizadosPorTipo.descarga) / metrics.movimientos.porTipo.DSCH * 100).toFixed(1)}%
+                                        {movimientosReales.DSCH > 0 ?
+                                            (((movimientosReales.DSCH || 0) - (movimientosModelo.DSCH || 0)) / movimientosReales.DSCH * 100).toFixed(1) :
+                                            '0.0'}%
                                     </td>
                                 </tr>
                                 <tr className="border-b border-slate-700 font-semibold">
                                     <td className="py-2 text-slate-300">Reubicaciones (YARD)</td>
-                                    <td className="text-right text-red-400">{metrics.movimientos.porTipo.YARD.toLocaleString()}</td>
+                                    <td className="text-right text-red-400">{(movimientosReales.YARD || 0).toLocaleString()}</td>
                                     <td className="text-right text-green-400">0</td>
                                     <td className="text-right text-green-400">
-                                        -{metrics.movimientos.porTipo.YARD.toLocaleString()}
+                                        -{(movimientosReales.YARD || 0).toLocaleString()}
                                     </td>
                                     <td className="text-right text-green-400">-100%</td>
                                 </tr>
                                 <tr className="font-bold">
                                     <td className="py-2 text-slate-100">TOTAL</td>
-                                    <td className="text-right text-red-300">{metrics.movimientos.totalReal.toLocaleString()}</td>
-                                    <td className="text-right text-green-300">{metrics.movimientos.optimizados.toLocaleString()}</td>
+                                    <td className="text-right text-red-300">{totalReal.toLocaleString()}</td>
+                                    <td className="text-right text-green-300">{totalModelo.toLocaleString()}</td>
                                     <td className="text-right text-cyan-300">
-                                        -{(metrics.movimientos.totalReal - metrics.movimientos.optimizados).toLocaleString()}
+                                        -{(totalReal - totalModelo).toLocaleString()}
                                     </td>
                                     <td className="text-right text-cyan-300">
-                                        -{metrics.movimientos.reduccionPorcentaje.toFixed(1)}%
+                                        -{((totalReal - totalModelo) / totalReal * 100).toFixed(1)}%
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Mostrar comparación con totales del sistema si está disponible */}
+                    {comparisonData?.movimientos_por_tipo?.real_total_sistema && (
+                        <div className="mt-4 p-3 bg-slate-700/50 rounded">
+                            <h4 className="text-sm font-medium text-slate-300 mb-2">Contexto del Sistema Completo</h4>
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <span className="text-slate-400">Movimientos totales del sistema:</span>
+                                    <span className="ml-2 text-slate-200">
+                                        {Object.values(comparisonData.movimientos_por_tipo.real_total_sistema)
+                                            .reduce((sum: number, val: any) => sum + (val || 0), 0)
+                                            .toLocaleString()}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-slate-400">Cobertura de optimización:</span>
+                                    <span className="ml-2 text-amber-300">
+                                        {comparisonData.cobertura_optimizacion?.porcentaje_cobertura.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Nota importante */}
+            {comparisonData?.nota_importante && (
+                <div className="bg-cyan-950/30 rounded-lg p-4 border border-cyan-700">
+                    <div className="flex items-start">
+                        <Info size={20} className="text-cyan-400 mr-3 mt-0.5" />
+                        <div className="text-sm text-cyan-300">
+                            <p>{comparisonData.nota_importante}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

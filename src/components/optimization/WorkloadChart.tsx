@@ -1,7 +1,7 @@
 // src/components/optimization/WorkloadChart.tsx
 import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, ComposedChart, Area } from 'recharts';
-import { useOptimizationData } from '../../hooks/useOptimizationData';
+import { useOptimizationData, useOptimizationComparison } from '../../hooks/useOptimizationData';
 import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
 import {
     Activity,
@@ -10,7 +10,8 @@ import {
     Target,
     AlertCircle,
     Clock,
-    TrendingDown
+    TrendingDown,
+    Info
 } from 'lucide-react';
 
 interface WorkloadStatsProps {
@@ -118,21 +119,44 @@ const WorkloadStats: React.FC<WorkloadStatsProps> = ({
 
 export const WorkloadChart: React.FC = () => {
     const { config } = useMagdalenaContext();
-    const { metrics, isLoading, error } = useOptimizationData(config);
+    const { metrics, isLoading: metricsLoading, error: metricsError } = useOptimizationData(config);
+    const { data: comparisonData, isLoading: comparisonLoading } = useOptimizationComparison(config);
 
-    // Procesar datos para gráficos
+    const isLoading = metricsLoading || comparisonLoading;
+    const error = metricsError;
+
+    // Procesar datos para gráficos con datos filtrados
     const chartData = useMemo(() => {
         if (!metrics) return null;
 
-        // Datos temporales
-        const timelineData = metrics.evolucionTemporal.map(item => ({
-            periodo: item.periodo,
-            cargaTrabajo: item.movimientosModelo,
-            movimientosReal: item.movimientosReal,
-            ocupacion: item.ocupacionPromedio,
-            dia: item.dia,
-            turno: item.turno
-        }));
+        // Usar evolución temporal con datos filtrados si está disponible
+        const temporalEvolution = comparisonData?.evolucion_temporal || metrics.evolucionTemporal;
+
+        // Datos temporales corregidos - mapear correctamente los campos
+        const timelineData = temporalEvolution.map((item: any, index: number) => {
+            let cargaTrabajo = 0;
+            let movimientosReal = 0;
+
+            // Para datos de comparación (endpoint filtrado)
+            if (comparisonData && item.real) {
+                movimientosReal = item.real.total || 0;
+                cargaTrabajo = item.modelo || 0;
+            }
+            // Si no hay datos del modelo en comparación, usar los del dashboard
+            else if (metrics.evolucionTemporal[index]) {
+                movimientosReal = item.movimientosReal || item.movimientos_real || 0;
+                cargaTrabajo = metrics.evolucionTemporal[index].movimientosModelo || 0;
+            }
+
+            return {
+                periodo: item.periodo,
+                cargaTrabajo: cargaTrabajo,
+                movimientosReal: movimientosReal,
+                ocupacion: item.ocupacion || item.ocupacionPromedio || item.ocupacion_promedio || 0,
+                dia: item.dia,
+                turno: item.turno
+            };
+        });
 
         // Datos por bloque
         const bloqueData = metrics.ocupacion.porBloque.map(bloque => ({
@@ -143,19 +167,28 @@ export const WorkloadChart: React.FC = () => {
             rango: bloque.ocupacionMaxima - bloque.ocupacionMinima
         }));
 
-        // Estadísticas
-        const cargas = timelineData.map(d => d.cargaTrabajo);
-        const totalWorkload = metrics.cargaTrabajo.total;
+        // Estadísticas corregidas - verificar que no haya valores 0
+        const cargas = timelineData.map((d: any) => d.cargaTrabajo).filter((v: number) => v > 0);
+        const totalWorkload = cargas.reduce((sum: number, val: number) => sum + val, 0);
         const avgWorkload = cargas.length > 0 ? totalWorkload / cargas.length : 0;
-        const maxWorkload = Math.max(...cargas);
-        const minWorkload = Math.min(...cargas);
-        const balance = metrics.cargaTrabajo.balance;
-        const variation = metrics.cargaTrabajo.variacion;
+        const maxWorkload = cargas.length > 0 ? Math.max(...cargas) : 0;
+        const minWorkload = cargas.length > 0 ? Math.min(...cargas) : 0;
+        const balance = metrics.cargaTrabajo.balance || 0;
+        const variation = avgWorkload > 0 ? (balance / avgWorkload * 100) : 0;
+
+        console.log('📊 Workload stats:', {
+            totalWorkload,
+            avgWorkload,
+            maxWorkload,
+            minWorkload,
+            cargas: cargas.slice(0, 5), // Primeros 5 valores para debug
+            timelineDataSample: timelineData.slice(0, 3) // Primeros 3 registros
+        });
 
         // Datos agregados por día
         const dailyData = Array.from({ length: 7 }, (_, i) => {
-            const dayData = timelineData.filter(d => d.dia === i + 1);
-            const totalDay = dayData.reduce((sum, d) => sum + d.cargaTrabajo, 0);
+            const dayData = timelineData.filter((d: any) => d.dia === i + 1);
+            const totalDay = dayData.reduce((sum: number, d: any) => sum + d.cargaTrabajo, 0);
             return {
                 dia: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i],
                 cargaTotal: totalDay,
@@ -169,7 +202,7 @@ export const WorkloadChart: React.FC = () => {
             dailyData,
             stats: { totalWorkload, avgWorkload, maxWorkload, minWorkload, balance, variation }
         };
-    }, [metrics]);
+    }, [metrics, comparisonData]);
 
     if (isLoading) {
         return (
@@ -215,12 +248,28 @@ export const WorkloadChart: React.FC = () => {
                 </p>
             </div>
 
+            {/* Alerta de cobertura si está disponible */}
+            {comparisonData?.cobertura_optimizacion && (
+                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-700">
+                    <div className="flex items-center text-amber-300 text-sm">
+                        <Info size={16} className="mr-2 flex-shrink-0" />
+                        <span>
+                            Análisis basado en {comparisonData.cobertura_optimizacion.segregaciones_optimizadas} segregaciones
+                            ({comparisonData.cobertura_optimizacion.porcentaje_cobertura.toFixed(1)}% del sistema)
+                        </span>
+                    </div>
+                </div>
+            )}
+
             {/* Stats */}
             <WorkloadStats {...chartData.stats} />
 
-            {/* Gráfico temporal por período */}
+            {/* Gráfico temporal por período - CORREGIDO */}
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
-                <h3 className="font-medium text-slate-50 mb-4">Evolución Temporal de Carga</h3>
+                <h3 className="font-medium text-slate-50 mb-4">
+                    Evolución Temporal de Carga
+                    {comparisonData && <span className="text-xs text-amber-400 ml-2">(Solo segregaciones optimizadas)</span>}
+                </h3>
                 <div style={{ height: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={chartData.timelineData}>
@@ -256,7 +305,7 @@ export const WorkloadChart: React.FC = () => {
                                 fillOpacity={0.3}
                                 stroke="#06b6d4"
                                 strokeWidth={2}
-                                name="Carga Optimizada"
+                                name="Movimientos Optimizados"
                             />
                             <Line
                                 type="monotone"
@@ -265,7 +314,7 @@ export const WorkloadChart: React.FC = () => {
                                 strokeWidth={2}
                                 strokeDasharray="5 5"
                                 dot={false}
-                                name="Movimientos Reales"
+                                name={comparisonData ? "Movimientos Reales (Filtrados)" : "Movimientos Reales"}
                             />
                             <Line
                                 type="monotone"
@@ -285,6 +334,12 @@ export const WorkloadChart: React.FC = () => {
                             />
                         </ComposedChart>
                     </ResponsiveContainer>
+                </div>
+
+                {/* Nota aclaratoria */}
+                <div className="mt-3 text-xs text-slate-400">
+                    <p>• Carga Optimizada: Movimientos del modelo por período</p>
+                    <p>• Movimientos Reales: {comparisonData ? "Solo segregaciones optimizadas" : "Total del sistema"}</p>
                 </div>
             </div>
 
@@ -375,6 +430,22 @@ export const WorkloadChart: React.FC = () => {
                             />
                         </BarChart>
                     </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Panel informativo actualizado */}
+            <div className="bg-cyan-950/30 rounded-lg p-4 border border-cyan-700">
+                <div className="flex items-start">
+                    <Info size={20} className="text-cyan-400 mr-3 mt-0.5" />
+                    <div className="text-sm text-cyan-300">
+                        <p className="font-semibold mb-1">Interpretación del Análisis</p>
+                        <ul className="space-y-1 ml-4 list-disc">
+                            <li>La carga optimizada muestra los movimientos del modelo por período</li>
+                            <li>Los movimientos reales {comparisonData ? "corresponden solo a las segregaciones optimizadas" : "incluyen todo el sistema"}</li>
+                            <li>El balance mide la distribución uniforme de la carga entre períodos</li>
+                            <li>Una menor variación indica mejor distribución del trabajo</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

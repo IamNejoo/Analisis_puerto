@@ -31,7 +31,7 @@ export const PatioView: React.FC<PatioViewProps> = ({
   const [currentTurno, setCurrentTurno] = useState(1);
   const [currentPeriod, setCurrentPeriod] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-
+  const [vistaActual, setVistaActual] = useState<'semana' | 'turno'>('semana');
 
 
   const { timeState } = useTimeContext();
@@ -123,7 +123,7 @@ export const PatioView: React.FC<PatioViewProps> = ({
   if (isCamilaActive && !camilaData && !camilaLoading) {
     return <PatioErrorStates type="camila-no-data" config={camilaConfig} />;
   }
-  const [vistaActual, setVistaActual] = useState<'semana' | 'turno'>('semana');
+
 
   if (isMagdalenaActive && (magdalenaError || (!magdalenaMetrics && !magdalenaLoading))) {
     return <PatioErrorStates type="magdalena-no-data" config={magdalenaConfig} error={magdalenaError} />;

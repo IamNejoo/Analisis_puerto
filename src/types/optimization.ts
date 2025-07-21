@@ -23,6 +23,8 @@ export interface OptimizationMetrics {
         optimizada: number;
         ganancia: number;
     };
+
+    // Metadata del backend
     metadata?: {
         instancia_id: string;
         codigo: string;
@@ -34,7 +36,9 @@ export interface OptimizationMetrics {
         fecha_fin: string;
         periodos: number;
         fecha_procesamiento: string | null;
+        archivo_distancias?: string;
     };
+
     movimientos: {
         totalReal: number;
         yardEliminados: number;
@@ -72,8 +76,8 @@ export interface OptimizationMetrics {
         };
         desglose?: {
             yardEliminada: number;
-            loadMantenida: number;
-            dlvrMantenida: number;
+            loadDiferencia: number;
+            dlvrDiferencia: number;
         };
     };
 
@@ -85,6 +89,8 @@ export interface OptimizationMetrics {
             codigo: string;
             descripcion: string;
             movimientos: number;
+            bloquesUsados?: number;
+            bloquesAsignados?: number;
         }>;
     };
 
@@ -93,14 +99,19 @@ export interface OptimizationMetrics {
         capacidadTotal: number;
         porBloque: Array<{
             bloque: string;
+            capacidad?: number;
             ocupacionPromedio: number;
             ocupacionMaxima: number;
             ocupacionMinima: number;
+            teusPromedio?: number;
+            utilizacion?: number;
         }>;
     };
 
     cargaTrabajo: {
         total: number;
+        maxima?: number;
+        minima?: number;
         variacion: number;
         balance: number;
     };
@@ -113,6 +124,7 @@ export interface OptimizationMetrics {
         movimientosReal: number;
         movimientosYard: number;
         movimientosModelo: number;
+        cargaTrabajo?: number;
         ocupacionPromedio: number;
     }>;
 
@@ -137,8 +149,8 @@ export interface OptimizationMetrics {
             unidad: string;
             desglose?: {
                 yardEliminada: number;
-                loadMantenida: number;
-                dlvrMantenida: number;
+                loadDiferencia: number;
+                dlvrDiferencia: number;
             };
         };
     };
@@ -149,6 +161,10 @@ export interface OptimizationMetrics {
         unidad: string;
         descripcion: string;
         equivalencia: string;
+        componentes?: {
+            yardEliminada: string;
+            optimizacionOperaciones: string;
+        };
     };
 }
 
@@ -163,6 +179,7 @@ export interface AvailableConfiguration {
     fechaFin: string;
     totalMovimientos: number;
     totalSegregaciones: number;
+    estado?: string;
 }
 
 export interface WorkloadData {
@@ -182,11 +199,50 @@ export interface SegregationHeatmapData {
     categoria?: string;
 }
 
-// src/types/temporal.types.ts
 export interface TemporalFilters {
     vista: 'semana' | 'turno' | 'dia' | 'hora';
     dia?: number;
     turno?: number;
     periodoInicio?: number;
     periodoFin?: number;
+}
+
+export interface BloqueInfo {
+    codigo: string;
+    capacidadTeus: number;
+    capacidadBahias: number;
+    capacidadOriginal?: number;
+    activo: boolean;
+}
+
+export interface SegregacionInfo {
+    id: string;
+    codigo: string;
+    descripcion: string;
+    tipo: string;
+    categoria: string;
+    tamano: number;
+}
+
+export interface MetricaTemporal {
+    periodo: number;
+    dia: number;
+    turno: number;
+    movimientosReal: number;
+    movimientosYard: number;
+    movimientosModelo: number;
+    cargaTrabajo: number;
+    ocupacionPromedio: number;
+    distanciaReal?: number;
+    distanciaModelo?: number;
+}
+
+export interface KPIComparativo {
+    categoria: string;
+    metrica: string;
+    valorReal: number;
+    valorModelo: number;
+    diferencia: number;
+    porcentajeMejora: number;
+    unidad: string;
 }

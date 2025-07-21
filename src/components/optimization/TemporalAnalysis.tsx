@@ -1,40 +1,43 @@
 // src/components/optimization/TemporalAnalysis.tsx
 import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { useOptimizationData, useOptimizationCharts } from '../../hooks/useOptimizationData';
+import { useOptimizationData, useOptimizationCharts, useOptimizationComparison } from '../../hooks/useOptimizationData';
 import { useMagdalenaContext } from '../../contexts/MagdalenaContext';
-import { Calendar, TrendingUp, Activity, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, TrendingUp, Activity, Clock, AlertCircle, Info } from 'lucide-react';
 
 export const TemporalAnalysis: React.FC = () => {
     const { config } = useMagdalenaContext();
     const { metrics, isLoading: metricsLoading, error: metricsError } = useOptimizationData(config);
     const { data: chartData, isLoading: chartsLoading, error: chartsError } = useOptimizationCharts(config);
+    const { data: comparisonData, isLoading: comparisonLoading } = useOptimizationComparison(config);
 
-    const isLoading = metricsLoading || chartsLoading;
+    const isLoading = metricsLoading || chartsLoading || comparisonLoading;
     const error = metricsError || chartsError;
 
-    // Procesar datos para visualización
+    // Procesar datos para visualización con datos filtrados
     const processedData = useMemo(() => {
         if (!metrics && !chartData) return null;
 
-        // Usar datos de evolución temporal del chartData si está disponible
-        const temporalData = chartData?.evolucion_temporal || metrics?.evolucionTemporal || [];
+        // Usar evolución temporal del comparisonData si está disponible (con datos filtrados)
+        const temporalData = comparisonData?.evolucion_temporal ||
+            chartData?.evolucion_temporal ||
+            metrics?.evolucionTemporal || [];
 
         return temporalData.map((item: any) => ({
             periodo: item.periodo,
             dia: item.dia,
             turno: item.turno,
-            movimientosReal: item.movimientos_real || item.movimientosReal,
-            movimientosModelo: item.movimientos_modelo || item.movimientosModelo,
-            yardEliminados: item.yard_eliminados || item.movimientosYard,
+            movimientosReal: item.real?.total || item.movimientos_real || item.movimientosReal,
+            movimientosModelo: item.modelo || item.movimientos_modelo || item.movimientosModelo,
+            yardEliminados: item.real?.yard || item.yard_eliminados || item.movimientosYard,
             ocupacion: item.ocupacion || item.ocupacionPromedio || 0,
             eficiencia: item.movimientosReal > 0
-                ? ((item.movimientosReal - item.movimientosYard) / item.movimientosReal * 100)
+                ? ((item.movimientosReal - (item.real?.yard || item.movimientosYard || 0)) / item.movimientosReal * 100)
                 : 100
         }));
-    }, [metrics, chartData]);
+    }, [metrics, chartData, comparisonData]);
 
-    // Calcular estadísticas por día
+    // Calcular estadísticas por día con datos filtrados
     const dailyStats = useMemo(() => {
         if (!processedData) return [];
 
@@ -58,6 +61,16 @@ export const TemporalAnalysis: React.FC = () => {
         }
         return stats;
     }, [processedData]);
+
+    // Calcular totales con datos filtrados
+    const totalMovimientosReales = comparisonData?.resumen_comparacion?.movimientos_operativos?.real ||
+        metrics?.movimientos.totalReal || 0;
+    const totalMovimientosModelo = comparisonData?.resumen_comparacion?.movimientos_operativos?.modelo ||
+        metrics?.movimientos.optimizados || 0;
+    const yardTotales = comparisonData?.movimientos_por_tipo?.real_filtrado?.YARD ||
+        metrics?.movimientos.yardEliminados || 0;
+    const reduccionPorcentaje = totalMovimientosReales > 0 ?
+        ((totalMovimientosReales - totalMovimientosModelo) / totalMovimientosReales * 100) : 0;
 
     if (isLoading) {
         return (
@@ -90,6 +103,19 @@ export const TemporalAnalysis: React.FC = () => {
             <div>
                 <h2 className="text-lg font-semibold text-slate-50 mb-4">Análisis Temporal de Optimización</h2>
 
+                {/* Alerta de cobertura si está disponible */}
+                {comparisonData?.cobertura_optimizacion && (
+                    <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-700 mb-4">
+                        <div className="flex items-center text-amber-300 text-sm">
+                            <Info size={16} className="mr-2 flex-shrink-0" />
+                            <span>
+                                Análisis basado en {comparisonData.cobertura_optimizacion.segregaciones_optimizadas} segregaciones
+                                optimizadas ({comparisonData.cobertura_optimizacion.porcentaje_cobertura.toFixed(1)}% del total)
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-4 gap-4 mb-6">
                     <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
                         <div className="flex items-center justify-between mb-2">
@@ -117,7 +143,7 @@ export const TemporalAnalysis: React.FC = () => {
                             <span className="text-xs text-slate-400">Total</span>
                         </div>
                         <div className="text-2xl font-bold text-purple-400">
-                            {metrics?.movimientos.yardEliminados.toLocaleString()}
+                            {yardTotales.toLocaleString()}
                         </div>
                         <div className="text-sm text-slate-400">YARD eliminados</div>
                     </div>
@@ -137,7 +163,10 @@ export const TemporalAnalysis: React.FC = () => {
 
             {/* Gráfico de evolución por período */}
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
-                <h3 className="font-medium text-slate-50 mb-4">Evolución por Período (21 turnos)</h3>
+                <h3 className="font-medium text-slate-50 mb-4">
+                    Evolución por Período (21 turnos)
+                    {comparisonData && <span className="text-xs text-amber-400 ml-2">(Datos filtrados)</span>}
+                </h3>
                 <div style={{ height: '350px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={processedData}>
@@ -173,7 +202,7 @@ export const TemporalAnalysis: React.FC = () => {
                                 stroke="#ef4444"
                                 fill="#ef4444"
                                 fillOpacity={0.6}
-                                name="Movimientos Reales"
+                                name="Movimientos Reales (Filtrados)"
                             />
                             <Area
                                 type="monotone"
@@ -248,10 +277,13 @@ export const TemporalAnalysis: React.FC = () => {
                 </div>
             </div>
 
-            {/* Resumen por día */}
+            {/* Resumen por día - CORREGIDO */}
             {dailyStats.length > 0 && (
                 <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
-                    <h3 className="font-medium text-slate-50 mb-4">Resumen por Día de la Semana</h3>
+                    <h3 className="font-medium text-slate-50 mb-4">
+                        Resumen por Día de la Semana
+                        {comparisonData && <span className="text-xs text-amber-400 ml-2">(Datos filtrados)</span>}
+                    </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
@@ -290,7 +322,7 @@ export const TemporalAnalysis: React.FC = () => {
                                         {dailyStats.reduce((sum, d) => sum + d.reduccion, 0).toLocaleString()}
                                     </td>
                                     <td className="text-right text-cyan-300">
-                                        {metrics?.movimientos.reduccionPorcentaje.toFixed(1)}%
+                                        {reduccionPorcentaje.toFixed(1)}%
                                     </td>
                                 </tr>
                             </tbody>
@@ -310,6 +342,9 @@ export const TemporalAnalysis: React.FC = () => {
                             <li>Cada turno representa 8 horas de operación</li>
                             <li>Los movimientos YARD (reubicaciones) han sido completamente eliminados</li>
                             <li>La eficiencia se calcula como (Movimientos útiles / Total) × 100</li>
+                            {comparisonData && (
+                                <li className="text-amber-300">Los datos mostrados corresponden solo a las segregaciones optimizadas</li>
+                            )}
                         </ul>
                     </div>
                 </div>

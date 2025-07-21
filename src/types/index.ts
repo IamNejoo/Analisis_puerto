@@ -208,9 +208,7 @@ export interface ContainerSearchResult {
   status?: 'available' | 'reserved' | 'in_transit' | 'customs_hold';
 }
 
-// En types/patioView.types.ts o donde esté definido
 export interface BloqueStats {
-  // Campos existentes
   total: number;
   occupied: number;
   free: number;
@@ -218,65 +216,8 @@ export interface BloqueStats {
   export: number;
   empty: number;
   reefer: number;
-
-  // AGREGAR ESTOS CAMPOS NUEVOS
-  teusActuales?: number;
-  bahiasTotales?: number;
-  bahiasReefer?: number;
-
-  // Gate
-  gate?: {
-    entradas: number;
-    salidas: number;
-  };
-  gateEntradas?: number;
-  gateSalidas?: number;
-
-  // Muelle
-  muelle?: {
-    entradas: number;
-    salidas: number;
-  };
-  muelleEntradas?: number;
-  muelleSalidas?: number;
-
-  // Despejos
-  despejosBloques?: number;
-  despejosPatios?: number;
-  despejes?: number;
-
-  // Bahías
-  bahias?: number;
-
-  // Otros movimientos
-  entradas?: number;
-  salidas?: number;
-  remanejos?: number;
-  reubicacionesEntreBloques?: number;
-  reubicacionesEntrePatios?: number;
 }
-// En el archivo del componente o en types
-interface ExtendedBloqueStats extends BloqueStats {
-  gateEntradas?: number;
-  gateSalidas?: number;
-  muelleEntradas?: number;
-  muelleSalidas?: number;
-  despejosBloques?: number;
-  despejosPatios?: number;
-  bahias?: number;
-  bahiasTotales?: number;
-  bahiasReefer?: number;
-  entradas?: number;
-  salidas?: number;
-  gate?: {
-    entradas: number;
-    salidas: number;
-  };
-  muelle?: {
-    entradas: number;
-    salidas: number;
-  };
-}
+
 export interface TerminalStats {
   totalPatios: number;
   totalBloques: number;

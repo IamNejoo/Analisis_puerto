@@ -97,8 +97,8 @@ const SegregationSummaryCard: React.FC<SegregationSummaryCardProps> = ({
     return (
         <div
             className={`bg-slate-800 rounded-lg p-4 border-2 cursor-pointer transition-all duration-200 ${selected
-                    ? 'border-cyan-500 shadow-lg scale-105'
-                    : 'border-slate-700 hover:border-slate-600 hover:shadow-md'
+                ? 'border-cyan-500 shadow-lg scale-105'
+                : 'border-slate-700 hover:border-slate-600 hover:shadow-md'
                 }`}
             onClick={onClick}
         >
